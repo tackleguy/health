@@ -1,0 +1,15 @@
+# Local IDE / tooling
+.cursor/
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+
+# Secrets
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store

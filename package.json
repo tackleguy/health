@@ -1,0 +1,11 @@
+{
+  "name": "health",
+  "private": true,
+  "description": "Outdoor OS monorepo — Next.js app lives in outdoor-app/",
+  "scripts": {
+    "dev": "npm run dev --prefix outdoor-app",
+    "build": "npm run build --prefix outdoor-app",
+    "start": "npm run start --prefix outdoor-app",
+    "vercel-build": "cd outdoor-app && npm ci && npm run build"
+  }
+}
