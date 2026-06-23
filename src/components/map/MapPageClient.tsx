@@ -173,6 +173,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
       )}
 
       <MapView
+        key={mode}
         mode={mode}
         markers={markers}
         className="h-[calc(100vh-280px)] min-h-[420px]"

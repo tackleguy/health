@@ -9,6 +9,8 @@ import { isSkiTappableLayer, OPENSKIMAP_TERRAIN_STYLE } from "@/lib/ski";
 import clsx from "clsx";
 
 const TRAIL_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const SKI_DEFAULT_CENTER: [number, number] = [-106.374, 39.64];
+const SKI_DEFAULT_ZOOM = 6;
 
 function parseMapProp<T>(value: unknown): T | undefined {
   if (value == null) return undefined;
@@ -20,6 +22,27 @@ function parseMapProp<T>(value: unknown): T | undefined {
     }
   }
   return value as T;
+}
+
+function featureFromProperties(
+  props: Record<string, unknown> | null | undefined,
+  lat: number,
+  lng: number,
+): SkiFeatureSummary | null {
+  if (!props?.id) return null;
+
+  return {
+    id: String(props.id),
+    name: String(props.name ?? "Ski feature"),
+    type: props.type as SkiFeatureSummary["type"],
+    uses: parseMapProp<string[]>(props.uses),
+    activities: parseMapProp<string[]>(props.activities),
+    difficulty: props.difficulty ? String(props.difficulty) : undefined,
+    status: props.status ? String(props.status) : undefined,
+    lat,
+    lng,
+    liftType: props.liftType ? String(props.liftType) : undefined,
+  };
 }
 
 interface MapViewProps {
@@ -39,8 +62,8 @@ interface MapViewProps {
 export function MapView({
   mode,
   markers = [],
-  center = [-98.5795, 39.8283],
-  zoom = 3.5,
+  center,
+  zoom,
   className,
   geolocate = false,
   fitToMarkers = true,
@@ -52,14 +75,20 @@ export function MapView({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
-  const modeRef = useRef(mode);
   const onGeolocateRef = useRef(onGeolocate);
   const onSkiFeatureClickRef = useRef(onSkiFeatureClick);
-  const tappableLayersRef = useRef<string[]>([]);
+  const skiLayerHandlersRef = useRef<
+    Array<{
+      layerId: string;
+      onClick: (e: maplibregl.MapLayerMouseEvent) => void;
+      onEnter: () => void;
+      onLeave: () => void;
+    }>
+  >([]);
 
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
+  const isSki = mode === "ski";
+  const mapCenter = center ?? (isSki ? SKI_DEFAULT_CENTER : [-98.5795, 39.8283]);
+  const mapZoom = zoom ?? (isSki ? SKI_DEFAULT_ZOOM : 3.5);
 
   useEffect(() => {
     onGeolocateRef.current = onGeolocate;
@@ -70,13 +99,13 @@ export function MapView({
   }, [onSkiFeatureClick]);
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (!containerRef.current) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mode === "ski" ? OPENSKIMAP_TERRAIN_STYLE : TRAIL_STYLE,
-      center,
-      zoom: mode === "ski" ? 9 : zoom,
+      style: isSki ? OPENSKIMAP_TERRAIN_STYLE : TRAIL_STYLE,
+      center: mapCenter,
+      zoom: mapZoom,
       attributionControl: false,
     });
 
@@ -86,80 +115,89 @@ export function MapView({
       "bottom-right",
     );
 
-    if (geolocate || mode === "ski") {
+    if (geolocate || isSki) {
       const geo = new maplibregl.GeolocateControl({
         trackUserLocation: true,
         showUserLocation: true,
         showAccuracyCircle: true,
       });
       map.addControl(geo, "top-right");
-      map.on("load", () => geo.trigger());
+      map.once("load", () => {
+        geo.trigger();
+      });
       geo.on("geolocate", (e) => {
         onGeolocateRef.current?.(e.coords.latitude, e.coords.longitude);
       });
     }
 
-    const refreshTappableLayers = () => {
+    const clearSkiHandlers = () => {
+      for (const { layerId, onClick, onEnter, onLeave } of skiLayerHandlersRef.current) {
+        map.off("click", layerId, onClick);
+        map.off("mouseenter", layerId, onEnter);
+        map.off("mouseleave", layerId, onLeave);
+      }
+      skiLayerHandlersRef.current = [];
+    };
+
+    const attachSkiHandlers = () => {
+      if (!isSki) return;
+      clearSkiHandlers();
+
       const layers = map.getStyle()?.layers ?? [];
-      tappableLayersRef.current = layers
+      const tappableLayers = layers
         .filter((l) => isSkiTappableLayer(l.id))
         .map((l) => l.id)
         .reverse();
+
+      for (const layerId of tappableLayers) {
+        const onClick = (e: maplibregl.MapLayerMouseEvent) => {
+          const props = e.features?.[0]?.properties;
+          const lngLat = e.lngLat;
+          if (!props || !lngLat) return;
+
+          const feature = featureFromProperties(props, lngLat.lat, lngLat.lng);
+          if (feature) onSkiFeatureClickRef.current?.(feature);
+        };
+
+        const onEnter = () => {
+          map.getCanvas().style.cursor = "pointer";
+        };
+        const onLeave = () => {
+          map.getCanvas().style.cursor = "";
+        };
+
+        map.on("click", layerId, onClick);
+        map.on("mouseenter", layerId, onEnter);
+        map.on("mouseleave", layerId, onLeave);
+
+        skiLayerHandlersRef.current.push({ layerId, onClick, onEnter, onLeave });
+      }
     };
 
-    map.on("styledata", refreshTappableLayers);
-
-    map.on("click", (e) => {
-      if (modeRef.current !== "ski" || tappableLayersRef.current.length === 0) return;
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: tappableLayersRef.current,
-      });
-      const props = features[0]?.properties;
-      if (!props?.id) return;
-
-      onSkiFeatureClickRef.current?.({
-        id: String(props.id),
-        name: String(props.name ?? "Ski feature"),
-        type: props.type as SkiFeatureSummary["type"],
-        uses: parseMapProp<string[]>(props.uses),
-        activities: parseMapProp<string[]>(props.activities),
-        difficulty: props.difficulty ? String(props.difficulty) : undefined,
-        status: props.status ? String(props.status) : undefined,
-        lat: e.lngLat.lat,
-        lng: e.lngLat.lng,
-        liftType: props.liftType ? String(props.liftType) : undefined,
-      });
-    });
-
-    map.on("mousemove", (e) => {
-      if (modeRef.current !== "ski" || tappableLayersRef.current.length === 0) return;
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: tappableLayersRef.current,
-      });
-      map.getCanvas().style.cursor = features.length > 0 ? "pointer" : "";
-    });
+    map.on("style.load", attachSkiHandlers);
 
     mapRef.current = map;
 
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObserver.observe(containerRef.current);
+
     return () => {
+      resizeObserver.disconnect();
+      clearSkiHandlers();
+      map.off("style.load", attachSkiHandlers);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isSki]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-
-    map.setStyle(mode === "ski" ? OPENSKIMAP_TERRAIN_STYLE : TRAIL_STYLE);
-  }, [mode]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || mode === "ski") return;
+    if (!map || isSki) return;
 
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
@@ -203,32 +241,37 @@ export function MapView({
 
       markersRef.current.push(mapMarker);
     });
-  }, [markers, onMarkerClick, mode]);
+  }, [markers, onMarkerClick, isSki]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !fitToMarkers || markers.length === 0 || mode === "ski") return;
+    if (!map || !fitToMarkers || markers.length === 0 || isSki) return;
 
     const bounds = new maplibregl.LngLatBounds();
     markers.forEach((m) => bounds.extend([m.longitude, m.latitude]));
     map.fitBounds(bounds, { padding: 60, maxZoom: 11 });
-  }, [markers, fitToMarkers, mode]);
+  }, [markers, fitToMarkers, isSki]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focus) return;
     map.flyTo({
       center: [focus.lng, focus.lat],
-      zoom: focus.zoom ?? 11,
+      zoom: focus.zoom ?? 12,
       essential: true,
     });
   }, [focus]);
 
   return (
-    <div className={clsx("relative overflow-hidden rounded-2xl", className)}>
-      <div ref={containerRef} className="h-full w-full" />
-      {mode === "ski" && (
-        <div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center px-4">
+    <div
+      className={clsx(
+        "relative min-h-[320px] overflow-hidden rounded-2xl",
+        className,
+      )}
+    >
+      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
+      {isSki && (
+        <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
           <div className="max-w-md rounded-full bg-sky-600/90 px-4 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur">
             Runs, lifts & resorts · downhill, cross-country, ski touring
           </div>

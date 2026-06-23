@@ -71,8 +71,8 @@ export function SkiMapClient() {
   }, [searchParams, flyToArea]);
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col md:h-[calc(100vh-5rem)]">
-      <div className="border-b border-stone-200 bg-white px-4 py-3">
+    <div className="flex h-[calc(100dvh-7rem)] min-h-[480px] flex-col md:h-[calc(100dvh-4.5rem)]">
+      <div className="shrink-0 border-b border-stone-200 bg-white px-4 py-3">
         <p className="text-sm font-medium text-sky-700">Explore · Ski</p>
         <h1 className="text-xl font-bold text-stone-900">Ski resort map</h1>
         <p className="mt-1 text-xs text-stone-500">
@@ -116,10 +116,10 @@ export function SkiMapClient() {
         )}
       </div>
 
-      <div className="relative flex-1">
+      <div className="relative min-h-0 flex-1">
         <MapView
           mode="ski"
-          className="absolute inset-0 rounded-none"
+          className="h-full w-full rounded-none"
           geolocate
           fitToMarkers={false}
           focus={mapFocus}
@@ -130,7 +130,7 @@ export function SkiMapClient() {
         />
 
         {selectedFeature && (
-          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:w-96">
+          <div className="absolute bottom-4 left-4 right-4 z-20 md:left-auto md:w-96">
             <SkiFeaturePanel
               feature={selectedFeature}
               onClose={() => setSelectedFeature(null)}
