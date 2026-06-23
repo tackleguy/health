@@ -18,6 +18,7 @@ export function SkiMapClient() {
   const [results, setResults] = useState<SkiArea[]>([]);
   const [selected, setSelected] = useState<SkiArea | null>(null);
   const [loading, setLoading] = useState(false);
+  const trimmedQuery = query.trim();
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -83,15 +84,12 @@ export function SkiMapClient() {
   }, []);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!trimmedQuery) return;
 
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`);
         const data = await res.json();
         const resorts = (data.results ?? []).filter(
           (r: { type: string }) => r.type === "resort",
@@ -113,7 +111,7 @@ export function SkiMapClient() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, showResorts]);
+  }, [trimmedQuery, showResorts]);
 
   useEffect(() => {
     const areaId = searchParams.get("area");

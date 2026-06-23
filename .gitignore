@@ -29,6 +29,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Legacy subfolder (app now at repo root)
+# Legacy subfolder (local env only)
 outdoor-app/node_modules/
 outdoor-app/.next/

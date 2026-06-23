@@ -15,7 +15,7 @@ export function ReviewsSection({
   trailId,
   initialReviews,
 }: ReviewsSectionProps) {
-  const [reviews, setReviews] = useState(initialReviews);
+  const reviews = initialReviews;
   const [userId, setUserId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);

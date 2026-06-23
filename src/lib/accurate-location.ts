@@ -13,8 +13,6 @@ export function getAccurateCurrentPosition(
 ): void {
   let lastCheckedPosition: GeolocationPosition | undefined;
   let locationEventCount = 0;
-  let watchID: number;
-  let timerID: ReturnType<typeof setTimeout>;
 
   const desiredAccuracy = options.desiredAccuracy ?? 20;
   const maxWait = options.maxWait ?? 10000;
@@ -52,12 +50,12 @@ export function getAccurateCurrentPosition(
     onError(error);
   };
 
-  watchID = navigator.geolocation.watchPosition(
+  const watchID = navigator.geolocation.watchPosition(
     checkLocation,
     handleError,
     watchOptions,
   );
-  timerID = setTimeout(stopTrying, maxWait);
+  const timerID = setTimeout(stopTrying, maxWait);
 }
 
 export interface WatchTrackOptions extends AccurateLocationOptions {

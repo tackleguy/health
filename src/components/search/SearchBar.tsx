@@ -11,17 +11,16 @@ export function SearchBar() {
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const trimmedQuery = query.trim();
+
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!trimmedQuery) return;
 
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query.trim())}`,
+          `/api/search?q=${encodeURIComponent(trimmedQuery)}`,
         );
         const data = await res.json();
         setResults(data.results ?? []);
@@ -33,7 +32,7 @@ export function SearchBar() {
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [trimmedQuery]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -80,13 +79,13 @@ export function SearchBar() {
         )}
       </div>
 
-      {open && query.trim() && (
+      {open && trimmedQuery && (
         <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl">
-          {results.length === 0 && !loading ? (
+          {trimmedQuery && results.length === 0 && !loading ? (
             <p className="px-4 py-3 text-sm text-stone-500">No results found</p>
           ) : (
             <ul>
-              {results.map((result) => (
+              {(trimmedQuery ? results : []).map((result) => (
                 <li key={`${result.type}-${result.id}`}>
                   <Link
                     href={result.href}
