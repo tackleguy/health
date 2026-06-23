@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { getActivities, getWeeklyStats } from "@/lib/activities";
 import { formatDistance, formatDuration } from "@/lib/gps";
 import { ActivityCard } from "@/components/activities/ActivityCard";
+import { getAuthUser } from "@/lib/supabase/server";
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getAuthUser();
 
   const activities = user ? await getActivities(20) : [];
   const stats = user ? await getWeeklyStats() : null;

@@ -20,8 +20,10 @@ export function NavBar() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
+    if (!supabase) return;
+
+    supabase.auth.getUser().then((result) => {
+      setUserEmail(result.data.user?.email ?? null);
     });
 
     const {
@@ -35,6 +37,7 @@ export function NavBar() {
 
   async function handleSignOut() {
     const supabase = createClient();
+    if (!supabase) return;
     await supabase.auth.signOut();
     window.location.href = "/";
   }

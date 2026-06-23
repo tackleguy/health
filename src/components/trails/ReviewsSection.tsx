@@ -22,8 +22,9 @@ export function ReviewsSection({
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id ?? null);
+    if (!supabase) return;
+    supabase.auth.getUser().then((result) => {
+      setUserId(result.data.user?.id ?? null);
     });
   }, []);
 

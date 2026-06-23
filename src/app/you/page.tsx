@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getActivities, getWeeklyStats } from "@/lib/activities";
 import { formatDistance, formatDuration } from "@/lib/gps";
 import { ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityType } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/server";
 
 const allTypes: ActivityType[] = ["run", "hike", "bike", "ski"];
 
 export default async function YouPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getAuthUser();
 
   if (!user) redirect("/login?next=/you");
 

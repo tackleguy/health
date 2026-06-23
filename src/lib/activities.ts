@@ -2,8 +2,17 @@ import type { Activity, ActivityType } from "@/lib/types";
 import { ACTIVITY_LABELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
 
+const emptyWeeklyStats = () => ({
+  distanceM: 0,
+  activityCount: 0,
+  elevationFt: 0,
+  durationSec: 0,
+  byType: {} as Partial<Record<ActivityType, number>>,
+});
+
 export async function getActivities(limit = 50): Promise<Activity[]> {
   const supabase = await createClient();
+  if (!supabase) return [];
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -24,6 +33,7 @@ export async function getActivities(limit = 50): Promise<Activity[]> {
 
 export async function getActivity(id: string): Promise<Activity | null> {
   const supabase = await createClient();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("activities")
     .select("*, trail:trails(*, park:parks(*))")
@@ -36,19 +46,12 @@ export async function getActivity(id: string): Promise<Activity | null> {
 
 export async function getWeeklyStats() {
   const supabase = await createClient();
+  if (!supabase) return emptyWeeklyStats();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return {
-      distanceM: 0,
-      activityCount: 0,
-      elevationFt: 0,
-      durationSec: 0,
-      byType: {} as Partial<Record<ActivityType, number>>,
-    };
-  }
+  if (!user) return emptyWeeklyStats();
 
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
@@ -82,6 +85,7 @@ export async function getWeeklyStats() {
 
 export async function getTrailForRecord(trailId: string) {
   const supabase = await createClient();
+  if (!supabase) return null;
   const { data } = await supabase
     .from("trails")
     .select("*, park:parks(*)")

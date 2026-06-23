@@ -1,12 +1,9 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseEnv } from "@/lib/env";
 
-export function createClient() {
+export function createClient(): SupabaseClient | null {
   const env = getSupabaseEnv();
-  if (!env) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    );
-  }
+  if (!env) return null;
   return createBrowserClient(env.url, env.anonKey);
 }

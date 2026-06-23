@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function getParks(): Promise<Park[]> {
   const supabase = await createClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("parks")
     .select("*")
@@ -14,6 +15,7 @@ export async function getParks(): Promise<Park[]> {
 
 export async function getPark(id: string): Promise<Park | null> {
   const supabase = await createClient();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("parks")
     .select("*")
@@ -26,6 +28,7 @@ export async function getPark(id: string): Promise<Park | null> {
 
 export async function getTrails(): Promise<Trail[]> {
   const supabase = await createClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("trails")
     .select("*, park:parks(*)")
@@ -37,6 +40,7 @@ export async function getTrails(): Promise<Trail[]> {
 
 export async function getTrailsByPark(parkId: string): Promise<Trail[]> {
   const supabase = await createClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("trails")
     .select("*")
@@ -49,6 +53,7 @@ export async function getTrailsByPark(parkId: string): Promise<Trail[]> {
 
 export async function getTrail(id: string): Promise<Trail | null> {
   const supabase = await createClient();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("trails")
     .select("*, park:parks(*)")
@@ -61,6 +66,7 @@ export async function getTrail(id: string): Promise<Trail | null> {
 
 export async function getReviews(trailId: string): Promise<Review[]> {
   const supabase = await createClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("reviews")
     .select("*, profile:profiles(*)")
@@ -71,10 +77,13 @@ export async function getReviews(trailId: string): Promise<Review[]> {
   return data ?? [];
 }
 
-export async function searchTrailsAndParks(query: string) {
+export async function searchTrailsAndParks(query: string): Promise<{
+  parks: Park[];
+  trails: Trail[];
+}> {
   const supabase = await createClient();
   const term = query.trim().toLowerCase();
-  if (!term) return { parks: [], trails: [] };
+  if (!supabase || !term) return { parks: [], trails: [] };
 
   const [parksResult, trailsResult] = await Promise.all([
     supabase.from("parks").select("*").ilike("park_name", `%${term}%`).limit(8),

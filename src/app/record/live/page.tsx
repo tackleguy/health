@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import {
   defaultActivityTitle,
   getTrailForRecord,
 } from "@/lib/activities";
 import { GpsRecorder } from "@/components/gps/GpsRecorder";
 import type { ActivityType } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/server";
 
 const VALID_TYPES: ActivityType[] = ["run", "hike", "bike", "ski"];
 
@@ -20,10 +20,7 @@ export default async function LiveRecordPage({
   }>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getAuthUser();
 
   if (!user) redirect("/login?next=/record/live");
 

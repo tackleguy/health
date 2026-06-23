@@ -1,14 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { getSupabaseEnv } from "@/lib/env";
 
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient | null> {
   const env = getSupabaseEnv();
-  if (!env) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    );
-  }
+  if (!env) return null;
 
   const cookieStore = await cookies();
 
@@ -28,4 +25,16 @@ export async function createClient() {
       },
     },
   });
+}
+
+export async function getAuthUser(): Promise<{
+  supabase: SupabaseClient | null;
+  user: User | null;
+}> {
+  const supabase = await createClient();
+  if (!supabase) return { supabase: null, user: null };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return { supabase, user };
 }
