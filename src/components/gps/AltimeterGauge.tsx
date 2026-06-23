@@ -9,12 +9,11 @@ interface AltimeterGaugeProps {
 
 /** Three-hand altimeter — ported from AltimeterView.setAltitude() */
 export function AltimeterGauge({ altitudeFt, className = "" }: AltimeterGaugeProps) {
-  const value = altitudeFt ?? 0;
+  const value = Math.max(0, altitudeFt ?? 0);
 
-  // AltimeterView: hand100 = value%1000, hand1k = value%10000, hand10k = value%100000
-  const hand100Deg = (360 * (value % 1000)) / 1000;
-  const hand1kDeg = (360 * (value % 10000)) / 10000;
-  const hand10kDeg = (360 * (value % 100000)) / 100000;
+  const hand100Deg = ((value % 1000) / 1000) * 360;
+  const hand1kDeg = ((value % 10000) / 10000) * 360;
+  const hand10kDeg = ((value % 100000) / 100000) * 360;
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
@@ -23,7 +22,7 @@ export function AltimeterGauge({ altitudeFt, className = "" }: AltimeterGaugePro
           src="/gauges/altimeter01.png"
           alt=""
           fill
-          className="rounded-full object-cover opacity-90"
+          className="rounded-full object-cover"
           sizes="128px"
         />
         <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
@@ -56,15 +55,16 @@ function Hand({
   width: number;
 }) {
   return (
-    <line
-      x1="50"
-      y1="50"
-      x2="50"
-      y2={50 - length}
-      stroke={color}
-      strokeWidth={width}
-      strokeLinecap="round"
-      transform={`rotate(${angle} 50 50)`}
-    />
+    <g transform={`rotate(${angle} 50 50)`}>
+      <line
+        x1="50"
+        y1="50"
+        x2="50"
+        y2={50 - length}
+        stroke={color}
+        strokeWidth={width}
+        strokeLinecap="round"
+      />
+    </g>
   );
 }

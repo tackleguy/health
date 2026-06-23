@@ -25,7 +25,7 @@ export default async function MapPage() {
         latitude: trail.latitude,
         longitude: trail.longitude,
         subtitle: trail.park?.park_name,
-        href: `/trails/${trail.id}`,
+        href: `/explore/trails/${trail.id}`,
       })),
     ];
   } catch {

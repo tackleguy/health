@@ -1,18 +1,66 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import type { MapMarker, MapMode } from "@/lib/types";
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
+import type { MapMarker, MapMode, Trail } from "@/lib/types";
 import { MapView } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
+import {
+  activityForTrail,
+  directionsUrl,
+  formatDistanceAway,
+  recordUrl,
+} from "@/lib/map";
+
+type NearbyTrail = Trail & { distance_km?: number };
 
 interface MapPageClientProps {
   markers: MapMarker[];
 }
 
-export function MapPageClient({ markers }: MapPageClientProps) {
-  const router = useRouter();
+export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   const [mode, setMode] = useState<MapMode>("trail");
+  const [nearbyTrails, setNearbyTrails] = useState<NearbyTrail[]>([]);
+  const [selected, setSelected] = useState<MapMarker | null>(null);
+  const [nearbyLabel, setNearbyLabel] = useState<string | null>(null);
+
+  const onGeolocate = useCallback(async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `/api/trails/nearby?lat=${lat}&lng=${lng}&radius=250&limit=40`,
+      );
+      const data = await res.json();
+      const trails: NearbyTrail[] = data.trails ?? [];
+      setNearbyTrails(trails);
+      setNearbyLabel(
+        trails.length > 0
+          ? `${trails.length} trails near you`
+          : "No trails nearby — showing all parks",
+      );
+    } catch {
+      setNearbyLabel(null);
+    }
+  }, []);
+
+  const markers = useMemo((): MapMarker[] => {
+    if (mode !== "trail") return [];
+
+    if (nearbyTrails.length > 0) {
+      return nearbyTrails.map((trail) => ({
+        id: trail.id,
+        type: "trail" as const,
+        name: trail.trail_name,
+        latitude: trail.latitude,
+        longitude: trail.longitude,
+        subtitle: trail.distance_km != null ? formatDistanceAway(trail.distance_km) : undefined,
+        href: `/explore/trails/${trail.id}`,
+      }));
+    }
+
+    return initialMarkers.filter((m) => m.type === "trail" || m.type === "park");
+  }, [mode, nearbyTrails, initialMarkers]);
+
+  const selectedTrail = nearbyTrails.find((t) => t.id === selected?.id);
 
   return (
     <div className="space-y-4">
@@ -20,7 +68,7 @@ export function MapPageClient({ markers }: MapPageClientProps) {
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Adventure Map</h1>
           <p className="text-sm text-stone-500">
-            Explore trails and resorts in one unified map
+            {nearbyLabel ?? "Trails and parks — enable location for nearby results"}
           </p>
         </div>
         <ModeSwitcher mode={mode} onChange={setMode} />
@@ -28,10 +76,70 @@ export function MapPageClient({ markers }: MapPageClientProps) {
 
       <MapView
         mode={mode}
-        markers={mode === "trail" ? markers : []}
-        className="h-[calc(100vh-220px)] min-h-[480px]"
-        onMarkerClick={(marker) => router.push(marker.href)}
+        markers={markers}
+        className="h-[calc(100vh-280px)] min-h-[420px]"
+        geolocate={mode === "trail"}
+        fitToMarkers={nearbyTrails.length === 0}
+        onGeolocate={onGeolocate}
+        onMarkerClick={(marker) => {
+          if (marker.type === "park") {
+            window.location.href = marker.href;
+            return;
+          }
+          setSelected(marker);
+        }}
       />
+
+      {selected && selectedTrail && (
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold text-stone-900">{selectedTrail.trail_name}</p>
+              <p className="mt-0.5 text-sm text-stone-500">
+                {selectedTrail.park?.park_name} · {selectedTrail.length_miles} mi ·{" "}
+                {selectedTrail.difficulty}
+                {selectedTrail.distance_km != null &&
+                  ` · ${formatDistanceAway(selectedTrail.distance_km)} away`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="text-stone-400 hover:text-stone-600"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a
+              href={directionsUrl(
+                selectedTrail.latitude,
+                selectedTrail.longitude,
+                selectedTrail.trail_name,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            >
+              Get directions
+            </a>
+            <Link
+              href={`/explore/trails/${selectedTrail.id}`}
+              className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            >
+              Trail details
+            </Link>
+            <Link
+              href={recordUrl(activityForTrail(selectedTrail.difficulty), {
+                trailId: selectedTrail.id,
+              })}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            >
+              Start GPS record
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

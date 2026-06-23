@@ -36,6 +36,7 @@ export function useGpsTrack() {
   const [error, setError] = useState<string | null>(null);
   const [currentSpeedMph, setCurrentSpeedMph] = useState(0);
   const [currentAltitudeFt, setCurrentAltitudeFt] = useState<number | null>(null);
+  const baselineAltRef = useRef<number | null>(null);
   const [currentLat, setCurrentLat] = useState<number | null>(null);
   const [currentLng, setCurrentLng] = useState<number | null>(null);
   const [currentHeading, setCurrentHeading] = useState<number | null>(null);
@@ -81,16 +82,21 @@ export function useGpsTrack() {
       } else if (point.heading !== null) {
         setCurrentHeading(point.heading);
       }
+
+      if (point.altitude !== null) {
+        if (baselineAltRef.current === null) {
+          baselineAltRef.current = point.altitude;
+        }
+        setCurrentAltitudeFt(Math.round(point.altitude * 3.28084));
+      } else {
+        const lastWithAlt = [...prev].reverse().find((p) => p.altitude !== null);
+        if (lastWithAlt?.altitude != null) {
+          setCurrentAltitudeFt(Math.round(lastWithAlt.altitude * 3.28084));
+        }
+      }
+
       return next;
     });
-
-    setCurrentLat(point.lat);
-    setCurrentLng(point.lng);
-    setCurrentAccuracy(point.accuracy);
-
-    if (point.altitude !== null) {
-      setCurrentAltitudeFt(Math.round(point.altitude * 3.28084));
-    }
 
     if (point.speed !== null && point.speed >= 0) {
       const mph = mpsToMph(point.speed);
@@ -112,6 +118,7 @@ export function useGpsTrack() {
     setCurrentLng(null);
     setCurrentHeading(null);
     setCurrentAccuracy(null);
+    baselineAltRef.current = null;
 
     getAccurateCurrentPosition(
       (position) => {

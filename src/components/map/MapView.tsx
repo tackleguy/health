@@ -15,7 +15,10 @@ interface MapViewProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
+  geolocate?: boolean;
+  fitToMarkers?: boolean;
   onMarkerClick?: (marker: MapMarker) => void;
+  onGeolocate?: (lat: number, lng: number) => void;
 }
 
 export function MapView({
@@ -24,11 +27,19 @@ export function MapView({
   center = [-98.5795, 39.8283],
   zoom = 3.5,
   className,
+  geolocate = false,
+  fitToMarkers = true,
   onMarkerClick,
+  onGeolocate,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const onGeolocateRef = useRef(onGeolocate);
+
+  useEffect(() => {
+    onGeolocateRef.current = onGeolocate;
+  }, [onGeolocate]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -46,6 +57,19 @@ export function MapView({
       new maplibregl.AttributionControl({ compact: true }),
       "bottom-right",
     );
+
+    if (geolocate) {
+      const geo = new maplibregl.GeolocateControl({
+        trackUserLocation: true,
+        showUserLocation: true,
+        showAccuracyCircle: true,
+      });
+      map.addControl(geo, "top-right");
+      map.on("load", () => geo.trigger());
+      geo.on("geolocate", (e) => {
+        onGeolocateRef.current?.(e.coords.latitude, e.coords.longitude);
+      });
+    }
 
     mapRef.current = map;
 
@@ -74,13 +98,22 @@ export function MapView({
 
     markers.forEach((marker) => {
       const el = document.createElement("button");
+      el.type = "button";
       el.className = clsx(
-        "flex h-8 w-8 -translate-x-1/2 -translate-y-full items-center justify-center rounded-full border-2 border-white text-sm shadow-lg transition hover:scale-110",
-        marker.type === "park"
-          ? "bg-emerald-600"
-          : "bg-amber-500",
+        "flex min-w-[2rem] flex-col items-center gap-0.5 rounded-xl border-2 border-white px-2 py-1.5 text-center shadow-lg transition hover:scale-105",
+        marker.type === "park" ? "bg-emerald-600 text-white" : "bg-white",
       );
-      el.innerHTML = marker.type === "park" ? "🏞" : "🥾";
+
+      if (marker.type === "park") {
+        el.innerHTML = `<span class="text-sm">🏞</span>`;
+      } else {
+        el.innerHTML = `
+          <span class="text-sm">🥾</span>
+          <span class="max-w-[72px] truncate text-[9px] font-semibold text-stone-800">${marker.name}</span>
+          ${marker.subtitle ? `<span class="text-[9px] text-emerald-700">${marker.subtitle}</span>` : ""}
+        `;
+      }
+
       el.title = marker.name;
       el.setAttribute("aria-label", marker.name);
 
@@ -89,7 +122,7 @@ export function MapView({
         onMarkerClick?.(marker);
       });
 
-      const mapMarker = new maplibregl.Marker({ element: el })
+      const mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([marker.longitude, marker.latitude])
         .addTo(map);
 
@@ -99,12 +132,12 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || markers.length === 0) return;
+    if (!map || !fitToMarkers || markers.length === 0) return;
 
     const bounds = new maplibregl.LngLatBounds();
     markers.forEach((m) => bounds.extend([m.longitude, m.latitude]));
-    map.fitBounds(bounds, { padding: 60, maxZoom: 10 });
-  }, [markers]);
+    map.fitBounds(bounds, { padding: 60, maxZoom: 11 });
+  }, [markers, fitToMarkers]);
 
   return (
     <div className={clsx("relative overflow-hidden rounded-2xl", className)}>

@@ -1,5 +1,6 @@
 import type { Park, Review, Trail } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
+import { haversineKm } from "@/lib/map";
 
 export async function getParks(): Promise<Park[]> {
   const supabase = await createClient();
@@ -34,7 +35,7 @@ export async function getTrails(): Promise<Trail[]> {
     .select("*, park:parks(*)")
     .order("trail_name");
 
-  if (error) throw error;
+  if (error) return [];
   return data ?? [];
 }
 
@@ -73,8 +74,25 @@ export async function getReviews(trailId: string): Promise<Review[]> {
     .eq("trail_id", trailId)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) return [];
   return data ?? [];
+}
+
+export async function getNearbyTrails(
+  lat: number,
+  lng: number,
+  radiusKm = 200,
+  limit = 40,
+): Promise<(Trail & { distance_km: number })[]> {
+  const trails = await getTrails();
+  return trails
+    .map((trail) => ({
+      ...trail,
+      distance_km: haversineKm(lat, lng, trail.latitude, trail.longitude),
+    }))
+    .filter((t) => t.distance_km <= radiusKm)
+    .sort((a, b) => a.distance_km - b.distance_km)
+    .slice(0, limit);
 }
 
 export async function searchTrailsAndParks(query: string): Promise<{
