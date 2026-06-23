@@ -24,12 +24,17 @@ export function AltimeterGauge({ altitudeFt, className = "" }: AltimeterGaugePro
           fill
           className="rounded-full object-cover"
           sizes="128px"
+          priority
         />
-        <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
+        <svg
+          viewBox="0 0 100 100"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+          aria-hidden
+        >
           <Hand angle={hand10kDeg} length={28} color="#ef4444" width={2.5} />
           <Hand angle={hand1kDeg} length={32} color="#f59e0b" width={2} />
           <Hand angle={hand100Deg} length={36} color="#10b981" width={1.5} />
-          <circle cx="50" cy="50" r="3" fill="#1c1917" />
+          <circle cx="50" cy="50" r="3.5" fill="#1c1917" stroke="#fafaf9" strokeWidth="0.5" />
         </svg>
       </div>
       <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-stone-500">
@@ -38,7 +43,9 @@ export function AltimeterGauge({ altitudeFt, className = "" }: AltimeterGaugePro
       <p className="text-xl font-bold tabular-nums text-stone-900">
         {altitudeFt !== null ? `${altitudeFt.toLocaleString()} ft` : "—"}
       </p>
-      <p className="text-[10px] text-stone-400">10k · 1k · 100 ft hands</p>
+      <p className="text-[10px] text-stone-400">
+        {altitudeFt !== null ? "10k · 1k · 100 ft hands" : "Waiting for GPS elevation…"}
+      </p>
     </div>
   );
 }

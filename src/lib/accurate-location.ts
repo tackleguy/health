@@ -61,6 +61,8 @@ export function getAccurateCurrentPosition(
 export interface WatchTrackOptions extends AccurateLocationOptions {
   distanceFilterM?: number;
   maxAccuracyM?: number;
+  /** Fires on every fix while recording — for live altimeter/speed (not distance-filtered) */
+  onInstrument?: (position: GeolocationPosition) => void;
 }
 
 export interface WatchTrackHandle {
@@ -90,6 +92,9 @@ export function watchGpsTrack(
 
   const handlePosition = (position: GeolocationPosition) => {
     if (paused) return;
+
+    options.onInstrument?.(position);
+
     if (position.coords.accuracy > maxAccuracy) return;
 
     const { latitude, longitude } = position.coords;

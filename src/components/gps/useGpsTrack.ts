@@ -36,7 +36,7 @@ export function useGpsTrack() {
   const [error, setError] = useState<string | null>(null);
   const [currentSpeedMph, setCurrentSpeedMph] = useState(0);
   const [currentAltitudeFt, setCurrentAltitudeFt] = useState<number | null>(null);
-  const baselineAltRef = useRef<number | null>(null);
+  const lastAltitudeFtRef = useRef<number | null>(null);
   const [currentLat, setCurrentLat] = useState<number | null>(null);
   const [currentLng, setCurrentLng] = useState<number | null>(null);
   const [currentHeading, setCurrentHeading] = useState<number | null>(null);
@@ -68,8 +68,31 @@ export function useGpsTrack() {
     return () => clearInterval(id);
   }, [state]);
 
+  const updateLiveStats = useCallback((position: GeolocationPosition) => {
+    const point = positionToPoint(position);
+
+    setCurrentLat(point.lat);
+    setCurrentLng(point.lng);
+    setCurrentAccuracy(point.accuracy);
+
+    if (point.altitude !== null && Number.isFinite(point.altitude)) {
+      const ft = Math.round(point.altitude * 3.28084);
+      lastAltitudeFtRef.current = ft;
+      setCurrentAltitudeFt(ft);
+    } else if (lastAltitudeFtRef.current !== null) {
+      setCurrentAltitudeFt(lastAltitudeFtRef.current);
+    }
+
+    if (point.speed !== null && point.speed >= 0) {
+      const mph = mpsToMph(point.speed);
+      speedAvgRef.current = smoothSpeed(speedAvgRef.current, mph);
+      setCurrentSpeedMph(speedAvgRef.current);
+    }
+  }, []);
+
   const addPoint = useCallback((position: GeolocationPosition) => {
     const point = positionToPoint(position);
+    updateLiveStats(position);
 
     setPoints((prev) => {
       const next = [...prev, point];
@@ -82,28 +105,9 @@ export function useGpsTrack() {
       } else if (point.heading !== null) {
         setCurrentHeading(point.heading);
       }
-
-      if (point.altitude !== null) {
-        if (baselineAltRef.current === null) {
-          baselineAltRef.current = point.altitude;
-        }
-        setCurrentAltitudeFt(Math.round(point.altitude * 3.28084));
-      } else {
-        const lastWithAlt = [...prev].reverse().find((p) => p.altitude !== null);
-        if (lastWithAlt?.altitude != null) {
-          setCurrentAltitudeFt(Math.round(lastWithAlt.altitude * 3.28084));
-        }
-      }
-
       return next;
     });
-
-    if (point.speed !== null && point.speed >= 0) {
-      const mph = mpsToMph(point.speed);
-      speedAvgRef.current = smoothSpeed(speedAvgRef.current, mph);
-      setCurrentSpeedMph(speedAvgRef.current);
-    }
-  }, []);
+  }, [updateLiveStats]);
 
   const start = useCallback(() => {
     setError(null);
@@ -114,11 +118,13 @@ export function useGpsTrack() {
     startTimeRef.current = null;
     pausedDurationRef.current = 0;
     pauseStartedRef.current = null;
+    setCurrentSpeedMph(0);
+    setCurrentAltitudeFt(null);
+    lastAltitudeFtRef.current = null;
     setCurrentLat(null);
     setCurrentLng(null);
     setCurrentHeading(null);
     setCurrentAccuracy(null);
-    baselineAltRef.current = null;
 
     getAccurateCurrentPosition(
       (position) => {
@@ -129,6 +135,8 @@ export function useGpsTrack() {
 
         watchRef.current = watchGpsTrack(addPoint, (err) => {
           setError(err.message);
+        }, {
+          onInstrument: updateLiveStats,
         });
       },
       (err) => {
@@ -137,10 +145,10 @@ export function useGpsTrack() {
       },
       (position) => {
         setAcquiringProgress(position.coords.accuracy);
-        addPoint(position);
+        updateLiveStats(position);
       },
     );
-  }, [addPoint]);
+  }, [addPoint, updateLiveStats]);
 
   const pause = useCallback(() => {
     watchRef.current?.pause();
