@@ -1,31 +1,40 @@
 # Outdoor OS
 
-Strava-style GPS tracking + AllTrails trails + ski resort maps.
+Strava-style GPS tracking, trail discovery, and ski maps.
 
-## Quick start
+## Local dev
 
 ```bash
-cd outdoor-app
 npm install
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # add Supabase keys
 npm run dev
 ```
 
-## Deploy on Vercel
+Open http://localhost:3000
 
-**Root Directory must be `outdoor-app`** (Settings → General → Root Directory).
+## Vercel deploy
 
-Clear any custom Build/Install command overrides — `outdoor-app/vercel.json` handles it.
+The app deploys from the **repository root** (not `outdoor-app/`).
 
-### Environment variables
+### Required Vercel settings
 
-| Variable | Value |
-|----------|--------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase publishable key |
+1. **Settings → General → Root Directory** → leave **empty** (or `.`)
+   - If this says `outdoor-app`, delete it and save — that breaks deploys.
+2. **Settings → Build & Development** → turn **off** any override for Install Command or Build Command
+3. **Settings → Environment Variables** → add:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Redeploy
 
-Also add your Vercel URL to Supabase Auth → URL Configuration.
+### Supabase auth
 
-## Reference archives
+In Supabase → Authentication → URL Configuration, add your Vercel URL:
+- Site URL: `https://your-app.vercel.app`
+- Redirect URLs: `https://your-app.vercel.app/**` and `https://*.vercel.app/**`
 
-See [`references/`](./references/).
+## Database
+
+Run in Supabase SQL Editor:
+- `supabase/migrations/20250622000001_initial_schema.sql`
+- `supabase/migrations/20250623000001_activities.sql`
+- `supabase/seed.sql` (optional)
