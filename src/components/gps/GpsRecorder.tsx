@@ -7,6 +7,8 @@ import { ElevationChart } from "@/components/gps/ElevationChart";
 import { GpsStatsPanel } from "@/components/gps/GpsStatsPanel";
 import { LiveTrackMap } from "@/components/gps/LiveTrackMap";
 import { SpeedometerGauge } from "@/components/gps/SpeedometerGauge";
+import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
+import { useLocationPermission } from "@/components/gps/useLocationPermission";
 import { useGpsTrack } from "@/components/gps/useGpsTrack";
 import { formatPace } from "@/lib/gps";
 import { ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityType } from "@/lib/types";
@@ -30,14 +32,20 @@ export function GpsRecorder({
 }: GpsRecorderProps) {
   const router = useRouter();
   const gps = useGpsTrack();
+  const location = useLocationPermission();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [locationReady, setLocationReady] = useState(false);
 
   useEffect(() => {
-    if (autoStart && gps.state === "idle") {
+    if (location.granted) setLocationReady(true);
+  }, [location.granted]);
+
+  useEffect(() => {
+    if (autoStart && gps.state === "idle" && locationReady) {
       gps.start();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart]);
+  }, [autoStart, locationReady]);
 
   useEffect(() => {
     if (gps.state !== "saving") return;
@@ -94,10 +102,10 @@ export function GpsRecorder({
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
-            onClick={() => gps.start()}
+            onClick={() => location.requestLocation().then(() => gps.start())}
             className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
           >
-            Try again
+            Allow location & try again
           </button>
           <button
             onClick={() => router.push("/record/manual")}
@@ -181,6 +189,20 @@ export function GpsRecorder({
         <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{saveError}</p>
       )}
 
+      {gps.state === "idle" && !locationReady && (
+        <div className="mt-6">
+          <LocationPermissionPrompt
+            permission={location.permission}
+            loading={location.loading}
+            error={location.error}
+            onRequest={async () => {
+              const coords = await location.requestLocation();
+              if (coords) setLocationReady(true);
+            }}
+          />
+        </div>
+      )}
+
       {/* Controls — fixed on mobile while recording */}
       <div
         className={`mt-6 flex gap-3 ${
@@ -189,7 +211,7 @@ export function GpsRecorder({
             : ""
         }`}
       >
-        {gps.state === "idle" && (
+        {gps.state === "idle" && locationReady && (
           <button
             onClick={() => gps.start()}
             className="flex-1 rounded-xl bg-emerald-600 py-4 text-sm font-semibold text-white shadow-md hover:bg-emerald-700"

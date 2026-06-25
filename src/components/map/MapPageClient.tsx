@@ -7,6 +7,8 @@ import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import { MapView } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
+import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
+import { useLocationPermission } from "@/components/gps/useLocationPermission";
 import {
   activityForTrail,
   directionsUrl,
@@ -38,10 +40,30 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
     zoom?: number;
   } | null>(null);
   const [nearbyLabel, setNearbyLabel] = useState<string | null>(null);
+  const location = useLocationPermission();
 
   const onGeolocate = useCallback((lat: number, lng: number) => {
     setUserLoc({ lat, lng });
   }, []);
+
+  const handleRequestLocation = useCallback(async () => {
+    const coords = await location.requestLocation();
+    if (coords) {
+      setUserLoc(coords);
+      setMapFocus({ lat: coords.lat, lng: coords.lng, zoom: 11 });
+    }
+  }, [location]);
+
+  useEffect(() => {
+    if (location.coords && !userLoc) {
+      setUserLoc(location.coords);
+      setMapFocus({
+        lat: location.coords.lat,
+        lng: location.coords.lng,
+        zoom: 11,
+      });
+    }
+  }, [location.coords, userLoc]);
 
   useEffect(() => {
     if (!userLoc) return;
@@ -172,13 +194,22 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
         </div>
       )}
 
+      {(location.needsPrompt || location.permission === "denied") && (
+        <LocationPermissionPrompt
+          permission={location.permission}
+          loading={location.loading}
+          error={location.error}
+          onRequest={handleRequestLocation}
+        />
+      )}
+
       <MapView
         key={mode}
         mode={mode}
         markers={markers}
         className="h-[calc(100vh-280px)] min-h-[420px]"
         geolocate
-        fitToMarkers={nearbyTrails.length === 0}
+        fitToMarkers={nearbyTrails.length === 0 && !userLoc}
         focus={mapFocus}
         onGeolocate={onGeolocate}
         onMarkerClick={(marker) => {

@@ -122,9 +122,6 @@ export function MapView({
         showAccuracyCircle: true,
       });
       map.addControl(geo, "top-right");
-      map.once("load", () => {
-        geo.trigger();
-      });
       geo.on("geolocate", (e) => {
         onGeolocateRef.current?.(e.coords.latitude, e.coords.longitude);
       });

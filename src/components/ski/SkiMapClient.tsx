@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import { MapView } from "@/components/map/MapView";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
+import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
+import { useLocationPermission } from "@/components/gps/useLocationPermission";
 
 export function SkiMapClient() {
   const searchParams = useSearchParams();
@@ -19,6 +21,14 @@ export function SkiMapClient() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const trimmedQuery = query.trim();
+  const location = useLocationPermission();
+
+  const handleRequestLocation = useCallback(async () => {
+    const coords = await location.requestLocation();
+    if (coords) {
+      setMapFocus({ lat: coords.lat, lng: coords.lng, zoom: 11 });
+    }
+  }, [location]);
 
   const flyToArea = useCallback((area: SkiArea) => {
     setMapFocus({ lat: area.lat, lng: area.lng, zoom: 12 });
@@ -117,6 +127,17 @@ export function SkiMapClient() {
       </div>
 
       <div className="relative min-h-0 flex-1">
+        {(location.needsPrompt || location.permission === "denied") && (
+          <div className="absolute inset-x-0 top-2 z-20 px-3">
+            <LocationPermissionPrompt
+              permission={location.permission}
+              loading={location.loading}
+              error={location.error}
+              onRequest={handleRequestLocation}
+              compact
+            />
+          </div>
+        )}
         <MapView
           mode="ski"
           className="h-full w-full rounded-none"
