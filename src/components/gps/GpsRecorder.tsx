@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import clsx from "clsx";
 import { AltimeterGauge } from "@/components/gps/AltimeterGauge";
 import { ElevationChart } from "@/components/gps/ElevationChart";
 import { GpsStatsPanel } from "@/components/gps/GpsStatsPanel";
@@ -122,52 +123,65 @@ export function GpsRecorder({
     gps.state === "recording" || gps.state === "paused" || gps.state === "acquiring";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-28 pt-4 md:pb-8">
+    <div
+      className={clsx(
+        "mx-auto max-w-2xl px-4 pb-28 pt-4 md:pb-8",
+        isActive && "min-h-screen bg-forest",
+      )}
+    >
       {/* Header */}
-      <div className="mb-4 flex items-start gap-3">
-        <span className="text-3xl">{ACTIVITY_ICONS[activityType]}</span>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-stone-500">
-            {ACTIVITY_LABELS[activityType]}
+      <div className="mb-6 text-center">
+        <p className="section-label">{ACTIVITY_LABELS[activityType]}</p>
+        <h1 className="mt-1 truncate font-display text-2xl font-semibold text-cream">{title}</h1>
+        {(trailId || skiAreaName) && (
+          <p className="mt-1 truncate text-xs text-accent">
+            {skiAreaName ? `⛷ ${skiAreaName}` : "Linked to trail"}
           </p>
-          <h1 className="truncate font-semibold text-stone-900">{title}</h1>
-          {(trailId || skiAreaName) && (
-            <p className="mt-0.5 truncate text-xs text-emerald-700">
-              {skiAreaName ? `⛷ ${skiAreaName}` : "Linked to trail"}
-            </p>
-          )}
+        )}
+        <div className="mt-3 flex justify-center">
+          <StatusBadge state={gps.state} acquiringAccuracy={gps.acquiringProgress} />
         </div>
-        <StatusBadge state={gps.state} acquiringAccuracy={gps.acquiringProgress} />
       </div>
 
-      {/* Live map — top of layout per plan */}
+      {isActive && (
+        <p className="mb-6 text-center font-display text-5xl font-semibold tabular-nums tracking-tight text-cream sm:text-6xl">
+          {gps.formattedDuration}
+        </p>
+      )}
+
+      {/* Live map */}
       <LiveTrackMap
         points={gps.points}
         heading={gps.currentHeading}
-        className="h-52 w-full sm:h-60"
+        className={clsx(
+          "w-full overflow-hidden rounded-[var(--radius-2xl)] border border-[var(--border)]",
+          isActive ? "h-40" : "h-52 sm:h-60",
+        )}
       />
 
-      {/* Gauges row — AltimeterView + AgOpenGPS speedometer */}
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      {/* Gauges */}
+      <div className="mt-4 grid grid-cols-2 gap-3 surface-card p-4">
         <AltimeterGauge altitudeFt={gps.currentAltitudeFt} />
         <SpeedometerGauge speedMph={gps.currentSpeedMph} />
       </div>
 
-      {/* Primary stats strip */}
-      <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      {/* Stats */}
+      <div className="mt-4 surface-card p-4">
         <div className="grid grid-cols-4 gap-2 text-center">
-          <PrimaryStat label="Distance" value={gps.formattedDistance} />
-          <PrimaryStat label="Time" value={gps.formattedDuration} />
+          <PrimaryStat label="Distance" value={gps.formattedDistance} active={isActive} />
+          <PrimaryStat label="Time" value={gps.formattedDuration} active={isActive} />
           <PrimaryStat
             label="Elev gain"
             value={`${gps.elevationGainFt.toLocaleString()} ft`}
+            active={isActive}
           />
           <PrimaryStat
             label="Pace"
             value={formatPace(gps.distanceM, gps.durationSec)}
+            active={isActive}
           />
         </div>
-        <ElevationChart points={gps.points} className="mt-4" height={112} />
+        <ElevationChart points={gps.points} className="mt-4" height={isActive ? 64 : 112} />
       </div>
 
       {/* AgOpenGPS instrumentation panel */}
@@ -207,14 +221,14 @@ export function GpsRecorder({
       <div
         className={`mt-6 flex gap-3 ${
           isActive
-            ? "fixed inset-x-0 bottom-16 z-40 border-t border-stone-200 bg-white/95 px-4 py-3 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0"
+            ? "fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-forest/95 px-4 py-4 backdrop-blur-xl md:static md:border-0 md:bg-transparent md:p-0"
             : ""
         }`}
       >
         {gps.state === "idle" && locationReady && (
           <button
             onClick={() => gps.start()}
-            className="flex-1 rounded-xl bg-emerald-600 py-4 text-sm font-semibold text-white shadow-md hover:bg-emerald-700"
+            className="btn-primary flex-1 !py-4"
           >
             Start {ACTIVITY_LABELS[activityType]}
           </button>
@@ -230,14 +244,11 @@ export function GpsRecorder({
           <>
             <button
               onClick={() => gps.pause()}
-              className="flex-1 rounded-xl border border-stone-300 py-4 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+              className="btn-ghost flex-1 !py-4"
             >
               Pause
             </button>
-            <button
-              onClick={handleFinish}
-              className="flex-1 rounded-xl bg-emerald-600 py-4 text-sm font-semibold text-white hover:bg-emerald-700"
-            >
+            <button onClick={handleFinish} className="btn-primary flex-1 !py-4">
               Finish
             </button>
           </>
@@ -247,14 +258,11 @@ export function GpsRecorder({
           <>
             <button
               onClick={() => gps.resume()}
-              className="flex-1 rounded-xl bg-emerald-600 py-4 text-sm font-semibold text-white hover:bg-emerald-700"
+              className="btn-primary flex-1 !py-4"
             >
               Resume
             </button>
-            <button
-              onClick={handleFinish}
-              className="flex-1 rounded-xl border border-stone-300 py-4 text-sm font-semibold text-stone-700 hover:bg-stone-50"
-            >
+            <button onClick={handleFinish} className="btn-ghost flex-1 !py-4">
               Finish
             </button>
           </>
@@ -271,11 +279,26 @@ export function GpsRecorder({
   );
 }
 
-function PrimaryStat({ label, value }: { label: string; value: string }) {
+function PrimaryStat({
+  label,
+  value,
+  active,
+}: {
+  label: string;
+  value: string;
+  active?: boolean;
+}) {
   return (
     <div>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-stone-400">{label}</p>
-      <p className="text-sm font-bold tabular-nums text-stone-900 sm:text-base">{value}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-mist">{label}</p>
+      <p
+        className={clsx(
+          "font-bold tabular-nums",
+          active ? "text-xl text-cream sm:text-2xl" : "text-sm text-cream sm:text-base",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -296,14 +319,14 @@ function StatusBadge({
   }
   if (state === "recording") {
     return (
-      <span className="shrink-0 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+      <span className="shrink-0 rounded-full bg-red-500/20 px-3 py-1 text-xs font-medium text-red-400">
         ● REC
       </span>
     );
   }
   if (state === "paused") {
     return (
-      <span className="shrink-0 rounded-full bg-stone-200 px-3 py-1 text-xs font-medium text-stone-700">
+      <span className="shrink-0 rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-mist">
         Paused
       </span>
     );

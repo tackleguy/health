@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import type { SearchResult } from "@/lib/types";
 
-export function SearchBar() {
+interface SearchBarProps {
+  variant?: "light" | "dark" | "hero";
+}
+
+export function SearchBar({ variant = "light" }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -12,6 +17,8 @@ export function SearchBar() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const trimmedQuery = query.trim();
+  const isHero = variant === "hero";
+  const isDark = variant === "dark" || isHero;
 
   useEffect(() => {
     if (!trimmedQuery) return;
@@ -48,10 +55,19 @@ export function SearchBar() {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative mx-auto max-w-xl">
-      <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 shadow-sm focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100">
+    <div ref={containerRef} className="relative w-full">
+      <div
+        className={clsx(
+          "flex items-center gap-3 rounded-[var(--radius-xl)] px-4 py-3.5 transition",
+          isHero
+            ? "glass-panel-light focus-within:border-accent/30 focus-within:ring-2 focus-within:ring-accent/15"
+            : isDark
+              ? "border border-[var(--border)] bg-surface-elevated focus-within:border-accent/30 focus-within:ring-2 focus-within:ring-accent/10"
+              : "surface-card focus-within:border-accent/30",
+        )}
+      >
         <svg
-          className="h-4 w-4 shrink-0 text-stone-400"
+          className="h-4 w-4 shrink-0 text-mist"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -72,17 +88,15 @@ export function SearchBar() {
           }}
           onFocus={() => setOpen(true)}
           placeholder="Search trails, parks, ski resorts..."
-          className="w-full bg-transparent text-sm text-stone-900 outline-none placeholder:text-stone-400"
+          className="w-full bg-transparent text-sm text-cream outline-none placeholder:text-mist"
         />
-        {loading && (
-          <span className="text-xs text-stone-400">Searching...</span>
-        )}
+        {loading && <span className="text-xs text-mist">…</span>}
       </div>
 
       {open && trimmedQuery && (
-        <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl">
+        <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-surface-elevated shadow-2xl">
           {trimmedQuery && results.length === 0 && !loading ? (
-            <p className="px-4 py-3 text-sm text-stone-500">No results found</p>
+            <p className="px-4 py-3 text-sm text-mist">No results found</p>
           ) : (
             <ul>
               {(trimmedQuery ? results : []).map((result) => (
@@ -93,9 +107,9 @@ export function SearchBar() {
                       setOpen(false);
                       setQuery("");
                     }}
-                    className="flex items-start gap-3 px-4 py-3 transition hover:bg-stone-50"
+                    className="flex items-start gap-3 px-4 py-3 transition hover:bg-surface-muted"
                   >
-                    <span className="mt-0.5 text-base">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-base">
                       {result.type === "park"
                         ? "🏞"
                         : result.type === "resort"
@@ -103,10 +117,8 @@ export function SearchBar() {
                           : "🥾"}
                     </span>
                     <div>
-                      <p className="text-sm font-medium text-stone-900">
-                        {result.name}
-                      </p>
-                      <p className="text-xs text-stone-500">{result.subtitle}</p>
+                      <p className="text-sm font-medium text-cream">{result.name}</p>
+                      <p className="text-xs text-mist">{result.subtitle}</p>
                     </div>
                   </Link>
                 </li>

@@ -3,124 +3,181 @@ import { redirect } from "next/navigation";
 import { getActivities, getWeeklyStats } from "@/lib/activities";
 import { formatDistance, formatDuration } from "@/lib/gps";
 import { ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityType } from "@/lib/types";
+import { ActivityListRow } from "@/components/activities/ActivityListRow";
 import { getAuthUser } from "@/lib/supabase/server";
 
 const allTypes: ActivityType[] = ["run", "hike", "bike", "ski"];
+
+function displayName(email: string) {
+  const local = email.split("@")[0] ?? "Explorer";
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
 
 export default async function YouPage() {
   const { user } = await getAuthUser();
 
   if (!user) redirect("/login?next=/you");
 
-  const [stats, activities] = await Promise.all([getWeeklyStats(), getActivities(15)]);
+  const [stats, activities] = await Promise.all([getWeeklyStats(), getActivities(50)]);
+
+  const lifetime = activities.reduce(
+    (acc, a) => ({
+      count: acc.count + 1,
+      distanceM: acc.distanceM + Number(a.distance_m),
+      elevationFt: acc.elevationFt + Number(a.elevation_gain_ft),
+    }),
+    { count: 0, distanceM: 0, elevationFt: 0 },
+  );
+
+  const milesThisMonth = activities
+    .filter((a) => {
+      const d = new Date(a.started_at);
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    })
+    .reduce((s, a) => s + Number(a.distance_m), 0);
+
+  const monthlyGoalM = 160934; // ~100 miles
+  const monthlyProgress = Math.min(100, (milesThisMonth / monthlyGoalM) * 100);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-24 pt-8 md:pb-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900">You</h1>
-          <p className="mt-1 text-sm text-stone-500">{user.email}</p>
-        </div>
-        <Link
-          href="/record"
-          className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-        >
-          Record
-        </Link>
-      </div>
-
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-          This week
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Distance" value={formatDistance(stats.distanceM)} />
-          <StatCard label="Moving time" value={formatDuration(stats.durationSec)} />
-          <StatCard label="Activities" value={String(stats.activityCount)} />
-          <StatCard label="Elev gain" value={`${stats.elevationFt.toLocaleString()} ft`} />
+    <div className="pb-24 md:pb-10">
+      <section className="relative overflow-hidden border-b border-[var(--border)] px-4 py-12 sm:px-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-pine/30 to-background" />
+        <div className="relative mx-auto max-w-2xl text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-accent/40 bg-surface-elevated font-display text-3xl font-semibold text-accent shadow-xl">
+            {displayName(user.email!).charAt(0)}
+          </div>
+          <h1 className="mt-4 font-display text-2xl font-semibold text-cream">
+            {displayName(user.email!)}
+          </h1>
+          <p className="mt-1 text-sm text-mist">{user.email}</p>
+          <Link href="/record" className="btn-primary mt-5">
+            Start recording
+          </Link>
         </div>
       </section>
 
-      {stats.byType && Object.keys(stats.byType).length > 0 && (
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <div className="grid grid-cols-3 gap-3">
+          <LifetimeStat label="Adventures" value={String(lifetime.count)} />
+          <LifetimeStat
+            label="Miles"
+            value={(lifetime.distanceM / 1609.34).toFixed(1)}
+          />
+          <LifetimeStat
+            label="Elevation"
+            value={`${Math.round(lifetime.elevationFt / 1000)}k`}
+            unit="ft"
+          />
+        </div>
+
+        <section className="mt-8 surface-card p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-base font-semibold text-cream">
+              100 miles this month
+            </h2>
+            <span className="text-xs font-semibold tabular-nums text-accent">
+              {Math.round(monthlyProgress)}%
+            </span>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-muted">
+            <div
+              className="h-full rounded-full bg-accent transition-all"
+              style={{ width: `${monthlyProgress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-mist">
+            {(milesThisMonth / 1609.34).toFixed(1)} mi of 100 mi goal
+          </p>
+        </section>
+
         <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-            By activity type
-          </h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {allTypes.map((type) => {
-              const count = stats.byType?.[type] ?? 0;
-              if (count === 0) return null;
-              return (
-                <span
-                  key={type}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm"
-                >
-                  {ACTIVITY_ICONS[type]} {ACTIVITY_LABELS[type]} · {count}
-                </span>
-              );
-            })}
+          <p className="section-label">This week</p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard label="Distance" value={formatDistance(stats.distanceM)} />
+            <StatCard label="Time" value={formatDuration(stats.durationSec)} />
+            <StatCard label="Activities" value={String(stats.activityCount)} />
+            <StatCard label="Elev" value={`${stats.elevationFt.toLocaleString()} ft`} />
           </div>
         </section>
-      )}
 
-      <section className="mt-10">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-stone-900">Activity history</h2>
-          <span className="text-xs text-stone-400">{activities.length} recent</span>
-        </div>
-
-        {activities.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-stone-200 px-6 py-10 text-center">
-            <p className="text-stone-500">No activities yet.</p>
-            <Link
-              href="/record"
-              className="mt-3 inline-block text-sm font-medium text-emerald-700 hover:underline"
-            >
-              Record your first activity
-            </Link>
-          </div>
-        ) : (
-          <ul className="mt-4 divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white">
-            {activities.map((a) => (
-              <li key={a.id}>
-                <Link
-                  href={`/activities/${a.id}`}
-                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-xl">
-                    {ACTIVITY_ICONS[a.activity_type]}
+        {stats.byType && Object.keys(stats.byType).length > 0 && (
+          <section className="mt-8">
+            <p className="section-label">By type</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {allTypes.map((type) => {
+                const count = stats.byType?.[type] ?? 0;
+                if (count === 0) return null;
+                return (
+                  <span
+                    key={type}
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-surface-elevated px-3 py-1.5 text-sm text-sage"
+                  >
+                    <span className="text-base">{ACTIVITY_ICONS[type]}</span>
+                    {ACTIVITY_LABELS[type]} · {count}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-stone-900">{a.title}</p>
-                    <p className="text-xs text-stone-500">
-                      {formatDistance(Number(a.distance_m))} ·{" "}
-                      {formatDuration(a.duration_sec)} ·{" "}
-                      {Number(a.elevation_gain_ft).toLocaleString()} ft ↑
-                    </p>
-                    <p className="text-[10px] text-stone-400">
-                      {new Date(a.started_at).toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <span className="text-stone-300">→</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                );
+              })}
+            </div>
+          </section>
         )}
-      </section>
+
+        <section className="mt-10">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="section-label">History</p>
+              <h2 className="font-display text-xl font-semibold text-cream">
+                Recent adventures
+              </h2>
+            </div>
+          </div>
+
+          {activities.length === 0 ? (
+            <div className="surface-card mt-4 px-6 py-10 text-center">
+              <p className="text-mist">No activities yet.</p>
+              <Link href="/record" className="btn-primary mt-4">
+                Record your first
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {activities.slice(0, 10).map((a) => (
+                <ActivityListRow key={a.id} activity={a} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function LifetimeStat({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+}) {
+  return (
+    <div className="surface-card p-4 text-center">
+      <p className="font-display text-2xl font-semibold tabular-nums text-accent">
+        {value}
+        {unit && <span className="ml-0.5 text-xs text-mist">{unit}</span>}
+      </p>
+      <p className="mt-1 text-xs text-mist">{label}</p>
     </div>
   );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 text-center">
-      <p className="text-lg font-bold tabular-nums text-emerald-600 sm:text-xl">{value}</p>
-      <p className="mt-1 text-xs text-stone-500">{label}</p>
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface-elevated p-3 text-center">
+      <p className="text-sm font-bold tabular-nums text-cream">{value}</p>
+      <p className="mt-0.5 text-[10px] text-mist">{label}</p>
     </div>
   );
 }

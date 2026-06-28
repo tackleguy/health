@@ -12,10 +12,12 @@ export default async function ExploreTrailsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 pb-24 sm:px-6 md:pb-10">
-      <div className="mb-8">
-        <p className="text-sm font-medium text-emerald-700">Explore · Trails</p>
-        <h1 className="text-3xl font-bold text-stone-900">Find your next hike</h1>
-        <p className="mt-2 text-stone-500">
+      <div className="mb-10">
+        <p className="section-label">Explore · Trails</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold text-cream sm:text-4xl">
+          Find your next hike
+        </h1>
+        <p className="mt-2 text-mist">
           {trails.length} trails across {new Set(trails.map((t) => t.park_id)).size} parks
         </p>
       </div>
@@ -27,7 +29,7 @@ export default async function ExploreTrailsPage() {
           ))}
         </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-stone-200 px-6 py-12 text-center text-stone-500">
+        <p className="surface-card px-6 py-12 text-center text-mist">
           No trails found. Set up Supabase and run migrations + seed.
         </p>
       )}

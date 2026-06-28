@@ -148,10 +148,15 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">Adventure Map</h1>
-          <p className="text-sm text-stone-500">
+          <p className="section-label">
+            {mode === "ski" ? "Winter layer" : "Trail layer"}
+          </p>
+          <h1 className="font-display text-3xl font-semibold text-cream">
+            Adventure Map
+          </h1>
+          <p className="mt-1 text-sm text-mist">
             {mode === "ski"
               ? (nearbyLabel ??
                 "Runs, lifts & resorts — enable location for nearby areas")
@@ -181,7 +186,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
                   activities: area.activities,
                 });
               }}
-              className="shrink-0 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-800 hover:bg-sky-100"
+              className="shrink-0 rounded-full border border-accent/20 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent/15"
             >
               {area.name}
               {area.distance_km != null && (
@@ -226,13 +231,13 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
       />
 
       {selected && selectedTrail && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <div className="surface-card p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-semibold text-stone-900">
+              <p className="font-display font-semibold text-cream">
                 {selectedTrail.trail_name}
               </p>
-              <p className="mt-0.5 text-sm text-stone-500">
+              <p className="mt-0.5 text-sm text-mist">
                 {selectedTrail.park?.park_name} · {selectedTrail.length_miles}{" "}
                 mi · {selectedTrail.difficulty}
                 {selectedTrail.distance_km != null &&
@@ -242,7 +247,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
             <button
               type="button"
               onClick={() => setSelected(null)}
-              className="text-stone-400 hover:text-stone-600"
+              className="text-mist hover:text-cream"
             >
               ✕
             </button>
@@ -256,13 +261,13 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+              className="btn-ghost !py-2 !text-sm"
             >
               Get directions
             </a>
             <Link
               href={`/explore/trails/${selectedTrail.id}`}
-              className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+              className="btn-ghost !py-2 !text-sm"
             >
               Trail details
             </Link>
@@ -270,7 +275,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
               href={recordUrl(activityForTrail(selectedTrail.difficulty), {
                 trailId: selectedTrail.id,
               })}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="btn-primary !py-2 !text-sm"
             >
               Start GPS record
             </Link>

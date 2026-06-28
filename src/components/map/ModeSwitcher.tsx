@@ -10,25 +10,27 @@ interface ModeSwitcherProps {
 
 export function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
   return (
-    <div className="inline-flex rounded-xl border border-stone-200 bg-white p-1 shadow-sm">
+    <div className="inline-flex rounded-[var(--radius-xl)] border border-[var(--border)] bg-surface-elevated p-1">
       <button
+        type="button"
         onClick={() => onChange("trail")}
         className={clsx(
-          "rounded-lg px-4 py-2 text-sm font-medium transition",
+          "rounded-[var(--radius-lg)] px-4 py-2 text-sm font-semibold transition",
           mode === "trail"
-            ? "bg-emerald-600 text-white shadow-sm"
-            : "text-stone-600 hover:bg-stone-50",
+            ? "bg-accent text-forest shadow-md shadow-accent/20"
+            : "text-mist hover:text-cream",
         )}
       >
         🥾 Trails
       </button>
       <button
+        type="button"
         onClick={() => onChange("ski")}
         className={clsx(
-          "rounded-lg px-4 py-2 text-sm font-medium transition",
+          "rounded-[var(--radius-lg)] px-4 py-2 text-sm font-semibold transition",
           mode === "ski"
-            ? "bg-sky-600 text-white shadow-sm"
-            : "text-stone-600 hover:bg-stone-50",
+            ? "bg-accent text-forest shadow-md shadow-accent/20"
+            : "text-mist hover:text-cream",
         )}
       >
         ⛷ Ski
