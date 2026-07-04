@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import { MapView } from "@/components/map/MapView";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
+import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
 
@@ -14,6 +16,8 @@ export function SkiMapClient() {
   const [results, setResults] = useState<SkiArea[]>([]);
   const [selectedFeature, setSelectedFeature] =
     useState<SkiFeatureSummary | null>(null);
+  const [selectedTrailFeature, setSelectedTrailFeature] =
+    useState<OpenTrailFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
     lat: number;
     lng: number;
@@ -82,11 +86,14 @@ export function SkiMapClient() {
 
   return (
     <div className="flex h-[calc(100dvh-7rem)] min-h-[480px] flex-col md:h-[calc(100dvh-4.5rem)]">
-      <div className="shrink-0 border-b border-stone-200 bg-white px-4 py-3">
-        <p className="text-sm font-medium text-sky-700">Explore · Ski</p>
-        <h1 className="text-xl font-bold text-stone-900">Ski resort map</h1>
-        <p className="mt-1 text-xs text-stone-500">
-          Downhill, cross-country, ski touring — tap any run or lift on the map
+      <div className="shrink-0 border-b border-[var(--border)] bg-surface-elevated px-4 py-3">
+        <p className="section-label">Explore · Ski</p>
+        <h1 className="font-display text-xl font-semibold text-cream">
+          Nordic ski trails
+        </h1>
+        <p className="mt-1 text-xs text-mist">
+          OpenTrailMap cross-country trails — search resorts to fly there, tap
+          trails on the map
         </p>
         <div className="mt-3 flex gap-2">
           <input
@@ -98,7 +105,7 @@ export function SkiMapClient() {
               if (!value.trim()) setResults([]);
             }}
             placeholder="Search resorts (e.g. Vail, Aspen)..."
-            className="flex-1 rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+            className="flex-1 rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface-muted px-4 py-2.5 text-sm text-cream outline-none placeholder:text-mist focus:border-accent/40"
           />
           {loading && (
             <span className="self-center text-xs text-stone-400">
@@ -107,17 +114,17 @@ export function SkiMapClient() {
           )}
         </div>
         {trimmedQuery && results.length > 0 && (
-          <ul className="mt-2 max-h-32 overflow-y-auto rounded-xl border border-stone-200 bg-stone-50">
+          <ul className="mt-2 max-h-32 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface-muted">
             {results.map((r) => (
               <li key={r.id}>
                 <button
                   type="button"
                   onClick={() => flyToArea(r)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-white"
+                  className="w-full px-4 py-2 text-left text-sm text-cream hover:bg-surface-elevated"
                 >
                   <span className="font-medium">{r.name}</span>
                   {r.region && (
-                    <span className="ml-2 text-stone-500">{r.region}</span>
+                    <span className="ml-2 text-mist">{r.region}</span>
                   )}
                 </button>
               </li>
@@ -144,11 +151,27 @@ export function SkiMapClient() {
           geolocate
           fitToMarkers={false}
           focus={mapFocus}
+          onOpenTrailFeatureClick={(feature) => {
+            setSelectedTrailFeature(feature);
+            setSelectedFeature(null);
+            setMapFocus(null);
+          }}
           onSkiFeatureClick={(feature) => {
             setSelectedFeature(feature);
+            setSelectedTrailFeature(null);
             setMapFocus(null);
           }}
         />
+
+        {selectedTrailFeature && (
+          <div className="absolute bottom-4 left-4 right-4 z-20 md:left-auto md:w-96">
+            <OpenTrailFeaturePanel
+              feature={selectedTrailFeature}
+              mode="ski"
+              onClose={() => setSelectedTrailFeature(null)}
+            />
+          </div>
+        )}
 
         {selectedFeature && (
           <div className="absolute bottom-4 left-4 right-4 z-20 md:left-auto md:w-96">

@@ -30,9 +30,6 @@ export interface SkiFeatureSummary {
 const API_BASE =
   process.env.NEXT_PUBLIC_SKI_API_URL ?? "https://api.openskimap.org";
 
-export const OPENSKIMAP_TERRAIN_STYLE =
-  "https://tiles.openskimap.org/styles/terrain_v2.json";
-
 interface GeoFeature {
   type: string;
   properties?: Record<string, unknown>;
@@ -295,15 +292,6 @@ export async function searchSkiAreasNearby(
     .filter((a) => a.distance_km <= radiusKm)
     .sort((a, b) => a.distance_km - b.distance_km)
     .slice(0, limit);
-}
-
-/** Layer ids used for run/lift/resort clicks on OpenSkiMap vector tiles */
-export function isSkiTappableLayer(layerId: string): boolean {
-  return (
-    layerId.includes("tappable") ||
-    layerId.includes("ski-area-icons") ||
-    layerId === "ski-area-labels"
-  );
 }
 
 export function skiFeatureFromMapProperties(

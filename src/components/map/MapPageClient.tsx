@@ -7,6 +7,8 @@ import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import { MapView } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
+import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
 import {
@@ -32,6 +34,8 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   const [nearbyTrails, setNearbyTrails] = useState<NearbyTrail[]>([]);
   const [nearbySkiAreas, setNearbySkiAreas] = useState<NearbySkiArea[]>([]);
   const [selected, setSelected] = useState<MapMarker | null>(null);
+  const [selectedOpenTrailFeature, setSelectedOpenTrailFeature] =
+    useState<OpenTrailFeatureSummary | null>(null);
   const [selectedSkiFeature, setSelectedSkiFeature] =
     useState<SkiFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
@@ -95,12 +99,12 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
         setNearbySkiAreas(areas);
         setNearbyLabel(
           areas.length > 0
-            ? `${areas.length} ski areas near you — tap runs on the map`
-            : "Zoom in to see runs, lifts & resorts",
+            ? `${areas.length} ski areas near you — tap nordic trails on the map`
+            : "Zoom in to see cross-country ski trails",
         );
       })
       .catch(() =>
-        setNearbyLabel("Zoom in to see runs, lifts & resorts"),
+        setNearbyLabel("Zoom in to see cross-country ski trails"),
       );
   }, [mode, userLoc]);
 
@@ -108,6 +112,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
     setMode(next);
     setSelected(null);
     setSelectedSkiFeature(null);
+    setSelectedOpenTrailFeature(null);
     setMapFocus(null);
   };
 
@@ -159,9 +164,9 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           <p className="mt-1 text-sm text-mist">
             {mode === "ski"
               ? (nearbyLabel ??
-                "Runs, lifts & resorts — enable location for nearby areas")
+                "Nordic ski trails from OpenTrailMap — tap trails on the map")
               : (nearbyLabel ??
-                "Trails and parks — enable location for nearby results")}
+                "Hiking trails from OpenTrailMap — enable location for nearby results")}
           </p>
         </div>
         <ModeSwitcher mode={mode} onChange={handleModeChange} />
@@ -223,10 +228,17 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
             return;
           }
           setSelected(marker);
+          setSelectedOpenTrailFeature(null);
+        }}
+        onOpenTrailFeatureClick={(feature) => {
+          setSelectedOpenTrailFeature(feature);
+          setSelected(null);
+          setSelectedSkiFeature(null);
         }}
         onSkiFeatureClick={(feature) => {
           setSelectedSkiFeature(feature);
           setSelected(null);
+          setSelectedOpenTrailFeature(null);
         }}
       />
 
@@ -281,6 +293,14 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
             </Link>
           </div>
         </div>
+      )}
+
+      {selectedOpenTrailFeature && (
+        <OpenTrailFeaturePanel
+          feature={selectedOpenTrailFeature}
+          mode={mode}
+          onClose={() => setSelectedOpenTrailFeature(null)}
+        />
       )}
 
       {mode === "ski" && selectedSkiFeature && (

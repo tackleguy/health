@@ -1,0 +1,19 @@
+{
+    "name": "opentrailmap",
+    "type": "module",
+    "version": "0.0.1",
+    "scripts": {
+        "build": "rm -rf dist/ && rollup --config rollup.config.js && cp -a node_modules/maplibre-gl/dist/. dist/maplibre/",
+        "build-static-styles": "node ./scripts/buildStaticStyles.js",
+        "serve": "node ./serve.js",
+        "sprites": "spreet --unique --minify-index-file style/sprites/svg style/sprites/opentrailmap && spreet --retina --unique --minify-index-file style/sprites/svg style/sprites/opentrailmap@2x"
+    },
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "~29.0.0",
+        "@rollup/plugin-node-resolve": "~16.0.0",
+        "@turf/buffer": "~7.3.1",
+        "maplibre-gl": "~5.24.0",
+        "rollup": "^4.47.1",
+        "rollup-plugin-polyfill-node": "~0.13.0"
+    }
+}
