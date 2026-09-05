@@ -1,0 +1,81 @@
+{
+  "sources": [
+    {
+      "adapter": "nps",
+      "sourceName": "National Park Service Public Trails",
+      "sourceUrl": "https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails/FeatureServer",
+      "license": "Public Domain",
+      "licenseUrl": "https://www.nps.gov/aboutus/foia/publicdomain.htm",
+      "attribution": "National Park Service",
+      "enabled": true,
+      "options": {
+        "unitCode": "YOSE",
+        "maxRecords": 500
+      }
+    },
+    {
+      "adapter": "overpass",
+      "sourceName": "OpenStreetMap (Overpass API)",
+      "sourceUrl": "https://www.openstreetmap.org",
+      "license": "ODbL 1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/",
+      "attribution": "© OpenStreetMap contributors",
+      "enabled": true,
+      "options": {
+        "bbox": {
+          "south": 37.7,
+          "west": -119.65,
+          "north": 37.9,
+          "east": -119.35
+        }
+      }
+    },
+    {
+      "adapter": "wikimedia",
+      "sourceName": "Wikimedia Commons",
+      "sourceUrl": "https://commons.wikimedia.org",
+      "license": "Various CC",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+      "attribution": "Wikimedia Commons contributors",
+      "enabled": true,
+      "options": {
+        "maxTrails": 25,
+        "limit": 5,
+        "radiusMeters": 500
+      }
+    },
+    {
+      "adapter": "usfs",
+      "sourceName": "USFS National Forest System Trails",
+      "sourceUrl": "https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_TrailNFSPublish_01/MapServer",
+      "license": "Public Domain",
+      "licenseUrl": "https://www.fs.usda.gov/about-agency/disclaimer",
+      "attribution": "USDA Forest Service",
+      "enabled": false,
+      "options": {
+        "forestName": "Sierra National Forest",
+        "maxRecords": 200
+      }
+    },
+    {
+      "adapter": "osm",
+      "sourceName": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org",
+      "license": "ODbL 1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/",
+      "attribution": "© OpenStreetMap contributors",
+      "enabled": false,
+      "options": {
+        "formats": ["geojson", "gpx"]
+      }
+    }
+  ],
+  "deduplication": {
+    "nameSimilarityThreshold": 0.75,
+    "overlapThresholdMeters": 150,
+    "distanceDeltaMiles": 0.5
+  },
+  "photoMatching": {
+    "maxDistanceMeters": 500
+  }
+}

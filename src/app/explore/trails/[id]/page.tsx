@@ -1,10 +1,52 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getReviews, getTrail } from "@/lib/data";
+import type { Metadata } from "next";
+import {
+  getReviews,
+  getTrail,
+  getTrailCampsites,
+  getTrailElevationProfile,
+  getTrailPhotos,
+  getTrailTrailheads,
+  getTrailWaterSources,
+} from "@/lib/data";
+import { createClient } from "@/lib/supabase/server";
 import { ReviewsSection } from "@/components/trails/ReviewsSection";
 import { MapView } from "@/components/map/MapView";
+import { TrailHero } from "@/components/trails/TrailHero";
+import { TrailElevationProfile } from "@/components/trails/TrailElevationProfile";
+import { TrailPhotoGallery } from "@/components/trails/TrailPhotoGallery";
+import { TrailPoisSection } from "@/components/trails/TrailPoisSection";
+import { TrailWeatherForecast } from "@/components/trails/TrailWeatherForecast";
+import { GpxRouteUpload } from "@/components/trails/GpxRouteUpload";
 import { difficultyColor, formatRating } from "@/lib/utils";
+import { buildTrailJsonLd } from "@/lib/seo/trail-jsonld";
+import type { GeoLineString } from "@/lib/types";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const trail = await getTrail(id);
+  if (!trail) return { title: "Trail not found" };
+
+  const title = `${trail.trail_name}${trail.park ? ` · ${trail.park.park_name}` : ""}`;
+  const description =
+    trail.description?.slice(0, 160) ||
+    `${trail.length_miles} mi · ${trail.elevation_ft.toLocaleString()} ft gain · ${trail.difficulty} hike`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+  };
+}
 
 export default async function ExploreTrailDetailPage({
   params,
@@ -16,9 +58,34 @@ export default async function ExploreTrailDetailPage({
 
   if (!trail) notFound();
 
-  const reviews = await getReviews(id);
+  const supabase = await createClient();
+  const [reviews, photos, elevationProfile, campsites, waterSources, trailheads] =
+    await Promise.all([
+      getReviews(id),
+      supabase ? getTrailPhotos(supabase, id) : Promise.resolve([]),
+      supabase
+        ? getTrailElevationProfile(supabase, id)
+        : Promise.resolve(trail.elevation_profile ?? []),
+      supabase ? getTrailCampsites(supabase, id) : Promise.resolve([]),
+      supabase ? getTrailWaterSources(supabase, id) : Promise.resolve([]),
+      supabase ? getTrailTrailheads(supabase, id) : Promise.resolve([]),
+    ]);
+
+  const jsonLd = buildTrailJsonLd(trail);
+
+  const heroPhoto = photos.find((p) => p.is_hero) ?? photos[0] ?? null;
+  const routes: GeoLineString[] = trail.geometry ? [trail.geometry] : [];
 
   const markers = [
+    ...trailheads.map((head) => ({
+      id: head.id,
+      type: "trailhead" as const,
+      name: head.name ?? "Trailhead",
+      latitude: head.latitude,
+      longitude: head.longitude,
+      subtitle: head.parking_info ?? undefined,
+      href: `#trailhead-${head.id}`,
+    })),
     {
       id: trail.id,
       type: "trail" as const,
@@ -42,37 +109,16 @@ export default async function ExploreTrailDetailPage({
   ];
 
   const startHikeHref = `/record/live?type=hike&trail_id=${trail.id}`;
+  const weatherLat = trail.start_latitude ?? trail.latitude;
+  const weatherLng = trail.start_longitude ?? trail.longitude;
 
   return (
     <div className="pb-24 md:pb-8">
-      <div className="relative h-64 overflow-hidden bg-stone-200 sm:h-80">
-        {trail.image_url && (
-          <Image
-            src={trail.image_url}
-            alt={trail.trail_name}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-          <div className="mx-auto max-w-7xl">
-            {trail.park && (
-              <Link
-                href={`/parks/${trail.park.id}`}
-                className="text-sm font-medium text-emerald-300 hover:underline"
-              >
-                {trail.park.park_name}
-              </Link>
-            )}
-            <h1 className="mt-1 text-3xl font-bold text-white sm:text-4xl">
-              {trail.trail_name}
-            </h1>
-          </div>
-        </div>
-      </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <TrailHero trail={trail} heroPhoto={heroPhoto} />
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <Link
@@ -81,6 +127,47 @@ export default async function ExploreTrailDetailPage({
         >
           🥾 Start Hike — GPS tracking
         </Link>
+
+        <div className="mb-10">
+          <h2 className="mb-3 text-lg font-semibold text-stone-900">Route map</h2>
+          <MapView
+            mode="trail"
+            markers={markers}
+            routes={routes}
+            center={[trail.longitude, trail.latitude]}
+            zoom={12}
+            className="h-80"
+            fitToMarkers={routes.length === 0}
+            fitToRoutes={routes.length > 0}
+          />
+        </div>
+
+        <div className="mb-10">
+          <h2 className="mb-3 text-lg font-semibold text-stone-900">Elevation profile</h2>
+          <TrailElevationProfile
+            samples={
+              elevationProfile.length > 0
+                ? elevationProfile
+                : (trail.elevation_profile ?? [])
+            }
+            className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
+          />
+        </div>
+
+        <div className="mb-10">
+          <TrailPhotoGallery photos={photos} />
+        </div>
+
+        <TrailPoisSection
+          campsites={campsites}
+          waterSources={waterSources}
+          trailheads={trailheads}
+        />
+
+        <div className="mb-10 grid gap-6 lg:grid-cols-2">
+          <TrailWeatherForecast lat={weatherLat} lng={weatherLng} />
+          <GpxRouteUpload trailId={trail.id} />
+        </div>
 
         <div className="grid gap-10 lg:grid-cols-3">
           <div className="lg:col-span-2">
@@ -93,12 +180,23 @@ export default async function ExploreTrailDetailPage({
               <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-medium text-stone-700">
                 {trail.route_type}
               </span>
+              {trail.allows_dogs != null && (
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                  {trail.allows_dogs ? "Dogs allowed" : "No dogs"}
+                </span>
+              )}
               <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
                 ★ {formatRating(trail.avg_rating)} ({trail.review_count} reviews)
               </span>
             </div>
 
             <p className="leading-relaxed text-stone-700">{trail.description}</p>
+
+            {trail.seasonal_information && (
+              <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+                <strong>Seasonal info:</strong> {trail.seasonal_information}
+              </p>
+            )}
 
             <ReviewsSection trailId={trail.id} initialReviews={reviews} />
           </div>
@@ -117,26 +215,36 @@ export default async function ExploreTrailDetailPage({
                     {trail.elevation_ft.toLocaleString()} ft
                   </dd>
                 </div>
+                {trail.elevation_loss_ft != null && (
+                  <div className="flex justify-between">
+                    <dt className="text-stone-500">Elevation loss</dt>
+                    <dd className="font-medium">
+                      {trail.elevation_loss_ft.toLocaleString()} ft
+                    </dd>
+                  </div>
+                )}
                 {trail.duration && (
                   <div className="flex justify-between">
                     <dt className="text-stone-500">Duration</dt>
                     <dd className="font-medium">{trail.duration}</dd>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <dt className="text-stone-500">Route type</dt>
-                  <dd className="font-medium">{trail.route_type}</dd>
-                </div>
+                {trail.surface && (
+                  <div className="flex justify-between">
+                    <dt className="text-stone-500">Surface</dt>
+                    <dd className="font-medium">{trail.surface}</dd>
+                  </div>
+                )}
+                {trail.confidence_score && (
+                  <div className="flex justify-between">
+                    <dt className="text-stone-500">Data confidence</dt>
+                    <dd className="font-medium capitalize">
+                      {trail.confidence_score.replace("_", " ")}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
-
-            <MapView
-              mode="trail"
-              markers={markers}
-              center={[trail.longitude, trail.latitude]}
-              zoom={11}
-              className="h-64"
-            />
           </div>
         </div>
       </div>

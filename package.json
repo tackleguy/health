@@ -8,7 +8,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "tsx scripts/apply-migrations.ts",
+    "ingest": "tsx scripts/ingestion/run.ts",
+    "ingest:nps": "tsx scripts/ingestion/run.ts nps",
+    "bootstrap": "tsx scripts/bootstrap-and-ingest.ts",
+    "test": "tsx --test src/lib/ingestion/deduplicate.test.ts src/lib/ingestion/parsers/gpx.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -22,11 +27,15 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "pg": "^8.23.0",
+    "supabase": "^2.116.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

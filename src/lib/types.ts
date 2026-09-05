@@ -45,6 +45,27 @@ export interface Trail {
   review_count: number;
   created_at: string;
   updated_at: string;
+  geometry?: GeoLineString | null;
+  start_latitude?: number | null;
+  start_longitude?: number | null;
+  end_latitude?: number | null;
+  end_longitude?: number | null;
+  elevation_loss_ft?: number | null;
+  highest_point_ft?: number | null;
+  lowest_point_ft?: number | null;
+  trail_type?: string | null;
+  surface?: string | null;
+  allows_hiking?: boolean;
+  allows_backpacking?: boolean;
+  allows_biking?: boolean;
+  allows_horseback?: boolean;
+  allows_dogs?: boolean | null;
+  seasonal_information?: string | null;
+  official_source?: string | null;
+  confidence_score?: ConfidenceLevel;
+  elevation_profile?: ElevationSample[] | null;
+  distance_m?: number;
+  distance_km?: number;
   park?: Park;
 }
 
@@ -60,9 +81,80 @@ export interface Review {
   profile?: Profile;
 }
 
+export type ConfidenceLevel =
+  | "verified"
+  | "source_reported"
+  | "inferred"
+  | "unknown";
+
 export interface GeoLineString {
   type: "LineString";
   coordinates: [number, number, number?][];
+}
+
+export interface ElevationSample {
+  distance_m: number;
+  elevation_m?: number;
+  elevation_ft?: number;
+}
+
+export interface TrailPhoto {
+  id: string;
+  trail_id: string;
+  url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  photographer: string | null;
+  license: string;
+  license_url: string | null;
+  attribution: string;
+  source_name: string;
+  source_url: string | null;
+  is_hero: boolean;
+  is_disabled: boolean;
+  sort_order: number;
+}
+
+export interface TrailPointOfInterest {
+  id: string;
+  name: string | null;
+  latitude: number;
+  longitude: number;
+  confidence_score: ConfidenceLevel;
+}
+
+export interface Campsite extends TrailPointOfInterest {
+  campsite_type: string | null;
+  capacity: number | null;
+  seasonal_information: string | null;
+}
+
+export interface WaterSource extends TrailPointOfInterest {
+  water_type: string | null;
+  seasonal_information: string | null;
+  treatment_required: boolean | null;
+}
+
+export interface Trailhead extends TrailPointOfInterest {
+  parking_info: string | null;
+  fees: string | null;
+  access_notes: string | null;
+  restrooms: boolean | null;
+  accessibility_notes: string | null;
+}
+
+export interface TrailFilters {
+  q?: string;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  difficulty?: Difficulty;
+  minLengthMiles?: number;
+  maxLengthMiles?: number;
+  minElevationFt?: number;
+  maxElevationFt?: number;
+  dogFriendly?: boolean;
+  limit?: number;
 }
 
 export interface Activity {
@@ -98,7 +190,7 @@ export interface GpsPoint {
 
 export interface MapMarker {
   id: string;
-  type: "park" | "trail" | "resort";
+  type: "park" | "trail" | "resort" | "trailhead";
   name: string;
   latitude: number;
   longitude: number;

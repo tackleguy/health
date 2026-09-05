@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { MapMarker, MapMode } from "@/lib/types";
+import type { MapMarker, MapMode, GeoLineString } from "@/lib/types";
 import type { SkiFeatureSummary } from "@/lib/ski";
 import {
   isOpenTrailMapClickableLayer,
@@ -52,11 +52,13 @@ function featureFromProperties(
 interface MapViewProps {
   mode: MapMode;
   markers?: MapMarker[];
+  routes?: GeoLineString[];
   center?: [number, number];
   zoom?: number;
   className?: string;
   geolocate?: boolean;
   fitToMarkers?: boolean;
+  fitToRoutes?: boolean;
   focus?: { lat: number; lng: number; zoom?: number } | null;
   onMarkerClick?: (marker: MapMarker) => void;
   onGeolocate?: (lat: number, lng: number) => void;
@@ -67,11 +69,13 @@ interface MapViewProps {
 export function MapView({
   mode,
   markers = [],
+  routes = [],
   center,
   zoom,
   className,
   geolocate = false,
   fitToMarkers = true,
+  fitToRoutes = true,
   focus,
   onMarkerClick,
   onGeolocate,
@@ -240,6 +244,74 @@ export function MapView({
     const map = mapRef.current;
     if (!map || isSki) return;
 
+    const sourceId = "trail-routes";
+    const layerId = "trail-routes-line";
+
+    const applyRoutes = () => {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+      if (routes.length === 0) return;
+
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: routes.map((geometry, index) => ({
+            type: "Feature" as const,
+            properties: { index },
+            geometry: {
+              type: "LineString" as const,
+              coordinates: geometry.coordinates.map(([lng, lat, ele]) =>
+                ele != null ? [lng, lat, ele] : [lng, lat],
+              ),
+            },
+          })),
+        },
+      });
+
+      map.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": "#059669",
+          "line-width": 4,
+          "line-opacity": 0.85,
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+      });
+
+      if (fitToRoutes) {
+        const bounds = new maplibregl.LngLatBounds();
+        for (const route of routes) {
+          for (const coord of route.coordinates) {
+            bounds.extend([coord[0], coord[1]]);
+          }
+        }
+        for (const marker of markers) {
+          bounds.extend([marker.longitude, marker.latitude]);
+        }
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds, { padding: 48, maxZoom: 14 });
+        }
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      applyRoutes();
+    } else {
+      map.once("load", applyRoutes);
+    }
+  }, [routes, fitToRoutes, markers, isSki]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || isSki) return;
+
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
@@ -252,11 +324,19 @@ export function MapView({
           ? "bg-pine text-cream"
           : marker.type === "resort"
             ? "bg-accent text-forest"
-            : "bg-surface-elevated text-cream",
+            : marker.type === "trailhead"
+              ? "bg-blue-700 text-cream"
+              : "bg-surface-elevated text-cream",
       );
 
       const icon =
-        marker.type === "park" ? "🏞" : marker.type === "resort" ? "⛷" : "🥾";
+        marker.type === "park"
+          ? "🏞"
+          : marker.type === "resort"
+            ? "⛷"
+            : marker.type === "trailhead"
+              ? "🅿️"
+              : "🥾";
 
       if (marker.type === "park") {
         el.innerHTML = `<span class="text-sm">${icon}</span>`;

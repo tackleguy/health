@@ -1,6 +1,15 @@
-import type { Park, Review, Trail } from "@/lib/types";
+import type { Park, Review, Trail, TrailFilters } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
-import { haversineKm } from "@/lib/map";
+import {
+  getTrailCampsites,
+  getTrailElevationProfile,
+  getTrailExtendedFields,
+  getTrailPhotos,
+  getTrailTrailheads,
+  getTrailWaterSources,
+  queryNearbyTrailsPostgis,
+  queryTrailsFiltered,
+} from "@/lib/trails";
 
 export async function getParks(): Promise<Park[]> {
   const supabase = await createClient();
@@ -27,9 +36,18 @@ export async function getPark(id: string): Promise<Park | null> {
   return data;
 }
 
-export async function getTrails(): Promise<Trail[]> {
+export async function getTrails(filters?: TrailFilters): Promise<Trail[]> {
   const supabase = await createClient();
   if (!supabase) return [];
+
+  if (filters && Object.keys(filters).length > 0) {
+    try {
+      return await queryTrailsFiltered(supabase, filters);
+    } catch {
+      // fall through
+    }
+  }
+
   const { data, error } = await supabase
     .from("trails")
     .select("*, park:parks(*)")
@@ -55,14 +73,21 @@ export async function getTrailsByPark(parkId: string): Promise<Trail[]> {
 export async function getTrail(id: string): Promise<Trail | null> {
   const supabase = await createClient();
   if (!supabase) return null;
+
   const { data, error } = await supabase
     .from("trails")
     .select("*, park:parks(*)")
     .eq("id", id)
     .single();
 
-  if (error) return null;
-  return data;
+  if (error || !data) return null;
+
+  try {
+    const extended = await getTrailExtendedFields(supabase, id);
+    return { ...data, ...extended };
+  } catch {
+    return data;
+  }
 }
 
 export async function getReviews(trailId: string): Promise<Review[]> {
@@ -81,18 +106,21 @@ export async function getReviews(trailId: string): Promise<Review[]> {
 export async function getNearbyTrails(
   lat: number,
   lng: number,
-  radiusKm = 200,
+  radiusKm = 50,
   limit = 40,
 ): Promise<(Trail & { distance_km: number })[]> {
-  const trails = await getTrails();
-  return trails
-    .map((trail) => ({
-      ...trail,
-      distance_km: haversineKm(lat, lng, trail.latitude, trail.longitude),
-    }))
-    .filter((t) => t.distance_km <= radiusKm)
-    .sort((a, b) => a.distance_km - b.distance_km)
-    .slice(0, limit);
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  try {
+    const trails = await queryNearbyTrailsPostgis(supabase, lat, lng, radiusKm, limit);
+    return trails.map((t) => ({
+      ...t,
+      distance_km: t.distance_km ?? (t.distance_m != null ? t.distance_m / 1000 : 0),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function searchTrailsAndParks(query: string): Promise<{
@@ -100,20 +128,25 @@ export async function searchTrailsAndParks(query: string): Promise<{
   trails: Trail[];
 }> {
   const supabase = await createClient();
-  const term = query.trim().toLowerCase();
+  const term = query.trim();
   if (!supabase || !term) return { parks: [], trails: [] };
 
   const [parksResult, trailsResult] = await Promise.all([
     supabase.from("parks").select("*").ilike("park_name", `%${term}%`).limit(8),
-    supabase
-      .from("trails")
-      .select("*, park:parks(park_name, state, country)")
-      .ilike("trail_name", `%${term}%`)
-      .limit(8),
+    queryTrailsFiltered(supabase, { q: term, limit: 8 }).catch(() => []),
   ]);
 
   return {
     parks: parksResult.data ?? [],
-    trails: trailsResult.data ?? [],
+    trails: trailsResult,
   };
 }
+
+export {
+  getTrailPhotos,
+  getTrailCampsites,
+  getTrailWaterSources,
+  getTrailTrailheads,
+  getTrailElevationProfile,
+  queryTrailsFiltered,
+};
