@@ -14,7 +14,6 @@ function mapGear(row: Record<string, unknown>): GearItem {
     weight: Number(row.weight) || 0,
     price: Number(row.price) || 0,
     link: String(row.link ?? ""),
-    modelUrl: String(row.model_url ?? ""),
   };
 }
 
@@ -49,17 +48,7 @@ export function useGear(userId: string) {
     if (!supabase) return;
     const { data, error: err } = await supabase
       .from("gear_items")
-      .insert({
-        user_id: userId,
-        name: item.name,
-        category: item.category,
-        type: item.type,
-        qty: item.qty,
-        weight: item.weight,
-        price: item.price,
-        link: item.link,
-        model_url: item.modelUrl || "",
-      })
+      .insert({ user_id: userId, ...item })
       .select()
       .single();
     if (err) {
@@ -74,16 +63,7 @@ export function useGear(userId: string) {
     if (!supabase) return;
     const { error: err } = await supabase
       .from("gear_items")
-      .update({
-        name: item.name,
-        category: item.category,
-        type: item.type,
-        qty: item.qty,
-        weight: item.weight,
-        price: item.price,
-        link: item.link,
-        model_url: item.modelUrl || "",
-      })
+      .update(item)
       .eq("id", id);
     if (err) {
       setError(err.message);

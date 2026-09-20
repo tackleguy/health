@@ -9,9 +9,7 @@ import {
   type GearItem,
   type WeightUnit,
 } from "@/lib/gear";
-import { resolveGearModelUrl } from "@/lib/gear-models";
 import { GearModal } from "./GearModal";
-import { GearModelViewer } from "./GearModelViewer";
 import { StatCard } from "./StatCard";
 
 interface Props {
@@ -37,11 +35,8 @@ export function GearLocker({
   );
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<GearItem | null>(null);
-  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const stats = useMemo(() => calcStats(gear), [gear]);
-  const previewItem = gear.find((g) => g.id === previewId) ?? null;
-  const previewSrc = resolveGearModelUrl(previewItem?.modelUrl);
 
   const filtered = useMemo(() => {
     let items = gear.filter(
@@ -50,7 +45,9 @@ export function GearLocker({
         g.category.toLowerCase().includes(search.toLowerCase()),
     );
     if (sortField === "weight")
-      items = [...items].sort((a, b) => b.weight * b.qty - a.weight * a.qty);
+      items = [...items].sort(
+        (a, b) => b.weight * b.qty - a.weight * a.qty,
+      );
     else if (sortField === "name")
       items = [...items].sort((a, b) => a.name.localeCompare(b.name));
     return items;
@@ -81,12 +78,10 @@ export function GearLocker({
           <h2 className="font-display text-2xl font-semibold tracking-tight text-cream sm:text-3xl">
             Gear Locker
           </h2>
-          <p className="mt-1 text-sm text-sage">
-            Inventory with glass panels and connected 3D models
-          </p>
+          <p className="mt-1 text-sm text-sage">Your complete gear inventory</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="glass-panel flex overflow-hidden rounded-lg">
+          <div className="flex overflow-hidden rounded-lg border border-[var(--border)] bg-surface">
             {units.map((u) => (
               <button
                 key={u}
@@ -141,215 +136,153 @@ export function GearLocker({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="relative min-w-[200px] flex-1">
-              <input
-                className="glass-panel-light w-full rounded-lg py-2.5 pl-4 pr-4 text-sm text-cream outline-none placeholder:text-mist/50 focus:border-accent/50"
-                placeholder="Search gear..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setSortField("weight")}
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                sortField === "weight"
-                  ? "border-accent/30 bg-accent/15 text-cream"
-                  : "glass-panel text-sage hover:text-cream"
-              }`}
-            >
-              Sort: Weight
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortField("name")}
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                sortField === "name"
-                  ? "border-accent/30 bg-accent/15 text-cream"
-                  : "glass-panel text-sage hover:text-cream"
-              }`}
-            >
-              Sort: Name
-            </button>
-          </div>
-
-          <div className="glass-card overflow-x-auto p-2">
-            <table
-              className="w-full"
-              style={{ borderCollapse: "separate", borderSpacing: "0 4px" }}
-            >
-              <thead>
-                <tr>
-                  {[
-                    "Item",
-                    "Category",
-                    "Type",
-                    "Qty",
-                    "Weight",
-                    "Price",
-                    "3D",
-                    "",
-                  ].map((h, i) => (
-                    <th
-                      key={h || i}
-                      className={`border-b border-[var(--border)] px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-sage ${
-                        i >= 3 ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {CATEGORY_ORDER.map((cat) => {
-                  if (!grouped[cat]) return null;
-                  const catWeight = grouped[cat].reduce(
-                    (s, g) => s + g.weight * g.qty,
-                    0,
-                  );
-                  return [
-                    <tr key={`header-${cat}`}>
-                      <td colSpan={8} className="px-4 pb-1 pt-3">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className="h-2 w-2 rounded-full"
-                            style={{ background: CATEGORY_COLORS[cat] }}
-                          />
-                          <h4 className="font-display text-[0.95rem] font-bold text-cream">
-                            {cat}
-                          </h4>
-                          <span className="ml-auto font-mono text-[0.7rem] text-sage">
-                            {convertWeight(catWeight, unit)} {unit}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>,
-                    ...grouped[cat].map((g) => {
-                      const hasModel = Boolean(resolveGearModelUrl(g.modelUrl));
-                      const selected = previewId === g.id;
-                      return (
-                        <tr
-                          key={g.id}
-                          className={`group cursor-pointer ${selected ? "ring-1 ring-accent/40" : ""}`}
-                          onClick={() =>
-                            hasModel
-                              ? setPreviewId(g.id)
-                              : setPreviewId(null)
-                          }
-                        >
-                          <td className="rounded-l-lg border-y border-l border-transparent bg-white/[0.03] px-4 py-2.5 text-sm transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            <strong className="text-cream">{g.name}</strong>
-                          </td>
-                          <td className="border-y border-transparent bg-white/[0.03] px-4 py-2.5 transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            <span
-                              className="inline-block rounded-md px-2 py-0.5 text-[0.7rem] font-semibold text-cream opacity-90"
-                              style={{
-                                background: CATEGORY_COLORS[g.category],
-                              }}
-                            >
-                              {g.category}
-                            </span>
-                          </td>
-                          <td className="border-y border-transparent bg-white/[0.03] px-4 py-2.5 transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            {g.type === "Worn" && (
-                              <span className="inline-block rounded border border-accent/30 bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-semibold text-accent">
-                                Worn
-                              </span>
-                            )}
-                            {g.type === "Consumable" && (
-                              <span className="inline-block rounded border border-pine-light/40 bg-pine/30 px-1.5 py-0.5 text-[0.65rem] font-semibold text-sage">
-                                Consumable
-                              </span>
-                            )}
-                            {g.type === "Base" && (
-                              <span className="text-xs text-sage">Base</span>
-                            )}
-                          </td>
-                          <td className="border-y border-transparent bg-white/[0.03] px-4 py-2.5 text-center font-mono text-sm transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            {g.qty}
-                          </td>
-                          <td className="border-y border-transparent bg-white/[0.03] px-4 py-2.5 text-right font-mono text-sm transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            {convertWeight(g.weight * g.qty, unit)} {unit}
-                          </td>
-                          <td className="border-y border-transparent bg-white/[0.03] px-4 py-2.5 text-right font-mono text-sm text-sage transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            ${(g.price * g.qty).toFixed(0)}
-                          </td>
-                          <td className="border-y border-transparent bg-white/[0.03] px-4 py-2.5 text-center text-xs transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            {hasModel ? (
-                              <span className="text-accent">●</span>
-                            ) : (
-                              <span className="text-mist/40">○</span>
-                            )}
-                          </td>
-                          <td className="rounded-r-lg border-y border-r border-transparent bg-white/[0.03] px-4 py-2.5 text-right transition group-hover:border-[var(--border)] group-hover:bg-white/[0.06]">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditItem(g);
-                                setModalOpen(true);
-                              }}
-                              className="px-1 text-mist transition hover:text-cream"
-                              aria-label="Edit"
-                            >
-                              ✎
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(g.id);
-                                if (previewId === g.id) setPreviewId(null);
-                              }}
-                              className="px-1 text-mist transition hover:text-red-400"
-                              aria-label="Delete"
-                            >
-                              ⌫
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    }),
-                  ];
-                })}
-              </tbody>
-            </table>
-            {gear.length === 0 && (
-              <p className="px-4 py-8 text-center text-sm text-sage">
-                No gear yet. Add an item and connect a 3D model to preview it
-                here.
-              </p>
-            )}
-          </div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[200px] flex-1">
+          <input
+            className="w-full rounded-lg border border-[var(--border)] bg-surface py-2.5 pl-4 pr-4 text-sm text-cream outline-none placeholder:text-mist/50 focus:border-accent/50"
+            placeholder="Search gear..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+        <button
+          type="button"
+          onClick={() => setSortField("weight")}
+          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+            sortField === "weight"
+              ? "border-accent/30 bg-accent/15 text-cream"
+              : "border-[var(--border)] bg-surface text-sage hover:text-cream"
+          }`}
+        >
+          Sort: Weight
+        </button>
+        <button
+          type="button"
+          onClick={() => setSortField("name")}
+          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+            sortField === "name"
+              ? "border-accent/30 bg-accent/15 text-cream"
+              : "border-[var(--border)] bg-surface text-sage hover:text-cream"
+          }`}
+        >
+          Sort: Name
+        </button>
+      </div>
 
-        <aside className="glass-card sticky top-24 h-fit p-4">
-          <p className="section-label mb-2">3D Preview</p>
-          {previewSrc && previewItem ? (
-            <>
-              <GearModelViewer
-                src={previewSrc}
-                alt={previewItem.name}
-                className="h-64 w-full"
-              />
-              <p className="mt-3 font-display text-base font-semibold text-cream">
-                {previewItem.name}
-              </p>
-              <p className="text-xs text-sage">{previewItem.category}</p>
-            </>
-          ) : (
-            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-strong)] bg-forest/30 px-4 text-center">
-              <p className="text-sm text-sage">
-                Select a gear row with a connected model, or add one via Edit →
-                3D Model.
-              </p>
-            </div>
-          )}
-        </aside>
+      <div className="surface-card overflow-x-auto p-2">
+        <table
+          className="w-full"
+          style={{ borderCollapse: "separate", borderSpacing: "0 4px" }}
+        >
+          <thead>
+            <tr>
+              {["Item", "Category", "Type", "Qty", "Weight", "Price", ""].map(
+                (h, i) => (
+                  <th
+                    key={h || i}
+                    className={`border-b border-[var(--border)] px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-sage ${
+                      i >= 3 ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {h}
+                  </th>
+                ),
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {CATEGORY_ORDER.map((cat) => {
+              if (!grouped[cat]) return null;
+              const catWeight = grouped[cat].reduce(
+                (s, g) => s + g.weight * g.qty,
+                0,
+              );
+              return [
+                <tr key={`header-${cat}`}>
+                  <td colSpan={7} className="px-4 pb-1 pt-3">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: CATEGORY_COLORS[cat] }}
+                      />
+                      <h4 className="font-display text-[0.95rem] font-bold text-cream">
+                        {cat}
+                      </h4>
+                      <span className="ml-auto font-mono text-[0.7rem] text-sage">
+                        {convertWeight(catWeight, unit)} {unit}
+                      </span>
+                    </div>
+                  </td>
+                </tr>,
+                ...grouped[cat].map((g) => (
+                  <tr key={g.id} className="group">
+                    <td className="rounded-l-lg border-y border-l border-transparent bg-surface-muted/40 px-4 py-2.5 text-sm transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      <strong className="text-cream">{g.name}</strong>
+                    </td>
+                    <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      <span
+                        className="inline-block rounded-md px-2 py-0.5 text-[0.7rem] font-semibold text-cream opacity-90"
+                        style={{ background: CATEGORY_COLORS[g.category] }}
+                      >
+                        {g.category}
+                      </span>
+                    </td>
+                    <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      {g.type === "Worn" && (
+                        <span className="inline-block rounded border border-accent/30 bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-semibold text-accent">
+                          Worn
+                        </span>
+                      )}
+                      {g.type === "Consumable" && (
+                        <span className="inline-block rounded border border-pine-light/40 bg-pine/30 px-1.5 py-0.5 text-[0.65rem] font-semibold text-sage">
+                          Consumable
+                        </span>
+                      )}
+                      {g.type === "Base" && (
+                        <span className="text-xs text-sage">Base</span>
+                      )}
+                    </td>
+                    <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 text-center font-mono text-sm transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      {g.qty}
+                    </td>
+                    <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 text-right font-mono text-sm transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      {convertWeight(g.weight * g.qty, unit)} {unit}
+                    </td>
+                    <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 text-right font-mono text-sm text-sage transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      ${(g.price * g.qty).toFixed(0)}
+                    </td>
+                    <td className="rounded-r-lg border-y border-r border-transparent bg-surface-muted/40 px-4 py-2.5 text-right transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditItem(g);
+                          setModalOpen(true);
+                        }}
+                        className="px-1 text-mist transition hover:text-cream"
+                        aria-label="Edit"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(g.id)}
+                        className="px-1 text-mist transition hover:text-red-400"
+                        aria-label="Delete"
+                      >
+                        ⌫
+                      </button>
+                    </td>
+                  </tr>
+                )),
+              ];
+            })}
+          </tbody>
+        </table>
+        {gear.length === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-sage">
+            No gear yet. Add your first item to start tracking pack weight.
+          </p>
+        )}
       </div>
 
       <GearModal

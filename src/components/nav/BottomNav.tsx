@@ -73,7 +73,7 @@ export function BottomNav() {
   if (hideOn.some((p) => pathname.startsWith(p))) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 glass-panel-dark md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-forest/95 backdrop-blur-xl md:hidden">
       <div className="flex items-end justify-around px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         {links.map((link) => {
           const active =
