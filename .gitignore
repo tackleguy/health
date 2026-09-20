@@ -32,3 +32,4 @@ next-env.d.ts
 # Legacy subfolder (local env only)
 outdoor-app/node_modules/
 outdoor-app/.next/
+supabase/.temp/

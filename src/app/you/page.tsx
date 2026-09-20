@@ -52,9 +52,23 @@ export default async function YouPage() {
             {displayName(user.email!)}
           </h1>
           <p className="mt-1 text-sm text-mist">{user.email}</p>
-          <Link href="/record" className="btn-primary mt-5">
-            Start recording
-          </Link>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/record" className="btn-primary">
+              Start recording
+            </Link>
+            <Link
+              href="/gear"
+              className="rounded-lg border border-[var(--border-strong)] bg-surface px-5 py-2.5 text-sm font-semibold text-cream transition hover:border-accent/40"
+            >
+              Gear Locker
+            </Link>
+            <Link
+              href="/pack-trails"
+              className="rounded-lg border border-[var(--border-strong)] bg-surface px-5 py-2.5 text-sm font-semibold text-cream transition hover:border-accent/40"
+            >
+              Pack Trails
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -10,6 +10,8 @@ import clsx from "clsx";
 const navLinks = [
   { href: "/explore", label: "Explore" },
   { href: "/map", label: "Map" },
+  { href: "/gear", label: "Gear" },
+  { href: "/pack-trails", label: "Pack Trails" },
   { href: "/record", label: "Record" },
   { href: "/", label: "Log" },
   { href: "/you", label: "Profile" },
