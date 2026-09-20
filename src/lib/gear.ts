@@ -20,6 +20,8 @@ export interface GearItem {
   price: number;
   type: GearType;
   link: string;
+  /** GLB/GLTF URL or preset id from GEAR_MODEL_PRESETS */
+  modelUrl: string;
 }
 
 /** Curated backpacking routes (not the PostGIS trails catalog). */

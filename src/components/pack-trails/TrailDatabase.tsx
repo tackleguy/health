@@ -117,7 +117,7 @@ export function TrailDatabase({ userId }: { userId: string }) {
         {filtered.map((trail) => (
           <div
             key={trail.id}
-            className="surface-card group relative overflow-hidden transition hover:border-[var(--border-strong)]"
+            className="glass-card group relative overflow-hidden transition hover:border-[var(--border-strong)]"
           >
             {trail.isCustom && (
               <button
@@ -202,7 +202,7 @@ export function TrailDatabase({ userId }: { userId: string }) {
           onClick={() => setShowModal(false)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-[var(--border-strong)] bg-surface-elevated p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-2xl glass-modal p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">

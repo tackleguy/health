@@ -12,7 +12,7 @@ export function StatCard({
   colorClass = "text-cream",
 }: Props) {
   return (
-    <div className="surface-card p-5 text-center transition hover:border-[var(--border-strong)]">
+    <div className="glass-card p-5 text-center transition hover:border-[var(--border-strong)]">
       <div
         className={`mb-1 font-mono text-[2rem] font-medium leading-none ${colorClass}`}
       >
