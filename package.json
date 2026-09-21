@@ -13,9 +13,10 @@
     "ingest": "tsx scripts/ingestion/run.ts",
     "ingest:nps": "tsx scripts/ingestion/run.ts nps",
     "bootstrap": "tsx scripts/bootstrap-and-ingest.ts",
-    "test": "tsx --test src/lib/ingestion/deduplicate.test.ts src/lib/ingestion/parsers/gpx.test.ts"
+    "test": "tsx --test src/lib/ingestion/deduplicate.test.ts src/lib/ingestion/parsers/gpx.test.ts src/lib/assistant/*.test.ts"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.85",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",

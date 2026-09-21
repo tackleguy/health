@@ -1,0 +1,11 @@
+{
+  "title": "One adventure. Three ways to bring it together.",
+  "question": "Choose a layout for Outdoor OS + TrailPack. These are visual mockups; example trip details are illustrative. You can also describe a combination or revision.",
+  "options": [
+    {"id":"trailhead","label":"A · Trailhead workspace","kicker":"RECOMMENDED","thesis":"Discovery and your next trip sit side by side, with one clear next step.","palette":["#f6f7f4","#ffffff","#234d3c","#26312c"],"materials":["daylight surfaces","landscape photography","quiet dividers"],"viewport":"A wide trail discovery image beside a trip and packing panel; a shared navigation above and route suggestions below.","risk":"A little less room for the map; it opens as a dedicated workspace.","comp":".impeccable/mocks/trailhead.png"},
+    {"id":"atlas","label":"B · Map-led workspace","thesis":"Choose the route visually and keep the trip plan within reach.","palette":["#edf0e8","#ffffff","#204d47","#263430"],"materials":["terrain canvas","compact route list","fixed planning panel"],"viewport":"A generous map with a compact trail browser and an attached trip planner.","risk":"Denser on a phone; the map and planning panel need separate tabs.","comp":".impeccable/mocks/atlas.png"},
+    {"id":"fieldbook","label":"C · Trip planner","thesis":"The upcoming trip is the home screen, with preparation as the main task.","palette":["#173f35","#f6f7f4","#ffffff","#3b6052"],"materials":["evergreen navigation rail","clean itinerary sheet","packing checklist"],"viewport":"A dark green navigation rail and a broad trip workspace with route, dates, checklist, and recording action.","risk":"Excellent for an existing plan; discovery takes one extra step.","comp":".impeccable/mocks/fieldbook.png"}
+  ],
+  "steer":true,
+  "buildPath":{"value":"comp","toggle":false}
+}

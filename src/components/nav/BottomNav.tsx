@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 function NavIcon({ name }: { name: string }) {
   const icons: Record<string, ReactNode> = {
+    plan: (<path d="M8 5h8M8 3v4m8-4v4M5 5h14v16H5V5zm3 7 2 2 5-5m-7 9h8" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />),
     explore: (
       <path
         strokeLinecap="round"
@@ -59,6 +60,7 @@ function NavIcon({ name }: { name: string }) {
 }
 
 const links = [
+  { href: "/plan", label: "Plan", icon: "plan" },
   { href: "/explore", label: "Explore", icon: "explore" },
   { href: "/map", label: "Map", icon: "map" },
   { href: "/record", label: "Record", icon: "record", accent: true },

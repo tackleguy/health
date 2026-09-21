@@ -1,0 +1,35 @@
+"use client";
+import { useState } from "react";
+import { CATEGORY_ORDER } from "@/lib/gear";
+import type { PlannerGear } from "@/lib/assistant/types";
+import { optionalNumber } from "@/lib/assistant/planning";
+import { ProductLookup } from "./ProductLookup";
+export function GearEditor({ onSave, initial, onCancel }: { onSave: (gear: PlannerGear) => boolean; initial?: PlannerGear; onCancel?: () => void }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [weight, setWeight] = useState(initial?.weightOz?.toString() ?? "");
+  const [unit, setUnit] = useState("oz");
+  const [size, setSize] = useState(initial?.packedSize ?? "");
+  const [category, setCategory] = useState<PlannerGear["category"]>(initial?.category ?? "Misc");
+  const [type, setType] = useState<PlannerGear["type"]>(initial?.type ?? "Base");
+  const [qty, setQty] = useState(initial?.qty ?? 1);
+  const [source, setSource] = useState(initial?.sourceUrl ?? "");
+  const [notice, setNotice] = useState("");
+  return <div className="planner-gear-editor">
+    <details><summary>Find product weight & size online</summary><ProductLookup onUse={(n, w, s, url) => { setName(n); setWeight(w?.toString() ?? ""); setUnit("oz"); setSize(s ?? ""); setSource(url); setNotice("Specifications copied below. Review the name and category, then save the item."); }} /></details>
+    <form onSubmit={e => { e.preventDefault(); const number = optionalNumber(weight, 0.001, 100000); const saved = onSave({ id: initial?.id ?? `local:${crypto.randomUUID()}`, name: name.trim(), category, type, qty, weightOz: number === null ? null : number * ({ oz: 1, lb: 16, g: 1/28.349523125, kg: 35.27396195 }[unit] ?? 1), packedSize: size.trim() || null, sourceUrl: source || null }); if (!saved) { setNotice("This item could not be saved. Check browser storage and try again."); return; } if (!initial) { setName(""); setWeight(""); setSize(""); setSource(""); } setNotice(initial ? "Item updated on this device." : "Added to your gear on this device."); }}>
+      <div className="planner-fields">
+        <label className="planner-span">Item name<input value={name} onChange={e => setName(e.target.value)} maxLength={180} required /></label>
+        <label>Weight per item<input type="number" step="any" min="0.001" max="16000" value={weight} onChange={e => setWeight(e.target.value)} placeholder="Unknown" /></label>
+        <label>Unit<select value={unit} onChange={e => setUnit(e.target.value)}><option>oz</option><option>lb</option><option>g</option><option>kg</option></select></label>
+        <label>Category<select value={category} onChange={e => setCategory(e.target.value as PlannerGear["category"])}>{CATEGORY_ORDER.map(c => <option key={c}>{c}</option>)}</select></label>
+        <label>Carried as<select value={type} onChange={e => setType(e.target.value as PlannerGear["type"])}><option>Base</option><option>Worn</option><option>Consumable</option></select></label>
+        <label>Quantity<input type="number" min="1" max="1000" step="1" required value={qty} onChange={e => setQty(Number(e.target.value))} /></label>
+        <label>Packed dimensions<input value={size} onChange={e => setSize(e.target.value)} placeholder="e.g. 20 × 5.5 in" maxLength={160} /></label>
+        <label className="planner-span">Specification source (optional)<input type="url" pattern="https://.*" value={source} onChange={e => setSource(e.target.value)} placeholder="https://…" maxLength={2000} /></label>
+      </div>
+      <p className="planner-help">Leave unknown weights empty. Product dimensions alone cannot confirm that everything fits in your pack.</p>
+      <div className="planner-actions"><button className="planner-button secondary">{initial ? "Save item changes" : "Add to my gear"}</button>{onCancel && <button type="button" className="planner-link" onClick={onCancel}>Close editor</button>}</div>
+      <p role="status" className="planner-help">{notice}</p>
+    </form>
+  </div>;
+}

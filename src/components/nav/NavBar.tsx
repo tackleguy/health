@@ -8,6 +8,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import clsx from "clsx";
 
 const navLinks = [
+  { href: "/plan", label: "Plan" },
   { href: "/explore", label: "Explore" },
   { href: "/map", label: "Map" },
   { href: "/gear", label: "Gear" },
@@ -60,11 +61,11 @@ export function NavBar() {
           </span>
         </Link>
 
-        <div className="min-w-0 flex-1 max-w-md">
+        <div className="hidden w-52 shrink-0 xl:block 2xl:w-64">
           <SearchBar variant="dark" />
         </div>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap">
           {navLinks.map((link) => {
             const active =
               link.href === "/"
@@ -75,7 +76,7 @@ export function NavBar() {
                 key={link.href}
                 href={link.href}
                 className={clsx(
-                  "rounded-lg px-3 py-2 text-sm font-medium transition",
+                  "rounded-lg px-2 py-2 text-sm font-medium transition",
                   active
                     ? "bg-accent/15 text-accent"
                     : "text-sage hover:bg-white/5 hover:text-cream",
