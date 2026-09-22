@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-09-21T23:11:32.772Z",
-  "title": "Design System: Outdoor OS trip planner",
+  "title": "Design System: TrailPack trip planner",
   "extensions": {
     "colorMeta": {
       "background": {
@@ -258,7 +258,7 @@
     }
   ],
   "narrative": {
-    "northStar": "Outdoor OS trip planner",
+    "northStar": "TrailPack trip planner",
     "overview": "This records the built component boundary in `src/components/assistant`, rendered by `src/app/plan/page.tsx`. Its source of truth is `planner.css` and the assistant components, inheriting palette and font variables from `src/app/globals.css` and `src/app/layout.tsx`. The matching sidecar is `.impeccable/design.json` beside this file. Route strategy is recorded separately in the project’s `.impeccable/surfaces/` directory.\n\nThe planner uses dark forest surfaces, cream text, and a lime action color. Playfair Display supplies the conversational headings and trip prompt; Inter carries labels, controls, explanations, and measured data. Most information sits directly on the page, organized by whitespace and dividing lines. Filled panels give the trip request and calculated weight distinct places in the hierarchy.\n\nThis is documentation of an extension to the incumbent system, not a whole-app redesign. The Trailhead, Atlas, and Fieldbook mock directions remain unchosen and supply no authority here.",
     "keyCharacteristics": [
       "Forest tonal layers with lime actions and state cues.",

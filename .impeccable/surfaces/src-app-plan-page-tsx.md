@@ -9,7 +9,7 @@ related_targets: ["route:/plan","src/components/assistant/TripPlanner.tsx","src/
 
 ## Scope and mode
 
-Mode: Operate. The built browser trip planner at /plan, implemented in src/app/plan/page.tsx and src/components/assistant. This is a new component surface inside the existing Outdoor OS app. Its scoped visual record is src/components/assistant/DESIGN.md, with the adjacent .impeccable/design.json sidecar. No whole-app redesign is claimed.
+Mode: Operate. The built browser trip planner at /plan, implemented in src/app/plan/page.tsx and src/components/assistant. This is a new component surface inside the existing TrailPack app. Its scoped visual record is src/components/assistant/DESIGN.md, with the adjacent .impeccable/design.json sidecar. No whole-app redesign is claimed.
 
 ## Audience and task
 

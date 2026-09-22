@@ -1,6 +1,6 @@
 ---
-name: Outdoor OS trip planner
-description: The implemented planner component system within the incumbent Outdoor OS shell.
+name: TrailPack trip planner
+description: The implemented planner component system within the incumbent TrailPack shell.
 colors:
   background: "#141814"
   forest: "#0d120d"
@@ -79,11 +79,11 @@ components:
     padding: "22px"
 ---
 
-# Design System: Outdoor OS trip planner
+# Design System: TrailPack trip planner
 
 ## Overview
 
-**Creative North Star: "Outdoor OS trip planner"**
+**Creative North Star: "TrailPack trip planner"**
 
 This records the built component boundary in `src/components/assistant`, rendered by `src/app/plan/page.tsx`. Its source of truth is `planner.css` and the assistant components, inheriting palette and font variables from `src/app/globals.css` and `src/app/layout.tsx`. The matching sidecar is `.impeccable/design.json` beside this file. Route strategy is recorded separately in the project’s `.impeccable/surfaces/` directory.
 

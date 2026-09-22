@@ -2,18 +2,23 @@ import { NextResponse } from "next/server";
 import { searchTrailsAndParks } from "@/lib/data";
 import { searchSkiAreas } from "@/lib/ski";
 import type { SearchResult } from "@/lib/types";
+import { searchCatalog } from "@/lib/trail-catalog/server";
+import { countryName } from "@/lib/trail-catalog/types";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get("q") ?? "";
+    const q = (searchParams.get("q") ?? "").trim().slice(0,180);
+    if (q.length < 2) return NextResponse.json({ results:[] });
 
-    const [{ parks, trails }, skiAreas] = await Promise.all([
-      searchTrailsAndParks(q),
-      searchSkiAreas(q, 6),
+    const [{ parks, trails }, skiAreas, catalog] = await Promise.all([
+      searchTrailsAndParks(q).catch(()=>({ parks:[],trails:[] })),
+      searchSkiAreas(q, 6).catch(()=>[]),
+      searchCatalog({ q,limit:6 }).catch(()=>null),
     ]);
 
     const results: (SearchResult & { lat?: number; lng?: number })[] = [
+      ...(catalog?.trails ?? []).map(trail=>({ id:trail.id,type:"trail" as const,name:trail.name,subtitle:`${trail.region ?? countryName(trail.country)} · Trail section`,href:`/explore/trails/${trail.id}`,lat:trail.latitude,lng:trail.longitude })),
       ...parks.map((park) => ({
         id: park.id,
         type: "park" as const,

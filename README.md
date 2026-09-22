@@ -1,6 +1,10 @@
-# Outdoor OS
+# TrailPack
 
 Next.js app at the **repository root** — standard layout for Vercel.
+
+The app includes a searchable catalog of **90,000 public trail-section records**: 82,392 in the U.S. and 7,608 in Canada. Browse `/explore/trails`, inspect source links and map geometry, or find regional discovery links in `/plan`. Sections are parts of trails, not automatically complete hikes.
+
+The catalog and guest trip planner work without Supabase setup. See [catalog sources, licenses, coverage and refresh instructions](data/trail-catalog/README.md). Account features still require the configuration below.
 
 Trail data platform (Phase 1): PostGIS geometry, ingestion pipeline, spatial APIs, admin dashboard.  
 **Full documentation:** [docs/TRAIL_PLATFORM.md](docs/TRAIL_PLATFORM.md)

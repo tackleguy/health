@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Outdoor OS — Trails, Maps & Adventure",
+  title: "TrailPack — Trails, Maps & Adventure",
   description:
     "Your unified outdoor operating system for trail discovery, maps, and adventure planning.",
 };

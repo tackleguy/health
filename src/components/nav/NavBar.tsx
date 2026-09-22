@@ -57,7 +57,7 @@ export function NavBar() {
             ⛰
           </span>
           <span className="font-display text-lg font-semibold text-cream">
-            Outdoor OS
+            TrailPack
           </span>
         </Link>
 

@@ -15,6 +15,7 @@ export function TrailSearchFilters() {
 
   const applyFilters = useCallback(() => {
     const params = new URLSearchParams();
+    if (searchParams.get("collection") === "community") params.set("collection", "community");
     if (q.trim()) params.set("q", q.trim());
     if (difficulty) params.set("difficulty", difficulty);
     if (dogFriendly) params.set("dog_friendly", "true");

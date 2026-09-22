@@ -22,6 +22,8 @@ import { GpxRouteUpload } from "@/components/trails/GpxRouteUpload";
 import { difficultyColor, formatRating } from "@/lib/utils";
 import { buildTrailJsonLd } from "@/lib/seo/trail-jsonld";
 import type { GeoLineString } from "@/lib/types";
+import { getCatalogTrail } from "@/lib/trail-catalog/server";
+import { CatalogTrailDetail } from "@/components/trails/CatalogTrailDetail";
 
 export async function generateMetadata({
   params,
@@ -29,6 +31,10 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  if (/^(usgs|parks-canada|ontario)-/.test(id)) {
+    const record = await getCatalogTrail(id);
+    return { title: record ? `${record.trail.name} — TrailPack` : "Trail not found", description: "Source-linked trail section from the TrailPack Canada and U.S. catalog." };
+  }
   const trail = await getTrail(id);
   if (!trail) return { title: "Trail not found" };
 
@@ -54,6 +60,11 @@ export default async function ExploreTrailDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (/^(usgs|parks-canada|ontario)-/.test(id)) {
+    const record = await getCatalogTrail(id);
+    if (!record) notFound();
+    return <CatalogTrailDetail {...record} />;
+  }
   const trail = await getTrail(id);
 
   if (!trail) notFound();

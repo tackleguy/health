@@ -20,7 +20,7 @@ export async function fetchSource(raw: string, redirects = 0): Promise<{ url: st
   const addresses = await lookup(url.hostname, { family: 4, all: true });
   if (!addresses.length || addresses.some(a => !publicIPv4(a.address))) throw new Error("This source address is unavailable.");
   const response = await new Promise<{ status: number; location?: string; body: string }>((resolve, reject) => {
-    const request = https.get(url, { family: 4, lookup: (_hostname, _options, callback) => callback(null, addresses[0].address, 4), headers: { "User-Agent": "OutdoorOS/1.0 (product-specification-research)", Accept: "text/html,application/xml,text/xml,application/rss+xml", "Accept-Encoding": "identity" } }, res => {
+    const request = https.get(url, { family: 4, lookup: (_hostname, _options, callback) => callback(null, addresses[0].address, 4), headers: { "User-Agent": "TrailPack/1.0 (product-specification-research)", Accept: "text/html,application/xml,text/xml,application/rss+xml", "Accept-Encoding": "identity" } }, res => {
       const status = res.statusCode ?? 500;
       if (status >= 300 && status < 400) { res.resume(); resolve({ status, location: res.headers.location, body: "" }); return; }
       if (status !== 200) { res.resume(); reject(new Error(`Source returned ${status}. Try another official page.`)); return; }

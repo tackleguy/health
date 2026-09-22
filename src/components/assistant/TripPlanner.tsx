@@ -10,6 +10,7 @@ import { emptyMemory } from "@/lib/assistant/memory";
 import { GearEditor } from "./GearEditor";
 import { usePlannerMemory } from "./usePlannerMemory";
 import { useLocalModel } from "./useLocalModel";
+import { CatalogSuggestions } from "./CatalogSuggestions";
 import "./planner.css";
 
 function NumberField({ label, value, onChange, min = 0, max = 10000, step = "any", hint }: { label: string; value: number | null; onChange: (n: number | null) => void; min?: number; max?: number; step?: string; hint?: string }) {
@@ -27,7 +28,7 @@ function FeedbackForm({ plan, onSave }: { plan: SavedPlan; onSave: (feedback: Tr
     </div><button className="planner-button secondary">{plan.feedback ? "Update completed-trip feedback" : "Mark completed & remember feedback"}</button>
   </form>;
 }
-export function TripPlanner({ context }: { context: PlannerContext }) {
+export function TripPlanner({ context, initialRegion = "" }: { context: PlannerContext; initialRegion?: string }) {
   const { memory, update, error: memoryError } = usePlannerMemory(context.userId);
   const model = useLocalModel();
   const router = useRouter();
@@ -45,8 +46,8 @@ export function TripPlanner({ context }: { context: PlannerContext }) {
     });
     return () => subscription.unsubscribe();
   }, [context.userId, router, stopModel]);
-  const [prompt, setPrompt] = useState("");
-  const [request, setRequest] = useState<TripRequest>({ ...EMPTY_REQUEST });
+  const [prompt, setPrompt] = useState(initialRegion ? `A trip in ${initialRegion}` : "");
+  const [request, setRequest] = useState<TripRequest>({ ...EMPTY_REQUEST, region: initialRegion });
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const stageHeading = useRef<HTMLHeadingElement>(null);
@@ -108,7 +109,7 @@ export function TripPlanner({ context }: { context: PlannerContext }) {
   }
   if (accountChanged) return <div className="planner-shell" role="status">Updating your planning account… <button className="planner-link" onClick={() => window.location.reload()}>Reload planner</button></div>;
   return <div className="planner-shell">
-    <div className="planner-topline"><Link href="/explore">Outdoor OS</Link><div><Link href="/gear">Gear locker</Link><Link href="/map">Map</Link></div></div>
+    <div className="planner-topline"><Link href="/explore">TrailPack</Link><div><Link href="/gear">Gear locker</Link><Link href="/map">Map</Link></div></div>
     <div className="planner-heading"><h1>A good trip starts here.</h1><p>Find the trail. Bring what you need. Know where it goes.</p></div>
     <div className="planner-layout">
       <div className="planner-workspace">
@@ -150,6 +151,7 @@ export function TripPlanner({ context }: { context: PlannerContext }) {
               <label>Route name<input name="name" required maxLength={180} /></label><label>Route distance (mi)<input name="distance" type="number" min="0.1" max="10000" step="any" required /></label><label className="planner-span">Official route URL<input name="source" type="url" pattern="https://.*" required maxLength={2000} /></label><button className="planner-button secondary">Use this route</button>
             </form></details>
             {route && <p className="planner-fit">Selected: {route.name} · {route.distanceMiles} miles</p>}
+            <CatalogSuggestions region={request.region} />
             <button className="planner-button" onClick={() => setStep(1)}>Prepare my pack <span aria-hidden="true">→</span></button>
           </section>}
           {step === 1 && <section className="planner-stage" aria-labelledby="pack-title">
