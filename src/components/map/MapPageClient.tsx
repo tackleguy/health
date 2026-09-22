@@ -28,7 +28,7 @@ interface MapPageClientProps {
 
 export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   const [mode, setMode] = useState<MapMode>("trail");
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
+  const [explicitLocation, setUserLoc] = useState<{ lat: number; lng: number } | null>(
     null,
   );
   const [nearbyTrails, setNearbyTrails] = useState<NearbyTrail[]>([]);
@@ -45,6 +45,8 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   } | null>(null);
   const [nearbyLabel, setNearbyLabel] = useState<string | null>(null);
   const location = useLocationPermission();
+  const userLoc = explicitLocation ?? location.coords;
+  const resolvedFocus = useMemo(() => mapFocus ?? (location.coords ? { ...location.coords, zoom: 11 } : null), [mapFocus, location.coords]);
 
   const onGeolocate = useCallback((lat: number, lng: number) => {
     setUserLoc({ lat, lng });
@@ -57,17 +59,6 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
       setMapFocus({ lat: coords.lat, lng: coords.lng, zoom: 11 });
     }
   }, [location]);
-
-  useEffect(() => {
-    if (location.coords && !userLoc) {
-      setUserLoc(location.coords);
-      setMapFocus({
-        lat: location.coords.lat,
-        lng: location.coords.lng,
-        zoom: 11,
-      });
-    }
-  }, [location.coords, userLoc]);
 
   useEffect(() => {
     if (!userLoc) return;
@@ -220,7 +211,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
         className="h-[calc(100vh-280px)] min-h-[420px]"
         geolocate
         fitToMarkers={nearbyTrails.length === 0 && !userLoc}
-        focus={mapFocus}
+        focus={resolvedFocus}
         onGeolocate={onGeolocate}
         onMarkerClick={(marker) => {
           if (marker.type === "park") {

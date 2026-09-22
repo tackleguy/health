@@ -34,3 +34,6 @@ next-env.d.ts
 outdoor-app/node_modules/
 outdoor-app/.next/
 supabase/.temp/
+
+# Generated from the installed MapLibre package before dev/build.
+/public/maplibre/

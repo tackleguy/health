@@ -2,37 +2,38 @@
 version: 1
 slug: "src-app-plan-page-tsx"
 primary_target: "src/app/plan/page.tsx"
-related_targets: ["route:/plan","src/components/assistant/TripPlanner.tsx","src/components/assistant/planner.css","src/components/assistant/GearEditor.tsx","src/components/assistant/ProductLookup.tsx"]
+related_targets: ["route:/plan","src/components/assistant/TripPlanner.tsx","src/components/assistant/planner.css","src/components/assistant/GearEditor.tsx","src/components/assistant/ProductLookup.tsx","src/components/gear/LocalGear.tsx"]
 ---
 
 # /plan surface brief
 
-## Scope and mode
+## Scope and authority
 
-Mode: Operate. The built browser trip planner at /plan, implemented in src/app/plan/page.tsx and src/components/assistant. This is a new component surface inside the existing TrailPack app. Its scoped visual record is src/components/assistant/DESIGN.md, with the adjacent .impeccable/design.json sidecar. No whole-app redesign is claimed.
+Mode: Operate. The working trip planner implements the user's approved Fieldbook Figma design in file `TXdEs8S62B0WxXXLJqovWc`. Root `DESIGN.md` and the scoped `src/components/assistant/DESIGN.md` record the shipped tokens and patterns. Saved desktop Figma renders and construction definitions supplied the reference while fresh design context remained blocked by the Starter-plan tool quota.
 
-## Audience and task
+THESIS: A route, a personal pack, and the recording handoff stay one connected task.
 
-Hikers and backpackers describe a trip, choose a trail, calculate what they will carry, and create a packing checklist. The principal sequence is natural trip request → trail choice → personal pack calculation → packing checklist. Saving a trip on the device and opening the activity recorder connect preparation to the outing.
+OWN-WORLD: Mineral workspace, evergreen shared navigation, forest actions, Inter, white task pane, sage context, and ruled equipment rows.
 
-## Built composition
+STORY: Describe the trip → Choose a trail → Prepare your pack → Record your outing. A route name and location lead its difficulty and distance-to-target metadata. The selected trip persists above preparation, while the sidebar carries measured pack context and local memory.
 
-The opening area has a serif heading and a large natural-language request field, an example prompt action, and Build my trip. Desktop places account/guest context and local-model controls alongside the workspace. The stage row exposes Find a trail, Prepare your pack, and Pack & go. Stage changes focus the new heading for keyboard users. On narrow screens the context follows the workspace; the inherited six-link bottom navigation remains reachable.
+FIRST VIEWPORT: My trips/New trip utilities; trip heading and save state; large request or selected-trip illustration; numbered stages; white workspace and sage sidebar. In packing, Review & record and Download checklist follow the weight breakdown before detailed carrying guidance. At 1000px and below the sidebar follows the workspace. Mobile retains numbered stages and the shared four-destination bottom navigation.
 
-The characteristic moment is the same request becoming a sourced route, a measured personal pack, and a checklist grouped by where equipment belongs. Forest/lime surfaces and Playfair/Inter extend the incumbent app; exact visual tokens belong in the scoped DESIGN.md.
+FORM: Approved Fieldbook composition implemented against actual routes, inventory, and local state. Exact responsive dimensions belong in the scoped design record.
 
-## Supporting content and disclosure
+## Product truth and interaction
 
-Trip details, additional trail research, manual routes, equipment editing, product-source extraction, supplies, preferences, saved-trip feedback, and privacy are disclosed near the task they support. Missing required information opens relevant sections. The weight summary distinguishes a complete starting pack from known weight so far. Empty gear and unmatched routes have explicit recovery actions. Forgetting device memory uses an inline confirmation with Confirm forget and Keep my data.
+Route matching, input parsing, arithmetic, packing zones, and validated insight text work without model activation. Source links remain visible. Route references do not establish current permits, conditions, or a complete itinerary. Unknown equipment weights remain unknown, and incomplete totals are labeled. The checklist groups personal gear, tracks packed state, and exports text. Saved plans can be restored and updated; Unsaved changes and Saved on this device identify persistence accurately.
 
-## Trust and capability boundaries
+Guest Gear and the guest planner share browser memory. Signed-in gear and activity context retain their existing services; guest and account-local memories remain separate. Preferences, supplemental equipment, saved plans, and feedback are browser-local. Model download/activation is explicit, with visible state and cancellation; no model inference or new installation was demonstrated in this UI pass.
 
-The optional WebLLM model runs on the device after explicit activation. Route matching, input parsing, arithmetic, packing zones, and validated insight text work without it. Generated output selects validated insight IDs; it does not author product facts or weight totals. Source links stay visible; online discovery does not establish current permits, conditions, or an exact itinerary. Product specifications require reviewing the exact variant before applying them.
+The landscape is a CSS crop of the approved generated composition at `public/images/fieldbook/planning-landscape.png`, with embedded and adjacent provenance. Visible and accessible labels identify it as a planning illustration, never a photograph of the selected route.
 
-Signed-in gear and hikes supply personal context. Guest and account-local planning memory remain separate. Preferences, supplemental gear, saved trips, and completed-trip feedback are saved in the browser, not advertised as cloud-synced. Explicit preferences override learned feedback. Model download, loading, ready, thinking, cancellation, and error states are visible; unsupported devices retain the standard planner.
+## Evidence and limits
 
-## Evidence and unresolved decisions
+Current captures: `.impeccable/review/plan-desktop.png`, `pack-desktop.png`, `pack-mobile.png`, `gear-desktop.png`, and `gear-mobile.png`. The finish verdict closed all three visual findings. `.impeccable/review/fieldbook-verification.md` records 26 passing tests, TypeScript, scoped ESLint, and production build. Checklist content is unit tested and clicking export invokes preparation; actual disk delivery was not confirmed by the in-app browser. Cloud/account flows, live GPS, and phone model inference were not re-tested. Figma's unfinished prototype/mobile tasks remain separate from the implemented responsive production UI.
 
-Ground truth: src/components/assistant/planner.css and TripPlanner.tsx, GearEditor.tsx, ProductLookup.tsx; src/app/globals.css and the shared navigation; src/lib/assistant; docs/local-trip-assistant.md. Reviewed captures are .impeccable/review/desktop.png, desktop-route.png, desktop-pack.png, mobile.png, mobile-pack.png, and mobile-go.png. Captured example equipment and feedback are runtime data, not defaults or visual-system requirements.
 
-The broader Trailhead, Atlas, and Fieldbook redesign mockups remain unchosen. No approved replacement visual world exists. Native packaging, authenticated live-account integration, and phone model inference are outside the demonstrated implementation evidence; see docs/local-trip-assistant.md for verification limits.
+## Production hardening
+
+The existing Prepare step now includes load/category donut charts with text tables, sortable per-item weights and quantities, shared unit switching, four detailed packing zones and a reconciled weight summary. Unknown measurements stay incomplete and worn items stay separate. See `.impeccable/review/production-verification.md` for 36-test coverage, responsive checks and accessibility evidence.

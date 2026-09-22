@@ -31,7 +31,23 @@ export interface CatalogManifest {
   excluded: Record<string, number>;
   notes: string[];
 }
+export type CatalogBounds = [west: number, south: number, east: number, north: number];
+export interface CatalogMapPoint {
+  id: string;
+  longitude: number;
+  latitude: number;
+  count: number;
+  bounds?: CatalogBounds;
+  trail?: CatalogTrail;
+}
+export interface CatalogMapResult {
+  points: CatalogMapPoint[];
+  total: number;
+  bounds: CatalogBounds | null;
+  grouped: boolean;
+}
 export interface CatalogFilters {
+  bbox?: CatalogBounds;
   q?: string;
   country?: string;
   region?: string;

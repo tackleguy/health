@@ -1,0 +1,26 @@
+[
+  {
+    "route": "/gear",
+    "violations": [],
+    "manualReview": [],
+    "passes": 43
+  },
+  {
+    "route": "/record",
+    "violations": [],
+    "manualReview": [],
+    "passes": 38
+  },
+  {
+    "route": "/login",
+    "violations": [],
+    "manualReview": [],
+    "passes": 39
+  },
+  {
+    "route": "/signup",
+    "violations": [],
+    "manualReview": [],
+    "passes": 39
+  }
+]

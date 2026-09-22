@@ -1,0 +1,471 @@
+{
+  "components": {
+    "Button": {
+      "id": "3:56",
+      "properties": [
+        {
+          "key": "Label#2:0",
+          "type": "TEXT",
+          "default": "Button"
+        },
+        {
+          "key": "Icon End#4:0",
+          "type": "INSTANCE_SWAP",
+          "default": "3:7"
+        },
+        {
+          "key": "Has Icon End#4:64",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "key": "Has Icon Start#4:128",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "key": "Icon Start#4:192",
+          "type": "INSTANCE_SWAP",
+          "default": "3:9"
+        },
+        {
+          "key": "Variant",
+          "type": "VARIANT",
+          "default": "Primary"
+        },
+        {
+          "key": "State",
+          "type": "VARIANT",
+          "default": "Default"
+        },
+        {
+          "key": "Size",
+          "type": "VARIANT",
+          "default": "Medium"
+        }
+      ],
+      "variants": [
+        {
+          "id": "3:57",
+          "name": "Variant=Primary, State=Default, Size=Medium"
+        },
+        {
+          "id": "3:58",
+          "name": "Variant=Primary, State=Hover, Size=Medium"
+        },
+        {
+          "id": "3:59",
+          "name": "Variant=Primary, State=Disabled, Size=Medium"
+        },
+        {
+          "id": "3:60",
+          "name": "Variant=Neutral, State=Default, Size=Medium"
+        },
+        {
+          "id": "3:61",
+          "name": "Variant=Neutral, State=Hover, Size=Medium"
+        },
+        {
+          "id": "3:62",
+          "name": "Variant=Neutral, State=Disabled, Size=Medium"
+        },
+        {
+          "id": "3:63",
+          "name": "Variant=Subtle, State=Default, Size=Medium"
+        },
+        {
+          "id": "3:64",
+          "name": "Variant=Subtle, State=Hover, Size=Medium"
+        },
+        {
+          "id": "3:65",
+          "name": "Variant=Subtle, State=Disabled, Size=Medium"
+        },
+        {
+          "id": "3:66",
+          "name": "Variant=Primary, State=Default, Size=Small"
+        },
+        {
+          "id": "3:67",
+          "name": "Variant=Primary, State=Hover, Size=Small"
+        },
+        {
+          "id": "3:68",
+          "name": "Variant=Primary, State=Disabled, Size=Small"
+        },
+        {
+          "id": "3:69",
+          "name": "Variant=Neutral, State=Default, Size=Small"
+        },
+        {
+          "id": "3:70",
+          "name": "Variant=Neutral, State=Hover, Size=Small"
+        },
+        {
+          "id": "3:71",
+          "name": "Variant=Neutral, State=Disabled, Size=Small"
+        },
+        {
+          "id": "3:72",
+          "name": "Variant=Subtle, State=Default, Size=Small"
+        },
+        {
+          "id": "3:73",
+          "name": "Variant=Subtle, State=Hover, Size=Small"
+        },
+        {
+          "id": "3:74",
+          "name": "Variant=Subtle, State=Disabled, Size=Small"
+        }
+      ]
+    },
+    "Input": {
+      "id": "3:142",
+      "properties": [
+        {
+          "key": "Has Label#57:0",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "key": "Has Error#72:6",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "key": "Label#280:41",
+          "type": "TEXT",
+          "default": "Label"
+        },
+        {
+          "key": "Error#280:44",
+          "type": "TEXT",
+          "default": "Error"
+        },
+        {
+          "key": "Has Description#611:20",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "key": "Description#611:27",
+          "type": "TEXT",
+          "default": "Description"
+        },
+        {
+          "key": "Value#630:14",
+          "type": "TEXT",
+          "default": "Value"
+        },
+        {
+          "key": "State",
+          "type": "VARIANT",
+          "default": "Default"
+        },
+        {
+          "key": "Value Type",
+          "type": "VARIANT",
+          "default": "Default"
+        }
+      ],
+      "variants": [
+        {
+          "id": "3:143",
+          "name": "State=Default, Value Type=Placeholder"
+        },
+        {
+          "id": "3:144",
+          "name": "State=Default, Value Type=Default"
+        },
+        {
+          "id": "3:145",
+          "name": "State=Error, Value Type=Placeholder"
+        },
+        {
+          "id": "3:146",
+          "name": "State=Error, Value Type=Default"
+        },
+        {
+          "id": "3:147",
+          "name": "State=Disabled, Value Type=Placeholder"
+        },
+        {
+          "id": "3:148",
+          "name": "State=Disabled, Value Type=Default"
+        }
+      ]
+    },
+    "Checkbox": {
+      "id": "3:188",
+      "properties": [
+        {
+          "key": "Has Description#31:31",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "key": "Description#280:81",
+          "type": "TEXT",
+          "default": "Description"
+        },
+        {
+          "key": "Label#373:9",
+          "type": "TEXT",
+          "default": "Label"
+        },
+        {
+          "key": "State",
+          "type": "VARIANT",
+          "default": "Default"
+        },
+        {
+          "key": "Value Type",
+          "type": "VARIANT",
+          "default": "Checked"
+        }
+      ],
+      "variants": [
+        {
+          "id": "3:189",
+          "name": "State=Default, Value Type=Checked"
+        },
+        {
+          "id": "3:190",
+          "name": "State=Default, Value Type=Unchecked"
+        },
+        {
+          "id": "3:191",
+          "name": "State=Default, Value Type=Indeterminate"
+        },
+        {
+          "id": "3:192",
+          "name": "State=Disabled, Value Type=Checked"
+        },
+        {
+          "id": "3:193",
+          "name": "State=Disabled, Value Type=Unchecked"
+        },
+        {
+          "id": "3:194",
+          "name": "State=Disabled, Value Type=Indeterminate"
+        }
+      ]
+    },
+    "Navigation": {
+      "id": "3:249",
+      "properties": [
+        {
+          "key": "Label#515:1",
+          "type": "TEXT",
+          "default": "Label"
+        },
+        {
+          "key": "Icon#515:2",
+          "type": "INSTANCE_SWAP",
+          "default": "3:237"
+        },
+        {
+          "key": "Has Icon#515:5",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "key": "Has Label#515:8",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "key": "State",
+          "type": "VARIANT",
+          "default": "Default"
+        },
+        {
+          "key": "Direction",
+          "type": "VARIANT",
+          "default": "Column"
+        },
+        {
+          "key": "Type",
+          "type": "VARIANT",
+          "default": "Small"
+        }
+      ],
+      "variants": [
+        {
+          "id": "3:250",
+          "name": "State=Default, Direction=Column, Type=Small"
+        },
+        {
+          "id": "3:251",
+          "name": "State=Default, Direction=Column, Type=Medium"
+        },
+        {
+          "id": "3:252",
+          "name": "State=Default, Direction=Row, Type=Small"
+        },
+        {
+          "id": "3:253",
+          "name": "State=Default, Direction=Row, Type=Medium"
+        },
+        {
+          "id": "3:254",
+          "name": "State=Hover, Direction=Column, Type=Small"
+        },
+        {
+          "id": "3:255",
+          "name": "State=Hover, Direction=Column, Type=Medium"
+        },
+        {
+          "id": "3:256",
+          "name": "State=Active, Direction=Column, Type=Small"
+        },
+        {
+          "id": "3:257",
+          "name": "State=Active, Direction=Column, Type=Medium"
+        },
+        {
+          "id": "3:258",
+          "name": "State=Hover, Direction=Row, Type=Small"
+        },
+        {
+          "id": "3:259",
+          "name": "State=Hover, Direction=Row, Type=Medium"
+        },
+        {
+          "id": "3:260",
+          "name": "State=Active, Direction=Row, Type=Small"
+        },
+        {
+          "id": "3:261",
+          "name": "State=Active, Direction=Row, Type=Medium"
+        }
+      ]
+    }
+  },
+  "collections": [
+    {
+      "id": "VariableCollectionId:3:286",
+      "name": "TrailPack / Primitives"
+    },
+    {
+      "id": "VariableCollectionId:3:287",
+      "name": "TrailPack / Fieldbook"
+    }
+  ],
+  "variables": [
+    {
+      "name": "color/background",
+      "id": "VariableID:3:289"
+    },
+    {
+      "name": "color/surface",
+      "id": "VariableID:3:291"
+    },
+    {
+      "name": "color/foreground",
+      "id": "VariableID:3:293"
+    },
+    {
+      "name": "color/muted",
+      "id": "VariableID:3:295"
+    },
+    {
+      "name": "color/forest",
+      "id": "VariableID:3:297"
+    },
+    {
+      "name": "color/action",
+      "id": "VariableID:3:299"
+    },
+    {
+      "name": "color/soft",
+      "id": "VariableID:3:301"
+    },
+    {
+      "name": "color/border",
+      "id": "VariableID:3:303"
+    },
+    {
+      "name": "color/inverse",
+      "id": "VariableID:3:305"
+    },
+    {
+      "name": "color/inverse-muted",
+      "id": "VariableID:3:307"
+    },
+    {
+      "name": "color/selected",
+      "id": "VariableID:3:309"
+    },
+    {
+      "name": "space/4",
+      "id": "VariableID:3:310"
+    },
+    {
+      "name": "space/8",
+      "id": "VariableID:3:311"
+    },
+    {
+      "name": "space/12",
+      "id": "VariableID:3:312"
+    },
+    {
+      "name": "space/16",
+      "id": "VariableID:3:313"
+    },
+    {
+      "name": "space/20",
+      "id": "VariableID:3:314"
+    },
+    {
+      "name": "space/24",
+      "id": "VariableID:3:315"
+    },
+    {
+      "name": "space/32",
+      "id": "VariableID:3:316"
+    },
+    {
+      "name": "space/40",
+      "id": "VariableID:3:317"
+    },
+    {
+      "name": "space/48",
+      "id": "VariableID:3:318"
+    },
+    {
+      "name": "radius/control",
+      "id": "VariableID:3:319"
+    }
+  ],
+  "styles": [
+    {
+      "name": "TrailPack/Title",
+      "id": "S:2f9fadbb0b317962df3472763d9acf9635a5e117,"
+    },
+    {
+      "name": "TrailPack/Heading",
+      "id": "S:ef9a225b045a08c16f273007dce035b60f067f66,"
+    },
+    {
+      "name": "TrailPack/Subheading",
+      "id": "S:e868dfa407f17cdc3a77c658687ebdcbcd9c8f82,"
+    },
+    {
+      "name": "TrailPack/Body",
+      "id": "S:ecc34de8767989cbf070533da8d6e68e1f7846b8,"
+    },
+    {
+      "name": "TrailPack/Label",
+      "id": "S:81426e0f21baf149e222ec3a97fb9243b565b196,"
+    },
+    {
+      "name": "TrailPack/Caption",
+      "id": "S:309d685c4bf2154ec95a13b693ca3b6e688ef302,"
+    }
+  ],
+  "mutatedNodeIds": [
+    "0:1"
+  ],
+  "createdNodeIds": []
+}

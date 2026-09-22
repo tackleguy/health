@@ -2,20 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/env";
 import type { PackTrail } from "@/lib/gear";
 
 export type UserPackTrail = PackTrail & { id: string };
 
 export function useUserTrails(userId: string) {
   const [trails, setTrails] = useState<UserPackTrail[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [message, setMessage] = useState<string | null>(() => isSupabaseConfigured() ? null : "Account trails are unavailable in this preview.");
 
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) {
-      setLoading(false);
-      setMessage("Supabase is not configured");
       return;
     }
     void (async () => {

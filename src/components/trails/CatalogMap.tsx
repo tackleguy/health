@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
-import type { CatalogTrail } from "@/lib/trail-catalog/types";
-import { CatalogMapView } from "./CatalogMapView";
+import { useState, type ReactNode } from "react";
+import type { CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
+import { CatalogExplorerMap } from "./CatalogExplorerMap";
 
-export function CatalogMap({ trails }: { trails:CatalogTrail[] }) {
-  const [open,setOpen] = useState(false);
-  return <div className="catalog-map-toggle">
-    <button type="button" className="catalog-link" aria-expanded={open} aria-controls="catalog-result-map" onClick={()=>setOpen(!open)}>{open ? "Hide map" : "Map these results"}</button>
-    {open && <div id="catalog-result-map"><p className="catalog-muted">Showing this page’s trail sections. Pins are points on trails, not verified trailheads.</p><CatalogMapView trails={trails} /></div>}
-  </div>;
+export function CatalogMap({ trails, mapData, query, summary, tools, children }: { trails: CatalogTrail[]; mapData: CatalogMapResult | null; query: string; summary: string; tools: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return <>
+    <div className="catalog-results-heading"><p role="status">{summary}</p><div>{tools}{trails.length > 0 && <button type="button" className="catalog-button secondary" aria-expanded={open} aria-controls="catalog-result-map" onClick={() => setOpen(!open)}>{open ? "Hide map" : "Map view"}</button>}</div></div>
+    {open && trails.length > 0 && <div id="catalog-result-map" className="catalog-result-map"><CatalogExplorerMap key={query} initialData={mapData} query={query} /></div>}
+    <div className="catalog-workspace">{children}</div>
+  </>;
 }

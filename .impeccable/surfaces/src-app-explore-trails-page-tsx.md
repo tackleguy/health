@@ -1,23 +1,41 @@
-# TrailPack catalog extension
+---
+version: 1
+slug: "src-app-explore-trails-page-tsx"
+primary_target: "src/app/explore/trails/page.tsx"
+related_targets: ["route:/explore/trails","src/components/trails/CatalogBrowser.tsx","src/components/trails/CatalogMap.tsx","src/components/trails/catalog.css"]
+---
 
-Mode: Operate. Scope: rename the active app to TrailPack and add a usable catalog of 90,000 U.S./Canadian public trail records. The user confirmed Canada and USA. This is a local data and browsing extension inside the incumbent application, not implementation of the earlier whole-app Fieldbook redesign.
+# /explore/trails surface brief
 
-THESIS: Search traceable trail sections, inspect their source and geometry, then prepare a complete trip.
+## Scope and authority
 
-OWN-WORLD: Inherit the shipped forest background (#141814), cream foreground (#f5f0e6), lime action (#c8f04a), Playfair headings and Inter controls. Secondary catalog text uses #bdc6b7 for readable contrast. Avoid invented ratings, images, elevations or route-completeness claims.
+Mode: Operate. The catalog now implements the approved Fieldbook design, using saved Figma Explore render `7:59` from file `TXdEs8S62B0WxXXLJqovWc`. Root `DESIGN.md` and `src/components/trails/DESIGN.md` describe the shipped system. This replaces the prior dark catalog presentation.
 
-STORY: Search and filter → compact trail rows → real section geometry/source details → planner with the region carried forward. Discovery sections never become an automatic full-route recommendation. Public source attribution and coverage are available beneath results.
+THESIS: Search traceable trail sections, inspect their source and geometry, then prepare a personal trip.
 
-FIRST VIEWPORT: Clear trail-search heading, truthful catalog size and scope, country/region/search controls, section count and results. Mobile stacks fields and rows, with the incumbent bottom navigation; the count sits above the results. Maps load only when requested in the list.
+OWN-WORLD: Light mineral workspace, evergreen navigation, Inter, forest actions, flat ruled results, and sage planning context.
 
-FORM: Narrow extension of an existing surface under Impeccable new-work section 3; no new visual-world roll or catalog comp is required. Earlier full-app mockups do not depict this catalog. Flat ruled rows replace repetitive cards and use tabular distances; one reversible map toggle reveals the selected page's mapped points. No ornamental animation beyond a short row hover; reduced motion disables it. The implemented planner DESIGN.md and globals.css are the visual authority for this extension.
+STORY: Search/filter → source-attributed sections → real geometry and details → planner. A labeled example request connects discovery with actual planning; a section does not automatically become a complete itinerary.
 
-Constraints: 90,000 unique source IDs after duplicate exclusions; these are trail sections, not 90,000 independent hikes. Canadian coverage is limited to the imported Parks Canada and Ontario sources. No Supabase credentials are configured, so this catalog is bundled server data. No changes to cloud user data or local planning-memory keys.
+FIRST VIEWPORT: Heading and catalog scope; a single-row search with a compact Filters disclosure for country, region, and distance; count, map action, and four ruled results; More trails continuation; planning context and source explanation. More trails requests the regular 24-record page and preserves filters. Applied filters remain visible in the collapsed disclosure summary. Mobile pairs country and region within the expanded panel, retains aligned distances, and moves the context below results; an earlier planning link keeps the next action reachable.
 
-Required review evidence: `.impeccable/review/catalog-desktop.png` (1280×900), `catalog-mobile.png` (390×844), `catalog-detail-map-mobile.png` and `catalog-map-mobile.png` (390×844). Map screenshots show actual source geometry, and the index/geometry integrity check covers all 90,000 records.
+FORM: Approved desktop Fieldbook composition adapted to the working catalog. Actual API state determines records, counts, pagination, empty states, and map geometry. Exact sizes and breakpoints belong in the scoped design record.
 
-## Validation
+## Trust and boundaries
 
-24 tests pass, including integrity of every catalog ID and geometry shard. The production build, TypeScript and scoped ESLint checks pass. Production HTTP checks verified country/region filters, pagination, empty search, global search, trail details, planner rendering, unknown-record 404s and a downloadable 90,000-record index. File tracing includes the pointer, index, manifest, and all 64 geometry shards.
+The bundled snapshot has 90,000 unique source trail-section records, not 90,000 independent hikes. Canadian coverage comes from imported Parks Canada and Ontario sources; U.S. records are a selection of USGS hiking sections. Source attribution, licenses, snapshot date, coverage, and download remain in the source disclosure. Estimated geometry distances are labeled. No fabricated photos, ratings, elevations, current conditions, or complete-route claims are introduced.
 
-The finish reviewer requested one mobile density correction. After pairing the location selects and reducing spacing, the 390×844 capture shows the first trail name and source context above the fixed navigation. The reviewer scored this fix resolved and returned `ship` for the scored fix, with no remaining findings.
+The reversible map disclosure uses actual returned record geometry. Detail links and filters retain the existing catalog services. A local checkout has no configured cloud credentials; no cloud user data or planning-memory keys changed for this visual implementation.
+
+## Evidence
+
+Current captures: `.impeccable/review/desktop.png`, `mobile.png`, and `user-788.png`. The finish verdict resolved the four-row first view, map-toolbar placement, and source explanation without visible clipping at mobile or the actual user viewport. Browser assertions verified four-record preview and 24-record continuation. `.impeccable/review/fieldbook-verification.md` records the passing 26-test suite, TypeScript, scoped ESLint, and production build. Saved Figma desktop renders remain the reference; fresh connector context and Figma mobile/prototype work remain quota-blocked.
+
+## Top-area refinement
+
+After the user reported “the top bar is bad,” the crowded search area was reduced to a 52px search row plus a 44px Filters disclosure. The 788×737 viewport now brings the first result about 165px higher. Clear filters is conditional on an active search. Current evidence is `topbar-after-desktop.png`, `topbar-after-mobile.png`, `topbar-after-user.png`, `topbar-filters-mobile.png`, and `topbar-filtered-mobile.png` in `.impeccable/review/`. Native keyboard disclosure, US/Colorado/2–10-mile filtering, query preservation, map expansion, and clearing filters were verified in the browser.
+
+
+## Production hardening
+
+The incremental production pass connects all catalog records to viewport maps, readable clusters, keyboard-selectable real geometry, GPX downloads and licensed nearby photos. The existing shell and search layout remain. See `.impeccable/review/production-verification.md` for implementation evidence, automated accessibility results and data/provider limitations.

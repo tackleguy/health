@@ -1,201 +1,201 @@
 ---
-name: TrailPack trip planner
-description: The implemented planner component system within the incumbent TrailPack shell.
+name: "TrailPack Fieldbook planner"
+description: "The implemented light trip planner, pack checklist, and guest equipment patterns."
 colors:
-  background: "#141814"
-  forest: "#0d120d"
-  surface: "#1e241e"
-  surface-elevated: "#272f27"
-  surface-muted: "#323a32"
-  cream: "#f5f0e6"
-  accent: "#c8f04a"
-  plan-muted: "#adb7a7"
-  plan-line: "#3d473a"
-  warning: "#f4cd9b"
+  background: "#f6f7f4"
+  foreground: "#18251f"
+  surface: "#ffffff"
+  surface-muted: "#e9efe9"
+  accent: "#245b47"
+  accent-dim: "#173f35"
+  sage: "#59665e"
+  border: "#d9e1d9"
+  warning: "#8b4415"
 typography:
   display:
-    fontFamily: "Playfair Display, Georgia, serif"
-    fontSize: "clamp(32px, 4.5vw, 52px)"
+    fontFamily: "Inter, sans-serif"
+    fontSize: "clamp(28px, 3vw, 40px)"
+    fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.025em"
   headline:
-    fontFamily: "Playfair Display, Georgia, serif"
-    fontSize: "27px"
+    fontFamily: "Inter, sans-serif"
+    fontSize: "24px"
+    fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "-0.02em"
   title:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "17px"
+    fontFamily: "Inter, sans-serif"
+    fontSize: "18px"
     fontWeight: 600
-    lineHeight: 1.35
+    lineHeight: 1.45
   body:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Inter, sans-serif"
     fontSize: "14px"
+    fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Inter, sans-serif"
+    fontSize: "14px"
+    fontWeight: 600
+    lineHeight: 1.4
+  caption:
+    fontFamily: "Inter, sans-serif"
     fontSize: "12px"
+    fontWeight: 400
+    lineHeight: 1.6
+  request:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "26px"
     fontWeight: 500
-  help:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "12px"
-    lineHeight: 1.65
+    lineHeight: 1.35
 rounded:
   field: "6px"
   control: "8px"
-  panel: "12px"
+  circle: "50%"
 spacing:
+  xs: "8px"
   small: "12px"
-  field-gap: "16px"
-  control-inline: "18px"
-  mobile-panel: "20px"
+  field: "16px"
+  compact: "20px"
   panel: "24px"
   section: "32px"
+  workspace: "48px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
-    textColor: "{colors.forest}"
+    textColor: "{colors.surface}"
     rounded: "{rounded.control}"
     padding: "11px 18px"
+  button-primary-hover:
+    backgroundColor: "{colors.accent-dim}"
+    textColor: "{colors.surface}"
   button-secondary:
-    backgroundColor: "{colors.surface-elevated}"
-    textColor: "{colors.cream}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.foreground}"
     rounded: "{rounded.control}"
     padding: "11px 18px"
+  context-panel:
+    backgroundColor: "{colors.surface-muted}"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.control}"
+    padding: "24px"
   input:
-    backgroundColor: "{colors.forest}"
-    textColor: "{colors.cream}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.foreground}"
     rounded: "{rounded.field}"
     padding: "11px 12px"
-  prompt-panel:
-    backgroundColor: "{colors.surface-elevated}"
-    textColor: "{colors.cream}"
-    rounded: "{rounded.panel}"
-    padding: "24px"
-  weight-panel:
+  workspace:
     backgroundColor: "{colors.surface}"
-    textColor: "{colors.cream}"
-    rounded: "{rounded.panel}"
-    padding: "22px"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.control}"
+    padding: "24px"
+  step-current:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.surface}"
+    rounded: "{rounded.circle}"
+    size: "32px"
 ---
 
-# Design System: TrailPack trip planner
+# Design System: TrailPack Fieldbook planner
 
 ## Overview
 
-**Creative North Star: "TrailPack trip planner"**
+**Creative North Star: "Fieldbook"**
 
-This records the built component boundary in `src/components/assistant`, rendered by `src/app/plan/page.tsx`. Its source of truth is `planner.css` and the assistant components, inheriting palette and font variables from `src/app/globals.css` and `src/app/layout.tsx`. The matching sidecar is `.impeccable/design.json` beside this file. Route strategy is recorded separately in the project’s `.impeccable/surfaces/` directory.
+The planner implements the approved Fieldbook world as a personal preparation workspace: a mineral page, white task pane, sage context, and clear forest actions. Inter replaces the previous serif typography. Its three numbered stages connect route choice, personal gear, and recording.
 
-The planner uses dark forest surfaces, cream text, and a lime action color. Playfair Display supplies the conversational headings and trip prompt; Inter carries labels, controls, explanations, and measured data. Most information sits directly on the page, organized by whitespace and dividing lines. Filled panels give the trip request and calculated weight distinct places in the hierarchy.
-
-This is documentation of an extension to the incumbent system, not a whole-app redesign. The Trailhead, Atlas, and Fieldbook mock directions remain unchosen and supply no authority here.
+This scoped record covers `TripPlanner.tsx`, `planner.css`, GearEditor, ProductLookup, and the guest Gear surface that reuses the planner styles. The root `DESIGN.md` is the shared visual authority. Surface behavior is recorded in `.impeccable/surfaces/src-app-plan-page-tsx.md` at the project root.
 
 **Key Characteristics:**
-- Forest tonal layers with lime actions and state cues.
-- Expressive serif headings paired with compact sans-serif controls.
-- Line-separated information with selectively filled panels.
-- Native disclosures, visible focus, and a responsive main column with supporting context.
+- White task workspace with a sage pack and memory sidebar.
+- Numbered stages and persistent trip context.
+- Ruled gear rows, tabular weights, and explicit incomplete totals.
+- Device-save status and optional model controls disclosed in place.
 
 ## Colors
 
-The inherited palette is forest and cream; the planner adds a brighter muted text color and a more visible line color for dense information. Sidecar tonal ramps are synthesized preview aids, not additional production tokens.
-
 ### Primary
 
-- **Lime accent** (`accent`): primary buttons, links, selected route titles, current step underline, progress, checkboxes, success notices, and focus outlines.
+- **Forest action** (`accent`): buttons, links, current step, checkboxes, progress, and focus.
+- **Evergreen hover** (`accent-dim`): primary-action hover; the shared rail belongs to the root system.
 
 ### Neutral
 
-- **Forest background** (`background`, `forest`): page ground and deeper input wells.
-- **Forest surface layers** (`surface`, `surface-elevated`, `surface-muted`): weight summary, request panel and secondary controls, and progress tracks.
-- **Warm cream** (`cream`): main text and active step labels.
-- **Readable muted sage** (`plan-muted`): secondary information, units, hints, and empty-state explanations.
-- **Forest divider** (`plan-line`): field boundaries, row separators, and disclosure rules.
+- **Mineral** (`background`), **white workspace** (`surface`), and **sage wash** (`surface-muted`): page, task, and supporting context.
+- **Charcoal green** (`foreground`): main text; the legacy `cream` utility resolves to the same foreground.
+- **Muted sage** (`sage`): help, units, save status, and local-model information. Planner muted and line aliases resolve to the shared sage and border tokens.
+- **Soft rule** (`border`): rows, fields, disclosures, and summary breakdowns.
 
-### Functional status
+### Status
 
-- **Warm warning** (`warning`): incomplete weights, possible duplicate supplies, and data-availability messages. Status meaning is also written in text.
+- **Warm warning** (`warning`): missing weights and incomplete data, always accompanied by text.
 
-**The Text Carries State Rule.** Selection, missing values, model state, and incomplete totals are named in text; color reinforces the message.
+**The Text Carries State Rule.** Missing weights, unsaved edits, local persistence, and model status are stated explicitly.
 
 ## Typography
 
-**Display Font:** Playfair Display with Georgia and serif fallbacks.
+**Display Font:** Inter with sans-serif fallback.
 
-**Body Font:** Inter with system-ui and sans-serif fallbacks.
+**Body Font:** Inter with sans-serif fallback.
 
-The serif is reserved for the main heading, stage headings, route names, and the natural-language trip request. Sans-serif text carries operational detail. Use sentence case for planner headings and controls.
+The large trip request uses (26px) Inter at weight (500) and line height (1.35), reducing to (23px) on mobile. Route names use (24px) semibold; the route-results heading is deliberately smaller at (18px), placing the actual route first. The main heading uses the responsive frontmatter size and reduces to (28px) below (768px). Stage headings use (24px), reducing to (22px) on mobile. Body copy is (14px); hints are (13px). Standard form fields become (16px) at (1000px) and below.
 
-The frontmatter records the principal roles. Stage headings reduce to (25px) on narrow screens. The request textarea uses (26px), reducing to (23px) on narrow screens; standard fields increase to (16px) on narrow screens. Route statistics use a medium-weight numeric treatment, while the calculated weight is the dominant number in its panel. Paragraphs are capped at (72ch).
-
-**The Measured Numbers Rule.** Weights, route statistics, numeric fields, and account-context counts use tabular numerals so comparisons stay aligned.
+**The Measured Numbers Rule.** Pack totals, route statistics, numeric inputs, and memory counts use tabular numerals.
 
 ## Layout
 
-The planner has a centered shell with a maximum width of (1240px), desktop side padding of (32px), and bottom padding of (64px). Its desktop grid pairs a flexible workspace with a (300px) context column and a (48px) gap. At a maximum viewport width of (1050px), the context column becomes (260px), the gap becomes (28px), and side padding becomes (24px).
+The shell caps at (1500px), with final top padding (24px), left inset (48px), right inset (32px), and bottom padding (64px). The desktop workspace uses `minmax(0, 1.87fr) minmax(290px, 1fr)` and a (24px) gap. At (1100px), side padding becomes (24px), the supporting column (290px), and the gap (20px). At (1000px), columns stack and the shell uses (20px) side padding. Mobile shell padding is (24px 20px 40px).
 
-At a maximum viewport width of (760px), the workspace and supporting context stack in document order with (20px) side padding. The context area gains a top rule. Prompt actions stack; the primary prompt button fills the width. Stage navigation remains a row of three equal buttons with the number above the label. Packing zones become one column, and inline research forms stack. General paired fields retain two columns; preferences and saved-trip feedback use one column.
+Task and context panes use (24px) padding and (8px) corners, reducing to (20px) padding below (768px). Numbered stages remain a row; mobile puts each number above its label. On a selected route, the illustrated banner precedes the stages, with actual route distance, requested days, and chosen or undecided dates below it. The banner is (222px) high on desktop and (180px) on mobile.
 
-The inherited app shell switches navigation at Tailwind’s (768px) breakpoint. Below it, the fixed six-link bottom navigation remains visible, respects the device safe area, and is accommodated by the main element’s (96px) bottom padding. The planner’s responsive boundary and the app shell’s navigation boundary are intentionally documented separately.
+Packing handoff and checklist-export actions appear directly after the summary weight breakdown. Detailed guidance follows. Gear rows and checkbox labels wrap on mobile, with secondary details below the item rather than pushing the workspace wider.
 
 ## Elevation & Depth
 
-Planner content is flat: filled forest layers and thin dividers carry hierarchy without component shadows. The shared app shell retains its existing translucent dark navigation and accent glow on prominent shared controls. Those inherited effects do not make planner rows or panels floating cards.
-
-**The Line-Separated Content Rule.** Routes, equipment, source results, saved trips, and packing zones are separated with spacing and rules; filled panels emphasize the request and weight calculation.
+White workspace and sage sidebar establish depth without shadows. Rules separate equipment, disclosures, and weight rows. Primary buttons transition background over (150ms); reduced motion disables transitions and animation. Focus is a (2px) forest outline offset (4px); focused stage headings use a (6px) offset.
 
 ## Shapes
 
-Fields use the small field radius, action buttons use the control radius, and the two primary filled panel types use the panel radius from the frontmatter. Most lists are open rows with bottom borders. Progress is a shallow rounded track. Native disclosure markers remain visible. The shared mobile recorder action retains its circular silhouette.
+Task panes, buttons, and banner use (8px) corners. Standard fields retain (6px); the large request textarea is borderless and square. Current-stage numbers occupy (32px) circles, reducing to (28px) on mobile. Checkboxes use native semantics and the forest accent.
 
 ## Components
 
 ### Buttons
 
-Primary actions are compact lime controls with dark text; secondary actions use the elevated forest surface, cream text, and a divider-colored border. Both use a minimum height of (44px). Hover changes the background, and disabled buttons reduce opacity to (0.5) with a disabled cursor. Planner text actions use lime and underline on hover.
+Forest primary buttons have white text, (48px) minimum height, (11px 18px) padding, and weight (650). White secondary buttons use charcoal text and a neutral border. Links remain forest and gain an underline on hover. Generic disabled buttons dim; unavailable stage buttons retain readable text and disabled semantics.
 
 ### Inputs / Fields
 
-Persistent labels sit above dark input wells. Standard inputs, selects, and textareas share a thin divider-colored border; the trip request is a larger serif textarea with a transparent interior. Placeholders and supporting text use muted sage. Native number, date, URL, checkbox, and select behavior is preserved. Unknown numeric values can remain empty and are explained in text.
-
-### Cards / Containers
-
-The request panel groups the prompt and its action footer. The weight panel contains the main carried weight and a breakdown of base gear, supplies, and separately worn weight. It changes from a horizontal arrangement to a vertical arrangement at the intermediate breakpoint. Neither planner panel uses a shadow.
-
-### Disclosures
-
-Native `details` and `summary` reveal supporting forms and research. Summary labels are semibold, separated from surrounding content by rules. The disclosure opens with a clear gap beneath its summary. Empty or incomplete workflow areas can open automatically so required input is visible.
-
-Forgetting local memory uses an inline confirmation group within Privacy & memory, with explicit Confirm forget and Keep my data actions. The destructive choice is named in text before the data is removed.
+White fields use a soft border, muted placeholders, and a visible label. The prompt textarea has a (140px) minimum height; its example and Build my trip controls sit below a rule. Trip details, supplies, equipment editing, preferences, source research, and model controls use native disclosures.
 
 ### Navigation
 
-Three equal step buttons show numbers and labels. The current step uses cream text and a lime underline and declares `aria-current="step"`. Moving to a stage places programmatic focus on its heading (`tabIndex="-1"`), with a visible lime focus outline and scroll clearance for the sticky header. This keeps keyboard position connected to the changed content.
+Choose a trail → Prepare your pack → Record your outing uses numbered circles, `aria-current="step"`, and programmatic focus on the stage heading after changes. Inactive steps use sage numbers; the current step is forest with a white numeral.
 
-The inherited desktop shell contains Plan alongside the other app destinations. Its mobile counterpart provides Plan, Explore, Map, Record, Log, and Profile. The raised circular Record action is inherited shell treatment, not a planner button variant.
+### Cards / Containers
 
-### Lists and progress
+The task pane is white and the supporting pack/memory pane is sage. The summary displays known gear, worn items, consumables, and missing inputs distinctly. Its dominant total is (32px); it never silently substitutes a complete pack weight for an incomplete one.
 
-Equipment rows place the checkbox and item name together, followed by weight and an Edit action. Item names can wrap; numeric weights remain on one line. Packing checklist labels remain associated with native checkboxes. Progress uses a lime fill against the muted forest track, with an adjacent written count and an accessible name.
+### Packing rows and saved plans
 
-### Focus and motion
+The grouped checklist tracks packed state and progress. Inline equipment editing, restored plans, saved-plan updates, and visible Unsaved changes/Saved on this device status keep preparation reviewable. Guest Gear uses the same guest storage as the planner; signed-in account memories remain separate. Optional model activation and download state stay disclosed; deterministic parsing, matching, and arithmetic work without the model.
 
-Interactive planner elements receive a (2px) lime focus outline offset by (4px). Stage headings use a (6px) offset. Button background transitions last (150ms). The planner disables transitions and animations under reduced-motion preferences; it does not add entrance animation or scrolling effects.
+### Planning illustration
+
+The banner crops the original approved generated composition at `public/images/fieldbook/planning-landscape.png`. Visible text says Planning illustration; accessible text explicitly distinguishes it from a route photograph. Keep the embedded and adjacent provenance intact. Do not substitute generated scenery as a factual route preview.
 
 ## Do's and Don'ts
 
 ### Do:
-
-- **Do** inherit the forest, cream, lime, Playfair Display, and Inter system within this planner boundary.
-- **Do** use line-separated rows for repeated information and filled panels for the request and weight summary.
-- **Do** pair color states with text and retain visible keyboard focus.
-- **Do** preserve tabular numerals for measured data and allow item names and source titles to wrap.
-- **Do** retain the stacked mobile workflow and space for the inherited bottom navigation.
+- Do place the route name before difficulty and distance-to-target metadata.
+- Do keep the pack summary and recording/export actions prominent.
+- Do disclose missing weights and identify browser-local save state.
+- Do preserve separate guest and account memory scopes.
+- Do keep optional model activation explicit and the ordinary planner usable without it.
 
 ### Don't:
-
-- **Don't** treat unchosen redesign mockups as approved system direction.
-- **Don't** promote this scoped component specification into evidence that the whole app was redesigned.
-- **Don't** remove native disclosure, field, checkbox, or progress semantics when extending these components.
-- **Don't** replace written incomplete, unknown, or local-storage states with color alone.
+- Don't bring back forest planning backgrounds, lime buttons, or Playfair headings.
+- Don't invent equipment weights, trip history, or current route conditions.
+- Don't claim that preparing a checklist export confirms a file was delivered.
+- Don't label the generated landscape as a photograph of the selected trail.

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/env";
 import type { GearCategory, GearItem, GearType } from "@/lib/gear";
 
 function mapGear(row: Record<string, unknown>): GearItem {
@@ -19,29 +20,22 @@ function mapGear(row: Record<string, unknown>): GearItem {
 
 export function useGear(userId: string) {
   const [gear, setGear] = useState<GearItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchGear = useCallback(async () => {
-    const supabase = createClient();
-    if (!supabase) {
-      setError("Supabase is not configured");
-      setLoading(false);
-      return;
-    }
-    const { data, error: err } = await supabase
-      .from("gear_items")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at");
-    if (err) setError(err.message);
-    else setGear((data ?? []).map(mapGear));
-    setLoading(false);
-  }, [userId]);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [error, setError] = useState<string | null>(() => isSupabaseConfigured() ? null : "Account gear is unavailable in this preview.");
 
   useEffect(() => {
-    void fetchGear();
-  }, [fetchGear]);
+    const supabase = createClient();
+    if (!supabase) return;
+    let active = true;
+    void supabase.from("gear_items").select("*").eq("user_id", userId).order("created_at")
+      .then(({ data, error: failure }) => {
+        if (!active) return;
+        setError(failure?.message ?? null);
+        if (!failure) setGear((data ?? []).map(mapGear));
+        setLoading(false);
+      });
+    return () => { active = false; };
+  }, [userId]);
 
   const addGear = async (item: Omit<GearItem, "id">) => {
     const supabase = createClient();

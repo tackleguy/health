@@ -61,25 +61,34 @@ export const ZONE_GUIDANCE: Record<PackingZone, string> = {
   "Top / quick access": "Keep layers, navigation, first aid, lighting, and other on-trail items reachable without unpacking.",
   Worn: "These items are worn or carried outside the pack and are excluded from loaded-pack weight.",
 };
+/** A missing or invalid quantity cannot silently turn into a known item weight. */
+export function gearWeightOz(gear: PlannerGear): number | null {
+  if (gear.weightOz == null || !Number.isFinite(gear.weightOz) || gear.weightOz <= 0 || !Number.isInteger(gear.qty) || gear.qty < 1) return null;
+  const weight = gear.weightOz * gear.qty;
+  return Number.isFinite(weight) ? weight : null;
+}
 export function packReport(gear: PlannerGear[], request: TripRequest, targetLb: number | null) {
   let baseOz = 0, wornOz = 0, consumableOz = 0;
   const unknown: string[] = [];
   for (const g of gear) {
-    if (g.weightOz == null || !Number.isFinite(g.weightOz) || g.weightOz <= 0) { unknown.push(g.name); continue; }
-    const weight = g.weightOz * g.qty;
+    const weight = gearWeightOz(g);
+    if (weight === null) { unknown.push(g.name); continue; }
     if (g.type === "Base") baseOz += weight;
     else if (g.type === "Worn") wornOz += weight;
     else consumableOz += weight;
   }
-  const extraFoodOz = request.suppliesInGear ? 0 : (request.foodOzPerDay ?? 0) * (request.days ?? 0);
-  const extraWaterOz = request.suppliesInGear ? 0 : (request.waterLiters ?? 0) * 35.274;
-  const extraFuelOz = request.suppliesInGear ? 0 : request.fuelOz ?? 0;
+  const amount = (value: number | null) => value !== null && Number.isFinite(value) && value >= 0 ? value : null;
+  const days = request.days !== null && Number.isInteger(request.days) && request.days > 0 ? request.days : null;
+  const food = amount(request.foodOzPerDay), water = amount(request.waterLiters), fuel = amount(request.fuelOz);
+  const extraFoodOz = request.suppliesInGear ? 0 : (food ?? 0) * (days ?? 0);
+  const extraWaterOz = request.suppliesInGear ? 0 : (water ?? 0) * 35.274;
+  const extraFuelOz = request.suppliesInGear ? 0 : fuel ?? 0;
   const suppliesOz = consumableOz + extraFoodOz + extraWaterOz + extraFuelOz;
   const loadedLb = (baseOz + suppliesOz) / 16;
-  const missingSupplies = request.suppliesInGear ? [] : [request.foodOzPerDay === null ? "food allowance" : "", request.waterLiters === null ? "water carry" : "", request.fuelOz === null ? "fuel allowance (enter 0 if none)" : ""].filter(Boolean);
-  return { baseLb: baseOz/16, wornLb: wornOz/16, suppliesLb: suppliesOz/16, loadedLb, unknown, missingSupplies,
-    complete: gear.length > 0 && !unknown.length && !missingSupplies.length && request.days !== null,
-    targetLb, baseBudgetLb: targetLb == null || missingSupplies.length > 0 ? null : targetLb - suppliesOz/16,
+  const missingSupplies = request.suppliesInGear ? [] : [food === null ? "food allowance" : "", days === null ? "trip days for food calculation" : "", water === null ? "water carry" : "", fuel === null ? "fuel allowance (enter 0 if none)" : ""].filter(Boolean);
+  return { baseLb: baseOz/16, wornLb: wornOz/16, suppliesLb: suppliesOz/16, loadedLb, unknown, missingSupplies, consumableOz, extraFoodOz, extraWaterOz, extraFuelOz,
+    complete: gear.length > 0 && !unknown.length && !missingSupplies.length && days !== null,
+    targetLb, baseBudgetLb: targetLb == null || missingSupplies.length > 0 || gear.some(g => g.type === "Consumable" && gearWeightOz(g) === null) ? null : targetLb - suppliesOz/16,
     overTarget: targetLb != null && loadedLb > targetLb,
     duplicateSupplies: !request.suppliesInGear && consumableOz > 0 && (extraFoodOz > 0 || extraWaterOz > 0 || extraFuelOz > 0),
   };

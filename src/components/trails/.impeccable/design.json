@@ -1,361 +1,269 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-22T00:15:25.004Z",
-  "title": "Design System: TrailPack Trail Catalog",
+  "generatedAt": "2026-09-22T02:08:00.434478+00:00",
+  "title": "Design System: TrailPack Fieldbook catalog",
   "extensions": {
     "colorMeta": {
       "background": {
         "role": "neutral",
-        "displayName": "Forest ground",
+        "displayName": "Background",
         "tonalRamp": [
-          "oklch(15% 0.0099 145.20)",
-          "oklch(26.43% 0.0099 145.20)",
-          "oklch(37.86% 0.0099 145.20)",
-          "oklch(49.29% 0.0099 145.20)",
-          "oklch(60.71% 0.0099 145.20)",
-          "oklch(72.14% 0.0099 145.20)",
-          "oklch(83.57% 0.0099 145.20)",
-          "oklch(95% 0.0099 145.20)"
+          "oklch(15% 0.0041 121.6)",
+          "oklch(26% 0.0041 121.6)",
+          "oklch(38% 0.0041 121.6)",
+          "oklch(49% 0.0041 121.6)",
+          "oklch(61% 0.0041 121.6)",
+          "oklch(72% 0.0041 121.6)",
+          "oklch(84% 0.0041 121.6)",
+          "oklch(95% 0.0041 121.6)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0213 164.6)",
+          "oklch(26% 0.0213 164.6)",
+          "oklch(38% 0.0213 164.6)",
+          "oklch(49% 0.0213 164.6)",
+          "oklch(61% 0.0213 164.6)",
+          "oklch(72% 0.0213 164.6)",
+          "oklch(84% 0.0213 164.6)",
+          "oklch(95% 0.0213 164.6)"
         ]
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Forest surface",
+        "displayName": "Surface",
         "tonalRamp": [
-          "oklch(15% 0.0141 145.14)",
-          "oklch(26.43% 0.0141 145.14)",
-          "oklch(37.86% 0.0141 145.14)",
-          "oklch(49.29% 0.0141 145.14)",
-          "oklch(60.71% 0.0141 145.14)",
-          "oklch(72.14% 0.0141 145.14)",
-          "oklch(83.57% 0.0141 145.14)",
-          "oklch(95% 0.0141 145.14)"
-        ]
-      },
-      "surface-elevated": {
-        "role": "neutral",
-        "displayName": "Raised forest tone",
-        "tonalRamp": [
-          "oklch(15% 0.0181 145.10)",
-          "oklch(26.43% 0.0181 145.10)",
-          "oklch(37.86% 0.0181 145.10)",
-          "oklch(49.29% 0.0181 145.10)",
-          "oklch(60.71% 0.0181 145.10)",
-          "oklch(72.14% 0.0181 145.10)",
-          "oklch(83.57% 0.0181 145.10)",
-          "oklch(95% 0.0181 145.10)"
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(49% 0.0000 89.9)",
+          "oklch(61% 0.0000 89.9)",
+          "oklch(72% 0.0000 89.9)",
+          "oklch(84% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
         ]
       },
       "surface-muted": {
         "role": "neutral",
-        "displayName": "Muted forest tone",
+        "displayName": "Surface Muted",
         "tonalRamp": [
-          "oklch(15% 0.0175 145.18)",
-          "oklch(26.43% 0.0175 145.18)",
-          "oklch(37.86% 0.0175 145.18)",
-          "oklch(49.29% 0.0175 145.18)",
-          "oklch(60.71% 0.0175 145.18)",
-          "oklch(72.14% 0.0175 145.18)",
-          "oklch(83.57% 0.0175 145.18)",
-          "oklch(95% 0.0175 145.18)"
-        ]
-      },
-      "cream": {
-        "role": "neutral",
-        "displayName": "Warm cream",
-        "tonalRamp": [
-          "oklch(15% 0.0143 84.58)",
-          "oklch(26.43% 0.0143 84.58)",
-          "oklch(37.86% 0.0143 84.58)",
-          "oklch(49.29% 0.0143 84.58)",
-          "oklch(60.71% 0.0143 84.58)",
-          "oklch(72.14% 0.0143 84.58)",
-          "oklch(83.57% 0.0143 84.58)",
-          "oklch(95% 0.0143 84.58)"
-        ]
-      },
-      "forest": {
-        "role": "neutral",
-        "displayName": "Deep forest",
-        "tonalRamp": [
-          "oklch(15% 0.0129 145.00)",
-          "oklch(26.43% 0.0129 145.00)",
-          "oklch(37.86% 0.0129 145.00)",
-          "oklch(49.29% 0.0129 145.00)",
-          "oklch(60.71% 0.0129 145.00)",
-          "oklch(72.14% 0.0129 145.00)",
-          "oklch(83.57% 0.0129 145.00)",
-          "oklch(95% 0.0129 145.00)"
+          "oklch(15% 0.0102 145.5)",
+          "oklch(26% 0.0102 145.5)",
+          "oklch(38% 0.0102 145.5)",
+          "oklch(49% 0.0102 145.5)",
+          "oklch(61% 0.0102 145.5)",
+          "oklch(72% 0.0102 145.5)",
+          "oklch(84% 0.0102 145.5)",
+          "oklch(95% 0.0102 145.5)"
         ]
       },
       "accent": {
         "role": "primary",
-        "displayName": "Lime action",
+        "displayName": "Accent",
         "tonalRamp": [
-          "oklch(15% 0.1907 122.16)",
-          "oklch(26.43% 0.1907 122.16)",
-          "oklch(37.86% 0.1907 122.16)",
-          "oklch(49.29% 0.1907 122.16)",
-          "oklch(60.71% 0.1907 122.16)",
-          "oklch(72.14% 0.1907 122.16)",
-          "oklch(83.57% 0.1907 122.16)",
-          "oklch(95% 0.1907 122.16)"
+          "oklch(15% 0.0675 166.5)",
+          "oklch(26% 0.0675 166.5)",
+          "oklch(38% 0.0675 166.5)",
+          "oklch(49% 0.0675 166.5)",
+          "oklch(61% 0.0675 166.5)",
+          "oklch(72% 0.0675 166.5)",
+          "oklch(84% 0.0675 166.5)",
+          "oklch(95% 0.0675 166.5)"
         ]
       },
-      "accent-hover": {
+      "accent-dim": {
         "role": "primary",
-        "displayName": "Lime hover",
+        "displayName": "Accent Dim",
         "tonalRamp": [
-          "oklch(15% 0.1636 121.56)",
-          "oklch(26.43% 0.1636 121.56)",
-          "oklch(37.86% 0.1636 121.56)",
-          "oklch(49.29% 0.1636 121.56)",
-          "oklch(60.71% 0.1636 121.56)",
-          "oklch(72.14% 0.1636 121.56)",
-          "oklch(83.57% 0.1636 121.56)",
-          "oklch(95% 0.1636 121.56)"
+          "oklch(15% 0.0486 174.3)",
+          "oklch(26% 0.0486 174.3)",
+          "oklch(38% 0.0486 174.3)",
+          "oklch(49% 0.0486 174.3)",
+          "oklch(61% 0.0486 174.3)",
+          "oklch(72% 0.0486 174.3)",
+          "oklch(84% 0.0486 174.3)",
+          "oklch(95% 0.0486 174.3)"
         ]
       },
-      "catalog-muted": {
+      "sage": {
         "role": "neutral",
-        "displayName": "Pale sage",
+        "displayName": "Sage",
         "tonalRamp": [
-          "oklch(15% 0.0229 132.57)",
-          "oklch(26.43% 0.0229 132.57)",
-          "oklch(37.86% 0.0229 132.57)",
-          "oklch(49.29% 0.0229 132.57)",
-          "oklch(60.71% 0.0229 132.57)",
-          "oklch(72.14% 0.0229 132.57)",
-          "oklch(83.57% 0.0229 132.57)",
-          "oklch(95% 0.0229 132.57)"
+          "oklch(15% 0.0203 158.6)",
+          "oklch(26% 0.0203 158.6)",
+          "oklch(38% 0.0203 158.6)",
+          "oklch(49% 0.0203 158.6)",
+          "oklch(61% 0.0203 158.6)",
+          "oklch(72% 0.0203 158.6)",
+          "oklch(84% 0.0203 158.6)",
+          "oklch(95% 0.0203 158.6)"
         ]
       },
-      "field-border": {
+      "border": {
         "role": "neutral",
-        "displayName": "Field edge",
+        "displayName": "Border",
         "tonalRamp": [
-          "oklch(15% 0.0292 134.44)",
-          "oklch(26.43% 0.0292 134.44)",
-          "oklch(37.86% 0.0292 134.44)",
-          "oklch(49.29% 0.0292 134.44)",
-          "oklch(60.71% 0.0292 134.44)",
-          "oklch(72.14% 0.0292 134.44)",
-          "oklch(83.57% 0.0292 134.44)",
-          "oklch(95% 0.0292 134.44)"
-        ]
-      },
-      "placeholder": {
-        "role": "neutral",
-        "displayName": "Placeholder sage",
-        "tonalRamp": [
-          "oklch(15% 0.0314 134.45)",
-          "oklch(26.43% 0.0314 134.45)",
-          "oklch(37.86% 0.0314 134.45)",
-          "oklch(49.29% 0.0314 134.45)",
-          "oklch(60.71% 0.0314 134.45)",
-          "oklch(72.14% 0.0314 134.45)",
-          "oklch(83.57% 0.0314 134.45)",
-          "oklch(95% 0.0314 134.45)"
+          "oklch(15% 0.0138 145.5)",
+          "oklch(26% 0.0138 145.5)",
+          "oklch(38% 0.0138 145.5)",
+          "oklch(49% 0.0138 145.5)",
+          "oklch(61% 0.0138 145.5)",
+          "oklch(72% 0.0138 145.5)",
+          "oklch(84% 0.0138 145.5)",
+          "oklch(95% 0.0138 145.5)"
         ]
       },
       "border-strong": {
         "role": "neutral",
-        "displayName": "Quiet rule",
+        "displayName": "Border Strong",
         "tonalRamp": [
-          "oklch(15% 0.0000 89.88 / 0.12)",
-          "oklch(26.43% 0.0000 89.88 / 0.12)",
-          "oklch(37.86% 0.0000 89.88 / 0.12)",
-          "oklch(49.29% 0.0000 89.88 / 0.12)",
-          "oklch(60.71% 0.0000 89.88 / 0.12)",
-          "oklch(72.14% 0.0000 89.88 / 0.12)",
-          "oklch(83.57% 0.0000 89.88 / 0.12)",
-          "oklch(95% 0.0000 89.88 / 0.12)"
-        ]
-      },
-      "map-green": {
-        "role": "primary",
-        "displayName": "Map green",
-        "tonalRamp": [
-          "oklch(15% 0.0826 151.64)",
-          "oklch(26.43% 0.0826 151.64)",
-          "oklch(37.86% 0.0826 151.64)",
-          "oklch(49.29% 0.0826 151.64)",
-          "oklch(60.71% 0.0826 151.64)",
-          "oklch(72.14% 0.0826 151.64)",
-          "oklch(83.57% 0.0826 151.64)",
-          "oklch(95% 0.0826 151.64)"
+          "oklch(15% 0.0182 148.1)",
+          "oklch(26% 0.0182 148.1)",
+          "oklch(38% 0.0182 148.1)",
+          "oklch(49% 0.0182 148.1)",
+          "oklch(61% 0.0182 148.1)",
+          "oklch(72% 0.0182 148.1)",
+          "oklch(84% 0.0182 148.1)",
+          "oklch(95% 0.0182 148.1)"
         ]
       }
     },
     "typographyMeta": {
       "display": {
-        "displayName": "Page title",
-        "purpose": "Catalog and trail-detail titles; fluid sizing and balanced wrapping."
+        "displayName": "Display",
+        "purpose": "Page and trip headings."
       },
       "headline": {
-        "displayName": "Detail section heading",
-        "purpose": "Planning and source-information sections."
+        "displayName": "Headline",
+        "purpose": "Task and context headings."
       },
       "title": {
-        "displayName": "Trail title",
-        "purpose": "Result names and secondary headings."
+        "displayName": "Title",
+        "purpose": "Rows and subsection titles."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Explanatory prose, with a maximum measure of 72ch."
-      },
-      "supporting": {
-        "displayName": "Supporting text",
-        "purpose": "Descriptions, geography, result status, and pagination."
+        "purpose": "Operational copy."
       },
       "label": {
-        "displayName": "Field and fact label",
-        "purpose": "Native form labels and detail fact names."
+        "displayName": "Label",
+        "purpose": "Controls and labels."
       },
-      "metadata": {
-        "displayName": "Row metadata",
-        "purpose": "Source, section classification, country, and distance basis."
-      },
-      "button": {
-        "displayName": "Action",
-        "purpose": "Semibold primary and secondary actions."
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Supporting state and units."
       }
     },
     "shadows": [
       {
         "name": "map-label",
         "value": "0 2px 5px #0003",
-        "purpose": "Legibility of point labels over the basemap; catalog panels and rows remain flat."
+        "purpose": "Source geometry marker label legibility."
       }
     ],
     "motion": [
       {
-        "name": "row-hover",
-        "value": "background 160ms ease-out",
-        "purpose": "Subtle result hover; disabled by prefers-reduced-motion: reduce."
-      },
-      {
-        "name": "map-fit",
-        "value": "0ms",
-        "purpose": "Bounds fit without animated camera travel."
+        "name": "background-state",
+        "value": "160ms ease-out",
+        "purpose": "Background transitions; reduced-motion preferences remove them."
       }
     ],
     "breakpoints": [
       {
-        "name": "catalog-compact",
-        "value": "800px"
+        "name": "mobile",
+        "value": "767px"
       },
       {
-        "name": "catalog-mobile",
+        "name": "stack-workspace",
+        "value": "1000px"
+      },
+      {
+        "name": "compact-catalog",
+        "value": "1199px"
+      },
+      {
+        "name": "detail-stack",
         "value": "560px"
       }
     ]
   },
   "components": [
     {
-      "name": "Primary action",
+      "name": "Primary button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Search and regional trip preparation, with a 46px minimum height.",
-      "html": "<button class=\"ds-primary\" type=\"button\">Find trails</button>",
-      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 18px;border:0;border-radius:6px;font:600 1rem/1.5 var(--font-inter, Inter), system-ui, sans-serif;cursor:pointer;text-decoration:none;background:var(--accent,#c8f04a);color:var(--forest,#0d120d)}.ds-primary:hover{background:#d8fa75}.ds-primary:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:5px;}"
+      "description": "Shared forest action with evergreen hover.",
+      "html": "<button class=\"ds-primary\">Plan this trip</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border:1px solid transparent;border-radius:8px;padding:10px 20px;background:var(--accent,#245b47);color:#fff;font-size:14px;font-weight:600;line-height:1.4;font-family:var(--font-inter,Inter,sans-serif);cursor:pointer;transition:background-color 160ms ease-out}.ds-primary:hover{background:var(--accent-dim,#173f35)}.ds-primary:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}.ds-primary:disabled{cursor:not-allowed;opacity:.5}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
     },
     {
-      "name": "Secondary action",
+      "name": "Secondary button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Previous and next page actions.",
-      "html": "<a class=\"ds-secondary\" href=\"#next-page\">Next</a>",
-      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 18px;border:0;border-radius:6px;font:600 1rem/1.5 var(--font-inter, Inter), system-ui, sans-serif;cursor:pointer;text-decoration:none;background:var(--surface-elevated,#272f27);color:var(--cream,#f5f0e6)}.ds-secondary:hover{background:var(--surface-muted,#323a32)}.ds-secondary:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:5px;}@media(max-width:560px){.ds-secondary{padding-inline:12px}}"
+      "description": "White supporting action with a neutral border.",
+      "html": "<button class=\"ds-secondary\">More trails</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border:1px solid var(--border,#d9e1d9);border-radius:8px;padding:10px 20px;background:var(--surface,#fff);color:var(--accent,#245b47);font-size:14px;font-weight:600;line-height:1.4;font-family:var(--font-inter,Inter,sans-serif);cursor:pointer;transition:background-color 160ms ease-out}.ds-secondary:hover{background:var(--surface-muted,#e9efe9)}.ds-secondary:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-secondary{transition:none}}"
     },
     {
-      "name": "Search field",
+      "name": "Labeled filter field",
       "kind": "input",
-      "refersTo": "field",
-      "description": "Visible native label, high-contrast edge, and 46px field.",
-      "html": "<div class=\"ds-search-wrap\"><label class=\"ds-search\">Search<input type=\"search\" maxlength=\"180\" placeholder=\"Trail, state or province\"></label></div>",
-      "css": ".ds-search-wrap{padding:16px;background:var(--surface,#1e241e);border-radius:12px}.ds-search{display:flex;flex-direction:column;gap:8px;color:var(--cream,#f5f0e6);font:.85rem/1.5 var(--font-inter, Inter), system-ui, sans-serif}.ds-search input{width:100%;min-width:0;height:46px;background:var(--background,#141814);color:var(--cream,#f5f0e6);border:1px solid #65705f;border-radius:6px;padding:0 12px;font:1rem/1.5 var(--font-inter, Inter), system-ui, sans-serif;caret-color:var(--accent,#c8f04a);}.ds-search input::placeholder{color:#aebba7}.ds-search input:focus{outline:2px solid var(--accent,#c8f04a);outline-offset:2px}"
+      "refersTo": "input",
+      "description": "A visibly labeled 44px field in the native Filters disclosure; the main search field is 52px high.",
+      "html": "<label class=\"ds-field\">Minimum miles<input type=\"number\" min=\"0\" placeholder=\"Any\"></label>",
+      "css": ".ds-field{display:grid;gap:8px;color:var(--foreground,#18251f);font-size:14px;font-family:var(--font-inter,Inter,sans-serif);}.ds-field input{min-width:0;height:44px;border:1px solid var(--border,#d9e1d9);border-radius:8px;padding:0 12px;background:var(--surface,#fff);color:var(--foreground,#18251f);font:inherit;font-size:16px;caret-color:var(--accent,#245b47)}.ds-field input::placeholder{color:var(--sage,#59665e)}.ds-field input:focus{outline:2px solid var(--accent,#245b47);outline-offset:2px}"
     },
     {
-      "name": "Paired location fields",
-      "kind": "input",
-      "refersTo": "field",
-      "description": "Country and state/province retain two shrinkable columns on mobile.",
-      "html": "<div class=\"ds-location-pair\"><label>Country<select><option>Canada + U.S.</option><option>Canada</option><option>United States</option></select></label><label>State or province<select><option>All regions</option><option>Ontario · CA</option></select></label></div>",
-      "css": ".ds-location-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:16px;border-radius:12px;background:var(--surface,#1e241e);color:var(--cream,#f5f0e6);font:.85rem/1.5 var(--font-inter, Inter), system-ui, sans-serif}.ds-location-pair label{display:flex;flex-direction:column;gap:8px;min-width:0}.ds-location-pair select{width:100%;min-width:0;height:46px;background:var(--background,#141814);color:var(--cream,#f5f0e6);border:1px solid #65705f;border-radius:6px;padding:0 12px;font:1rem/1.5 var(--font-inter, Inter), system-ui, sans-serif;caret-color:var(--accent,#c8f04a);}.ds-location-pair select:focus{outline:2px solid var(--accent,#c8f04a);outline-offset:2px}"
+      "name": "Context panel",
+      "kind": "card",
+      "refersTo": "context-panel",
+      "description": "A quiet supporting pane alongside the task.",
+      "html": "<aside class=\"ds-context\"><h2>A trip, in your words.</h2><p>Start with a place, distance and time.</p></aside>",
+      "css": ".ds-context{background:var(--surface-muted,#e9efe9);color:var(--foreground,#18251f);padding:24px;border-radius:8px;font-family:var(--font-inter,Inter,sans-serif);}.ds-context h2{margin:0;font-size:24px;line-height:1.3;font-weight:600}.ds-context p{color:var(--sage,#59665e);margin:16px 0 0;font-size:16px;line-height:1.6}"
     },
     {
-      "name": "Collection navigation",
-      "kind": "nav",
-      "description": "Wrapping text tabs, with a lime rule and aria-current on the selected collection.",
-      "html": "<nav class=\"ds-tabs\" aria-label=\"Trail collections\"><a href=\"#catalog\" aria-current=\"page\">Trail catalog</a><a href=\"#community\">Community trails &amp; GPX</a></nav>",
-      "css": ".ds-tabs{display:flex;flex-wrap:wrap;gap:24px;background:var(--background,#141814);border-bottom:1px solid var(--border-strong,rgba(255,255,255,.12));font:1rem/1.5 var(--font-inter, Inter), system-ui, sans-serif}.ds-tabs a{padding:14px 0;color:#bdc6b7;text-decoration:none;text-underline-offset:4px}.ds-tabs a[aria-current]{color:var(--cream,#f5f0e6);border-bottom:2px solid var(--accent,#c8f04a)}.ds-tabs a:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:5px;}@media(max-width:560px){.ds-tabs{gap:18px;font-size:.85rem}.ds-tabs a{padding-block:10px}}"
-    },
-    {
-      "name": "Ruled trail-section row",
+      "name": "Source trail row",
       "kind": "custom",
-      "refersTo": "result-row",
-      "description": "A linked section record with source, location, and right-aligned tabular distance.",
-      "html": "<ul class=\"ds-results\"><li><a class=\"ds-row\" href=\"#section-detail\"><div class=\"ds-row-name\"><h2>Algonquin Highlands Ridge Trail</h2><p>Ontario Trail Network · Trail section</p></div><span class=\"ds-row-place\">Ontario<small>Canada</small></span><span class=\"ds-row-distance\">3.5 mi<small>Source distance</small></span></a></li></ul>",
-      "css": ".ds-results{list-style:none;padding:0;margin:0;background:var(--background,#141814);font:1rem/1.5 var(--font-inter, Inter), system-ui, sans-serif}.ds-results li{border-block:1px solid var(--border-strong,rgba(255,255,255,.12))}.ds-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1.5fr) 115px;align-items:center;gap:24px;padding:24px 12px;border-radius:4px;color:var(--cream,#f5f0e6);text-decoration:none;transition:background 160ms ease-out}.ds-row:hover{background:var(--surface,#1e241e)}.ds-row:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:5px;}.ds-row h2{margin:0;font-family:var(--font-playfair, 'Playfair Display'), Georgia, serif;font-size:1.25rem;line-height:1.35;font-weight:inherit;overflow-wrap:anywhere}.ds-row p,.ds-row small{display:block;margin:5px 0 0;color:#bdc6b7;font-size:.8rem;line-height:1.65}.ds-row-place{font-size:.9rem}.ds-row-distance{text-align:right;font-variant-numeric:tabular-nums}@media(max-width:800px){.ds-row{grid-template-columns:minmax(0,3fr) minmax(0,2fr) 95px;gap:16px}}@media(max-width:560px){.ds-row{grid-template-columns:minmax(0,1fr) 100px;padding:16px 4px;gap:12px}.ds-row-name{grid-column:1/-1}.ds-row-place{font-size:.85rem}.ds-row-distance{font-size:.95rem}}@media(prefers-reduced-motion:reduce){.ds-row{transition:none}}"
-    },
-    {
-      "name": "Map result label",
-      "kind": "custom",
-      "description": "Cream label and green point; a point on a section, not a verified trailhead.",
-      "html": "<a class=\"ds-map-marker\" href=\"#section-detail\" aria-label=\"View Algonquin Highlands Ridge Trail\" title=\"Algonquin Highlands Ridge Trail\"><span class=\"ds-map-dot\" aria-hidden=\"true\"></span><span>Algonquin Highlands Ridge Trail</span></a>",
-      "css": ".ds-map-marker{display:flex;flex-direction:column;align-items:center;gap:3px;color:#141814;max-width:130px;text-align:center;font:600 12px/1.3 var(--font-inter, Inter), system-ui, sans-serif;text-decoration:none}.ds-map-marker>span:last-child{background:#f5f0e6;border-radius:4px;padding:3px 6px;box-shadow:0 2px 5px #0003;overflow:hidden;text-overflow:ellipsis;max-width:130px;white-space:nowrap}.ds-map-dot{height:14px;width:14px;border:2px solid #f5f0e6;border-radius:50%;background:#235834}.ds-map-marker:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:5px;}"
-    },
-    {
-      "name": "Source disclosure",
-      "kind": "custom",
-      "description": "Native disclosure keeps section truth, coverage, and licensing available beneath results.",
-      "html": "<details class=\"ds-sources\"><summary>Sources &amp; coverage</summary><p>These are distinct trail-section records. Several records can belong to one trail.</p><p>Contains information licensed under the <a href=\"https://www.ontario.ca/page/open-government-licence-ontario\" target=\"_blank\" rel=\"noopener noreferrer\">Open Government Licence – Ontario</a>.</p></details>",
-      "css": ".ds-sources{border-top:1px solid var(--border-strong,rgba(255,255,255,.12));padding:18px 0 0;background:var(--background,#141814);color:#bdc6b7;font:.85rem/1.65 var(--font-inter, Inter), system-ui, sans-serif}.ds-sources summary{cursor:pointer;width:fit-content;padding:8px 0}.ds-sources p{max-width:72ch;margin:12px 0}.ds-sources a{color:var(--accent,#c8f04a);text-decoration:underline;text-underline-offset:4px}.ds-sources summary:focus-visible,.ds-sources a:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:5px;}"
+      "refersTo": "trail-row",
+      "description": "An illustrative row showing the real source/section pattern, not a new catalog record.",
+      "html": "<a class=\"ds-row\" href=\"#trail\"><div><strong>Trail section</strong><p>Region · Public source</p></div><span class=\"ds-distance\">—<small>section</small></span></a>",
+      "css": ".ds-row{display:grid;grid-template-columns:minmax(0,1fr) 110px;align-items:center;gap:20px;padding:24px 0;border-bottom:1px solid var(--border-strong,#c4cfc5);border-radius:4px;text-decoration:none;color:var(--foreground,#18251f);font-family:var(--font-inter,Inter,sans-serif);transition:background 160ms ease-out}.ds-row:hover{background:var(--surface,#fff)}.ds-row:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}.ds-row strong{font-size:18px;line-height:1.45;font-weight:600}.ds-row p{color:var(--sage,#59665e);font-size:14px;margin:8px 0 0}.ds-distance{text-align:right;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}.ds-distance small{display:block;color:var(--sage,#59665e);font-size:12px;font-weight:400}@media(prefers-reduced-motion:reduce){.ds-row{transition:none}}"
     }
   ],
   "narrative": {
-    "northStar": "The Forest Trail Index",
-    "overview": "The catalog inherits TrailPack's dark forest surfaces, cream text, lime actions, Playfair headings, and Inter controls. Its character comes from readable type, quiet separators, and compact geographic and distance information. The current implementation extends the incumbent app; the earlier Fieldbook mockup is not the implemented catalog.\n\nThis is a scoped system for [CatalogBrowser.tsx](./CatalogBrowser.tsx), [CatalogTrailDetail.tsx](./CatalogTrailDetail.tsx), [CatalogMap.tsx](./CatalogMap.tsx), [CatalogMapView.tsx](./CatalogMapView.tsx), and [catalog.css](./catalog.css). Legacy trail cards, reviews, photos, weather, elevation components, and the shared app navigation remain outside this scope even though some share this directory. Shared color and font variables come from [globals.css](../../app/globals.css) and [layout.tsx](../../app/layout.tsx). Product commitments live in [PRODUCT.md](../../../PRODUCT.md); the catalog's strategy lives in its [surface brief](../../../.impeccable/surfaces/src-app-explore-trails-page-tsx.md).",
+    "northStar": "Fieldbook",
+    "overview": "Explore brings public trail sections into the approved light Fieldbook workspace. A compact search area leads to four ruled results and a personal-planning invitation, keeping the next step visible without overstating the catalog as complete hikes.\n\nThis record covers `CatalogBrowser.tsx`, `CatalogMap.tsx`, and `catalog.css`, inheriting the root `DESIGN.md`. The project-root brief `.impeccable/surfaces/src-app-explore-trails-page-tsx.md` records the discovery strategy. The saved Figma desktop Explore render is the visual reference; the production data and CSS are authoritative for actual states and responsive behavior.\n\nThe search input and action share one row at all widths. Country, region, and distance fields are grouped in a native Filters disclosure; applied values remain visible in its summary. This refinement addresses the user’s feedback about the crowded top area.",
     "keyCharacteristics": [
-      "Flat, ruled results with serif trail names and tabular distances.",
-      "Clearly labeled native fields, visible focus, and compact paired mobile selects.",
-      "Lime actions and source links against forest surfaces and readable muted text.",
-      "Explicit trail-section boundaries, distance provenance, and unknown fields.",
-      "User-opened list maps and attributed source geometry on detail pages."
+      "Mineral workspace, forest actions, and an evergreen shared shell.",
+      "Four-row first view with filter-preserving continuation.",
+      "Ruled results with source context and tabular section distances.",
+      "Sage planning context and optional real-geometry maps."
     ],
     "rules": [
       {
-        "name": "The Readable Metadata Rule",
-        "body": "Keep provenance and unknown-field text in the catalog's pale sage; these labels carry necessary meaning.",
+        "name": "The Source Stays Visible Rule",
+        "body": "Source and section meaning remain adjacent to each trail result and available in the coverage disclosure.",
         "section": "colors"
       },
       {
-        "name": "The Comparable Distance Rule",
-        "body": "Distances use tabular numerals and align right in results. Detail facts also use tabular numerals. Retain units and the source-versus-geometry label alongside the value.",
+        "name": "The Measured Numbers Rule",
+        "body": "Section distances, counts, and detail facts use tabular numerals.",
         "section": "typography"
-      },
-      {
-        "name": "The Ruled Index Rule",
-        "body": "Results are linked rows separated by rules. Preserve this repeated structure instead of applying the legacy trail-card treatment.",
-        "section": "elevation"
       }
     ],
     "dos": [
-      "Do preserve the scoped forest palette, Playfair headings, and Inter controls.",
-      "Do keep results as ruled rows with tabular distances and visible provenance.",
-      "Do retain the paired country and region selects on mobile and 46px fields and filled controls.",
-      "Do distinguish trail sections from complete hikes and show unknown fields explicitly.",
-      "Do preserve original-source links, licence links, snapshot dates, and visible basemap attribution.",
-      "Do open the list map only on request and explain what its points represent.",
-      "Do retain visible keyboard focus, wrapping names, and reduced-motion behavior."
+      "Do retain the compact four-record first view and filter-preserving continuation.",
+      "Do keep source attribution and the trail-section explanation visible.",
+      "Do label estimated section distance and use actual source geometry.",
+      "Do preserve paired mobile location filters and aligned distances."
     ],
     "donts": [
-      "Don't describe the earlier Fieldbook mockup or legacy trail cards as this implemented catalog system.",
-      "Don't turn the current record count into a claim of independent hikes or complete national coverage.",
-      "Don't invent ratings, images, elevations, difficulty, current conditions, or verified trailheads.",
-      "Don't apply the global glass-card shadow or card-lift treatment to catalog results.",
-      "Don't make catalog maps imply verified navigation or preload offline tiles."
+      "Don't restore dark catalog backgrounds, lime actions, or serif titles.",
+      "Don't present the 90,000 records as 90,000 complete independent hikes.",
+      "Don't invent route photos, ratings, elevations, or current conditions.",
+      "Don't turn every trail row into a raised card."
     ]
   }
 }

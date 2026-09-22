@@ -12,7 +12,7 @@ import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPro
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
 import { useGpsTrack } from "@/components/gps/useGpsTrack";
 import { formatPace } from "@/lib/gps";
-import { ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityType } from "@/lib/types";
+import { ACTIVITY_LABELS, type ActivityType } from "@/lib/types";
 
 interface GpsRecorderProps {
   activityType: ActivityType;
@@ -35,11 +35,8 @@ export function GpsRecorder({
   const gps = useGpsTrack();
   const location = useLocationPermission();
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [locationReady, setLocationReady] = useState(false);
-
-  useEffect(() => {
-    if (location.granted) setLocationReady(true);
-  }, [location.granted]);
+  const [locationConfirmed, setLocationReady] = useState(false);
+  const locationReady = locationConfirmed || location.granted;
 
   useEffect(() => {
     if (autoStart && gps.state === "idle" && locationReady) {

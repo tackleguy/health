@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 const inputClass =
-  "w-full rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface-muted px-3 py-2.5 text-sm text-cream outline-none placeholder:text-mist focus:border-accent/40 focus:ring-2 focus:ring-accent/10";
+  "w-full rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2.5 text-base text-cream placeholder:text-mist focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4";
 
 export function SignupForm() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export function SignupForm() {
 
     const supabase = createClient();
     if (!supabase) {
-      setError("Supabase is not configured.");
+      setError("Account sign-in is not connected in this preview. You can still explore trails and plan trips as a guest.");
       setLoading(false);
       return;
     }
@@ -55,6 +55,7 @@ export function SignupForm() {
           </label>
           <input
             id="firstName"
+            autoComplete="given-name"
             required
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
@@ -67,6 +68,7 @@ export function SignupForm() {
           </label>
           <input
             id="lastName"
+            autoComplete="family-name"
             required
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
@@ -80,6 +82,7 @@ export function SignupForm() {
         </label>
         <input
           id="email"
+          autoComplete="email"
           type="email"
           required
           value={email}
@@ -93,6 +96,7 @@ export function SignupForm() {
         </label>
         <input
           id="password"
+          autoComplete="new-password"
           type="password"
           required
           minLength={6}
@@ -101,7 +105,7 @@ export function SignupForm() {
           className={inputClass}
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
         {loading ? "Creating account..." : "Create account"}
       </button>

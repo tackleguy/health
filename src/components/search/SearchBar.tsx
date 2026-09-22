@@ -1,130 +1,86 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import clsx from "clsx";
 import type { SearchResult } from "@/lib/types";
+import { NavIcon } from "@/components/nav/NavIcon";
 
 interface SearchBarProps {
   variant?: "light" | "dark" | "hero";
 }
 
+type SearchState = { query: string; results: SearchResult[]; status: "loading" | "ready" | "error" };
+
 export function SearchBar({ variant = "light" }: SearchBarProps) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [state, setState] = useState<SearchState>({ query: "", results: [], status: "ready" });
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
+  const inputId = useId();
   const trimmedQuery = query.trim();
   const isHero = variant === "hero";
   const isDark = variant === "dark" || isHero;
+  const current = state.query === trimmedQuery;
+  const loading = Boolean(trimmedQuery) && (!current || state.status === "loading");
+  const error = current && state.status === "error";
+  const results = current && state.status === "ready" ? state.results : [];
 
   useEffect(() => {
     if (!trimmedQuery) return;
-
+    const controller = new AbortController();
+    let active = true;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     const timer = setTimeout(async () => {
-      setLoading(true);
+      setState({ query: trimmedQuery, results: [], status: "loading" });
+      timeout = setTimeout(() => controller.abort(), 10000);
       try {
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(trimmedQuery)}`,
-        );
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`, { signal: controller.signal });
+        if (!res.ok) throw new Error("Search unavailable");
         const data = await res.json();
-        setResults(data.results ?? []);
+        if (active) setState({ query: trimmedQuery, results: Array.isArray(data.results) ? data.results : [], status: "ready" });
       } catch {
-        setResults([]);
+        if (active) setState({ query: trimmedQuery, results: [], status: "error" });
       } finally {
-        setLoading(false);
+        clearTimeout(timeout);
       }
     }, 250);
-
-    return () => clearTimeout(timer);
+    return () => { active = false; clearTimeout(timer); clearTimeout(timeout); controller.abort(); };
   }, [trimmedQuery]);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
+    function handleClickOutside(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, []);
 
-  return (
-    <div ref={containerRef} className="relative w-full">
-      <div
-        className={clsx(
-          "flex items-center gap-3 rounded-[var(--radius-xl)] px-4 py-3.5 transition",
-          isHero
-            ? "glass-panel-light focus-within:border-accent/30 focus-within:ring-2 focus-within:ring-accent/15"
-            : isDark
-              ? "border border-[var(--border)] bg-surface-elevated focus-within:border-accent/30 focus-within:ring-2 focus-within:ring-accent/10"
-              : "surface-card focus-within:border-accent/30",
-        )}
-      >
-        <svg
-          className="h-4 w-4 shrink-0 text-mist"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"
-          />
-        </svg>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          placeholder="Search trails, parks, ski resorts..."
-          className="w-full bg-transparent text-sm text-cream outline-none placeholder:text-mist"
-        />
-        {loading && <span className="text-xs text-mist">…</span>}
-      </div>
+  const status = !trimmedQuery || !open ? "" : loading ? "Searching places…" : error ? "Search is unavailable. Check your connection and change the search to try again." : results.length ? `${results.length} ${results.length === 1 ? "result" : "results"}. Tab to explore the matches.` : "No results found. Try a different place name.";
 
+  return (
+    <div ref={containerRef} className="site-search relative w-full" role="search" aria-label="Find trails, parks, and ski resorts"
+      onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false); }}
+      onKeyDown={event => { if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); setOpen(false); containerRef.current?.querySelector("input")?.focus(); } }}>
+      <label htmlFor={inputId} className="sr-only">Search trails, parks, and ski resorts</label>
+      <div className={clsx("site-search-field flex items-center gap-3 rounded-[var(--radius-xl)] px-4 py-3.5 transition", isHero ? "glass-panel-light" : isDark ? "border border-[var(--border)] bg-surface-elevated" : "surface-card")}>
+        <NavIcon name="explore" style={{ width: 18, height: 18, flexShrink: 0 }} />
+        <input id={inputId} type="search" value={query} maxLength={180} autoComplete="off"
+          onChange={event => { setQuery(event.target.value); setOpen(true); }} onFocus={() => setOpen(true)}
+          placeholder="Search places…" aria-describedby={`${inputId}-status`}
+          className="w-full min-w-0 bg-transparent text-base text-cream placeholder:text-mist" />
+      </div>
+      <p id={`${inputId}-status`} className="sr-only" role="status" aria-atomic="true">{status}</p>
       {open && trimmedQuery && (
-        <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-surface-elevated shadow-2xl">
-          {trimmedQuery && results.length === 0 && !loading ? (
-            <p className="px-4 py-3 text-sm text-mist">No results found</p>
-          ) : (
-            <ul>
-              {(trimmedQuery ? results : []).map((result) => (
-                <li key={`${result.type}-${result.id}`}>
-                  <Link
-                    href={result.href}
-                    onClick={() => {
-                      setOpen(false);
-                      setQuery("");
-                    }}
-                    className="flex items-start gap-3 px-4 py-3 transition hover:bg-surface-muted"
-                  >
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-base">
-                      {result.type === "park"
-                        ? "🏞"
-                        : result.type === "resort"
-                          ? "⛷"
-                          : "🥾"}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-cream">{result.name}</p>
-                      <p className="text-xs text-mist">{result.subtitle}</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="site-search-results absolute top-full z-50 mt-2 w-full rounded-[var(--radius-xl)] border border-[var(--border)] bg-surface-elevated">
+          {loading || error || results.length === 0 ? <p className="px-4 py-3 text-sm text-mist">{status}</p> : <ul aria-label="Search results">
+            {results.map(result => <li key={`${result.type}-${result.id}`}>
+              <Link href={result.href} onClick={() => { setOpen(false); setQuery(""); }} className="flex min-h-11 items-start gap-3 px-4 py-3 transition hover:bg-surface-muted">
+                <NavIcon name={result.type === "park" || result.type === "resort" ? "mountain" : "trips"} style={{ width: 20, height: 20, flexShrink: 0, marginTop: 2 }} />
+                <div className="min-w-0"><p className="break-words text-sm font-medium text-cream">{result.name}</p><p className="break-words text-xs text-mist">{result.subtitle}</p></div>
+              </Link>
+            </li>)}
+          </ul>}
         </div>
       )}
     </div>

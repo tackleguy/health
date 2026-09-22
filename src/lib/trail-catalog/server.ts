@@ -4,7 +4,9 @@ import { gunzip } from "node:zlib";
 import { promisify } from "node:util";
 import { createHash } from "node:crypto";
 import type { CatalogFilters, CatalogManifest, CatalogTrail } from "./types";
-import { filterCatalog, searchableText } from "./search";
+import { filterCatalog, matchingCatalogRows, searchableText } from "./search";
+
+import { buildCatalogMap } from "./map";
 
 const unzip = promisify(gunzip);
 const root = path.join(process.cwd(),"data/trail-catalog");
@@ -28,8 +30,12 @@ export async function searchCatalog(filters: CatalogFilters = {}) {
   const data = await load();
   return { ...filterCatalog(data.rows,filters,data.texts), manifest:data.manifest };
 }
+export async function searchCatalogMap(filters: CatalogFilters = {}) {
+  const data = await load();
+  return buildCatalogMap(matchingCatalogRows(data.rows, filters, data.texts));
+}
 export async function getCatalogTrail(id: string) {
-  if (!/^(usgs|parks-canada|ontario)-[a-zA-Z0-9-]+$/.test(id)) return null;
+  if (id.length > 200 || !/^(usgs|parks-canada|ontario)-/.test(id)) return null;
   const data = await load();
   const trail = data.byId.get(id); if (!trail) return null;
   const geometry = JSON.parse((await unzip(await readFile(path.join(data.directory,`geometry-${trail.geometryShard}.json.gz`)))).toString()) as Record<string,[number,number][][]>;

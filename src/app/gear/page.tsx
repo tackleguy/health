@@ -1,13 +1,15 @@
-import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/supabase/server";
 import { GearPageClient } from "@/components/gear/GearPageClient";
+import { LocalGear } from "@/components/gear/LocalGear";
+
+export const metadata = { title: "Gear locker — TrailPack", description: "Manage the equipment you bring on your trips." };
 
 export default async function GearPage() {
   const { user } = await getAuthUser();
-  if (!user) redirect("/login?next=/gear");
+  if (!user) return <LocalGear />;
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-8 pb-24 sm:px-6 md:pb-10 lg:px-10">
+    <div className="fieldbook-page">
       <GearPageClient userId={user.id} />
     </div>
   );

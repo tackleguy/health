@@ -1,300 +1,280 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-21T23:11:32.772Z",
-  "title": "Design System: TrailPack trip planner",
+  "generatedAt": "2026-09-22T01:54:46.956906+00:00",
+  "title": "Design System: TrailPack Fieldbook planner",
   "extensions": {
     "colorMeta": {
       "background": {
         "role": "neutral",
-        "displayName": "Forest background",
+        "displayName": "Background",
         "tonalRamp": [
-          "oklch(15.00% 0.0099 145.20)",
-          "oklch(26.43% 0.0099 145.20)",
-          "oklch(37.86% 0.0099 145.20)",
-          "oklch(49.29% 0.0099 145.20)",
-          "oklch(60.71% 0.0099 145.20)",
-          "oklch(72.14% 0.0099 145.20)",
-          "oklch(83.57% 0.0099 145.20)",
-          "oklch(95.00% 0.0099 145.20)"
+          "oklch(15% 0.0041 121.6)",
+          "oklch(26% 0.0041 121.6)",
+          "oklch(38% 0.0041 121.6)",
+          "oklch(49% 0.0041 121.6)",
+          "oklch(61% 0.0041 121.6)",
+          "oklch(72% 0.0041 121.6)",
+          "oklch(84% 0.0041 121.6)",
+          "oklch(95% 0.0041 121.6)"
         ]
       },
-      "forest": {
+      "foreground": {
         "role": "neutral",
-        "displayName": "Deep forest",
+        "displayName": "Foreground",
         "tonalRamp": [
-          "oklch(15.00% 0.0129 145.00)",
-          "oklch(26.43% 0.0129 145.00)",
-          "oklch(37.86% 0.0129 145.00)",
-          "oklch(49.29% 0.0129 145.00)",
-          "oklch(60.71% 0.0129 145.00)",
-          "oklch(72.14% 0.0129 145.00)",
-          "oklch(83.57% 0.0129 145.00)",
-          "oklch(95.00% 0.0129 145.00)"
+          "oklch(15% 0.0213 164.6)",
+          "oklch(26% 0.0213 164.6)",
+          "oklch(38% 0.0213 164.6)",
+          "oklch(49% 0.0213 164.6)",
+          "oklch(61% 0.0213 164.6)",
+          "oklch(72% 0.0213 164.6)",
+          "oklch(84% 0.0213 164.6)",
+          "oklch(95% 0.0213 164.6)"
         ]
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Forest surface",
+        "displayName": "Surface",
         "tonalRamp": [
-          "oklch(15.00% 0.0141 145.14)",
-          "oklch(26.43% 0.0141 145.14)",
-          "oklch(37.86% 0.0141 145.14)",
-          "oklch(49.29% 0.0141 145.14)",
-          "oklch(60.71% 0.0141 145.14)",
-          "oklch(72.14% 0.0141 145.14)",
-          "oklch(83.57% 0.0141 145.14)",
-          "oklch(95.00% 0.0141 145.14)"
-        ]
-      },
-      "surface-elevated": {
-        "role": "neutral",
-        "displayName": "Elevated forest",
-        "tonalRamp": [
-          "oklch(15.00% 0.0181 145.10)",
-          "oklch(26.43% 0.0181 145.10)",
-          "oklch(37.86% 0.0181 145.10)",
-          "oklch(49.29% 0.0181 145.10)",
-          "oklch(60.71% 0.0181 145.10)",
-          "oklch(72.14% 0.0181 145.10)",
-          "oklch(83.57% 0.0181 145.10)",
-          "oklch(95.00% 0.0181 145.10)"
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(49% 0.0000 89.9)",
+          "oklch(61% 0.0000 89.9)",
+          "oklch(72% 0.0000 89.9)",
+          "oklch(84% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
         ]
       },
       "surface-muted": {
         "role": "neutral",
-        "displayName": "Muted forest",
+        "displayName": "Surface Muted",
         "tonalRamp": [
-          "oklch(15.00% 0.0175 145.18)",
-          "oklch(26.43% 0.0175 145.18)",
-          "oklch(37.86% 0.0175 145.18)",
-          "oklch(49.29% 0.0175 145.18)",
-          "oklch(60.71% 0.0175 145.18)",
-          "oklch(72.14% 0.0175 145.18)",
-          "oklch(83.57% 0.0175 145.18)",
-          "oklch(95.00% 0.0175 145.18)"
-        ]
-      },
-      "cream": {
-        "role": "neutral",
-        "displayName": "Warm cream",
-        "tonalRamp": [
-          "oklch(15.00% 0.0143 84.58)",
-          "oklch(26.43% 0.0143 84.58)",
-          "oklch(37.86% 0.0143 84.58)",
-          "oklch(49.29% 0.0143 84.58)",
-          "oklch(60.71% 0.0143 84.58)",
-          "oklch(72.14% 0.0143 84.58)",
-          "oklch(83.57% 0.0143 84.58)",
-          "oklch(95.00% 0.0143 84.58)"
+          "oklch(15% 0.0102 145.5)",
+          "oklch(26% 0.0102 145.5)",
+          "oklch(38% 0.0102 145.5)",
+          "oklch(49% 0.0102 145.5)",
+          "oklch(61% 0.0102 145.5)",
+          "oklch(72% 0.0102 145.5)",
+          "oklch(84% 0.0102 145.5)",
+          "oklch(95% 0.0102 145.5)"
         ]
       },
       "accent": {
         "role": "primary",
-        "displayName": "Lime accent",
+        "displayName": "Accent",
         "tonalRamp": [
-          "oklch(15.00% 0.1907 122.16)",
-          "oklch(26.43% 0.1907 122.16)",
-          "oklch(37.86% 0.1907 122.16)",
-          "oklch(49.29% 0.1907 122.16)",
-          "oklch(60.71% 0.1907 122.16)",
-          "oklch(72.14% 0.1907 122.16)",
-          "oklch(83.57% 0.1907 122.16)",
-          "oklch(95.00% 0.1907 122.16)"
+          "oklch(15% 0.0675 166.5)",
+          "oklch(26% 0.0675 166.5)",
+          "oklch(38% 0.0675 166.5)",
+          "oklch(49% 0.0675 166.5)",
+          "oklch(61% 0.0675 166.5)",
+          "oklch(72% 0.0675 166.5)",
+          "oklch(84% 0.0675 166.5)",
+          "oklch(95% 0.0675 166.5)"
         ]
       },
-      "plan-muted": {
-        "role": "neutral",
-        "displayName": "Readable muted sage",
+      "accent-dim": {
+        "role": "primary",
+        "displayName": "Accent Dim",
         "tonalRamp": [
-          "oklch(15.00% 0.0250 133.51)",
-          "oklch(26.43% 0.0250 133.51)",
-          "oklch(37.86% 0.0250 133.51)",
-          "oklch(49.29% 0.0250 133.51)",
-          "oklch(60.71% 0.0250 133.51)",
-          "oklch(72.14% 0.0250 133.51)",
-          "oklch(83.57% 0.0250 133.51)",
-          "oklch(95.00% 0.0250 133.51)"
+          "oklch(15% 0.0486 174.3)",
+          "oklch(26% 0.0486 174.3)",
+          "oklch(38% 0.0486 174.3)",
+          "oklch(49% 0.0486 174.3)",
+          "oklch(61% 0.0486 174.3)",
+          "oklch(72% 0.0486 174.3)",
+          "oklch(84% 0.0486 174.3)",
+          "oklch(95% 0.0486 174.3)"
         ]
       },
-      "plan-line": {
+      "sage": {
         "role": "neutral",
-        "displayName": "Forest divider",
+        "displayName": "Sage",
         "tonalRamp": [
-          "oklch(15.00% 0.0252 138.49)",
-          "oklch(26.43% 0.0252 138.49)",
-          "oklch(37.86% 0.0252 138.49)",
-          "oklch(49.29% 0.0252 138.49)",
-          "oklch(60.71% 0.0252 138.49)",
-          "oklch(72.14% 0.0252 138.49)",
-          "oklch(83.57% 0.0252 138.49)",
-          "oklch(95.00% 0.0252 138.49)"
+          "oklch(15% 0.0203 158.6)",
+          "oklch(26% 0.0203 158.6)",
+          "oklch(38% 0.0203 158.6)",
+          "oklch(49% 0.0203 158.6)",
+          "oklch(61% 0.0203 158.6)",
+          "oklch(72% 0.0203 158.6)",
+          "oklch(84% 0.0203 158.6)",
+          "oklch(95% 0.0203 158.6)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "tonalRamp": [
+          "oklch(15% 0.0138 145.5)",
+          "oklch(26% 0.0138 145.5)",
+          "oklch(38% 0.0138 145.5)",
+          "oklch(49% 0.0138 145.5)",
+          "oklch(61% 0.0138 145.5)",
+          "oklch(72% 0.0138 145.5)",
+          "oklch(84% 0.0138 145.5)",
+          "oklch(95% 0.0138 145.5)"
         ]
       },
       "warning": {
-        "role": "functional",
-        "displayName": "Warm warning",
+        "role": "neutral",
+        "displayName": "Warning",
         "tonalRamp": [
-          "oklch(15.00% 0.0784 73.40)",
-          "oklch(26.43% 0.0784 73.40)",
-          "oklch(37.86% 0.0784 73.40)",
-          "oklch(49.29% 0.0784 73.40)",
-          "oklch(60.71% 0.0784 73.40)",
-          "oklch(72.14% 0.0784 73.40)",
-          "oklch(83.57% 0.0784 73.40)",
-          "oklch(95.00% 0.0784 73.40)"
+          "oklch(15% 0.1122 49.5)",
+          "oklch(26% 0.1122 49.5)",
+          "oklch(38% 0.1122 49.5)",
+          "oklch(49% 0.1122 49.5)",
+          "oklch(61% 0.1122 49.5)",
+          "oklch(72% 0.1122 49.5)",
+          "oklch(84% 0.1122 49.5)",
+          "oklch(95% 0.1122 49.5)"
         ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Page heading; related serif treatments appear in route names and the trip request."
+        "purpose": "Page and trip headings."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Stage and context headings; 25px on narrow viewports."
+        "purpose": "Task and context headings."
       },
       "title": {
-        "displayName": "Section title",
-        "purpose": "Equipment, packing zones, and local-model sections."
+        "displayName": "Title",
+        "purpose": "Rows and subsection titles."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Planner explanations and operational content."
+        "purpose": "Operational copy."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Persistent field labels."
+        "purpose": "Controls and labels."
       },
-      "help": {
-        "displayName": "Supporting text",
-        "purpose": "Sources, limitations, and supporting instructions."
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Supporting state and units."
+      },
+      "request": {
+        "displayName": "Request",
+        "purpose": "Natural-language trip request."
       }
     },
     "shadows": [],
     "motion": [
       {
-        "name": "planner-button-background",
-        "value": "background 0.15s",
-        "purpose": "Planner button state transitions; disabled by prefers-reduced-motion."
+        "name": "background-state",
+        "value": "150ms ease",
+        "purpose": "Background transitions; reduced-motion preferences remove them."
       }
     ],
     "breakpoints": [
       {
-        "name": "planner-intermediate-max",
-        "value": "1050px"
+        "name": "mobile",
+        "value": "767px"
       },
       {
-        "name": "planner-stacked-max",
-        "value": "760px"
+        "name": "stack-workspace",
+        "value": "1000px"
       },
       {
-        "name": "inherited-desktop-nav-min",
-        "value": "768px"
+        "name": "compact-planner",
+        "value": "1100px"
       }
     ]
   },
   "components": [
     {
-      "name": "Primary action",
+      "name": "Primary button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Advances the current planning task.",
-      "html": "<button class=\"ds-primary\">Build my trip</button>",
-      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:18px;min-height:44px;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:650;line-height:1.4;text-align:center;cursor:pointer;transition:background .15s;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;border:0;background:var(--accent,#c8f04a);color:var(--forest,#0d120d)}.ds-primary:hover{background:#d7f782}.ds-primary:disabled{opacity:.5;cursor:not-allowed}.ds-primary:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+      "description": "Shared forest action with evergreen hover.",
+      "html": "<button class=\"ds-primary\">Use this route &amp; prepare</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border:1px solid transparent;border-radius:8px;padding:11px 18px;background:var(--accent,#245b47);color:#fff;font-size:14px;font-weight:650;line-height:1.4;font-family:var(--font-inter,Inter,sans-serif);cursor:pointer;transition:background-color 150ms ease}.ds-primary:hover{background:var(--accent-dim,#173f35)}.ds-primary:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}.ds-primary:disabled{cursor:not-allowed;opacity:.5}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
     },
     {
-      "name": "Secondary action",
+      "name": "Secondary button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Applies a local choice or opens an optional capability.",
-      "html": "<button class=\"ds-secondary\">Enable local AI</button>",
-      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;gap:18px;min-height:44px;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:650;line-height:1.4;text-align:center;cursor:pointer;transition:background .15s;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;border:1px solid var(--plan-line,#3d473a);background:var(--surface-elevated,#272f27);color:var(--cream,#f5f0e6)}.ds-secondary:hover{background:#354031}.ds-secondary:disabled{opacity:.5;cursor:not-allowed}.ds-secondary:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-secondary{transition:none}}"
+      "description": "White supporting action with a neutral border.",
+      "html": "<button class=\"ds-secondary\">Download checklist</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border:1px solid var(--border,#d9e1d9);border-radius:8px;padding:11px 18px;background:var(--surface,#fff);color:var(--foreground,#18251f);font-size:14px;font-weight:650;line-height:1.4;font-family:var(--font-inter,Inter,sans-serif);cursor:pointer;transition:background-color 150ms ease}.ds-secondary:hover{background:var(--surface-muted,#e9efe9)}.ds-secondary:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-secondary{transition:none}}"
     },
     {
-      "name": "Labeled field",
+      "name": "Planner field",
       "kind": "input",
       "refersTo": "input",
-      "description": "A persistent label above a dark native input.",
-      "html": "<label class=\"ds-label\">Item name<input class=\"ds-input\" placeholder=\"Enter equipment name\"></label>",
-      "css": ".ds-label{display:block;color:var(--cream,#f5f0e6);font-size:12px;font-weight:500;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;}.ds-input{display:block;width:100%;margin-top:7px;border:1px solid var(--plan-line,#3d473a);border-radius:6px;background:var(--forest,#0d120d);color:var(--cream,#f5f0e6);padding:11px 12px;font-size:14px;line-height:1.4;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;caret-color:var(--accent,#c8f04a)}.ds-input::placeholder{color:var(--plan-muted,#adb7a7);opacity:1}.ds-input:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}@media(max-width:760px){.ds-input{font-size:16px}}"
+      "description": "White labeled field used by catalog search.",
+      "html": "<label class=\"ds-field\">Trip length<input type=\"number\" placeholder=\"Days\"></label>",
+      "css": ".ds-field{display:grid;gap:8px;color:var(--foreground,#18251f);font-size:14px;font-family:var(--font-inter,Inter,sans-serif);}.ds-field input{min-width:0;border:1px solid var(--border,#d9e1d9);border-radius:6px;padding:11px 12px;background:var(--surface,#fff);color:var(--foreground,#18251f);font:inherit;font-size:14px;caret-color:var(--accent,#245b47)}.ds-field input::placeholder{color:var(--sage,#59665e)}.ds-field input:focus{outline:2px solid var(--accent,#245b47);outline-offset:2px}@media(max-width:1000px){.ds-field input{font-size:16px}}"
     },
     {
-      "name": "Trip request panel",
-      "kind": "card",
-      "refersTo": "prompt-panel",
-      "description": "A large serif request field in the elevated surface.",
-      "html": "<div class=\"ds-prompt\"><label for=\"ds-trip\">What do you have in mind?</label><textarea id=\"ds-trip\" class=\"ds-request\" placeholder=\"30 miles, 3 days in Colorado…\" rows=\"2\"></textarea></div>",
-      "css": ".ds-prompt{padding:24px;border-radius:12px;background:var(--surface-elevated,#272f27);color:var(--cream,#f5f0e6);font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;}.ds-prompt label{font-size:14px;font-weight:600}.ds-request{display:block;width:100%;min-height:100px;margin-top:7px;padding:16px 0;border:0;border-radius:0;background:transparent;color:var(--cream,#f5f0e6);font-size:26px;line-height:1.35;resize:vertical;font-family:var(--font-playfair,\"Playfair Display\"),\"Playfair Display\",Georgia,serif;}.ds-request::placeholder{color:var(--plan-muted,#adb7a7);opacity:1}.ds-request:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}@media(max-width:760px){.ds-prompt{padding:20px}.ds-request{font-size:23px}}"
-    },
-    {
-      "name": "Weight summary",
-      "kind": "card",
-      "refersTo": "weight-panel",
-      "description": "The measured pack total and its labeled breakdown; preview values are illustrative.",
-      "html": "<div class=\"ds-weight\"><div><span>Calculated starting pack</span><strong>12.5 <small>lb</small></strong></div><dl><div><dt>Base gear</dt><dd>3.4 lb</dd></div><div><dt>Food, water &amp; fuel</dt><dd>9.1 lb</dd></div><div><dt>Worn separately</dt><dd>0.0 lb</dd></div></dl></div>",
-      "css": ".ds-weight{display:flex;justify-content:space-between;gap:24px;padding:22px;border-radius:12px;background:var(--surface,#1e241e);color:var(--cream,#f5f0e6);font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;}.ds-weight span,.ds-weight dt{font-size:12px;color:var(--plan-muted,#adb7a7)}.ds-weight strong{display:block;font-size:38px;line-height:1.5;font-weight:500;font-variant-numeric:tabular-nums}.ds-weight small{font-size:16px;font-weight:500;color:var(--plan-muted,#adb7a7)}.ds-weight dl{flex:1;max-width:260px;min-width:190px;margin:0;font-size:12px}.ds-weight dl>div{display:flex;justify-content:space-between;gap:20px;padding:6px 0}.ds-weight dd{margin:0;font-variant-numeric:tabular-nums}@media(max-width:1050px){.ds-weight{flex-direction:column;gap:12px}.ds-weight dl{max-width:none}}"
-    },
-    {
-      "name": "Planning steps",
+      "name": "Numbered planning stages",
       "kind": "nav",
-      "description": "Three equal navigation buttons; current step has a lime underline.",
-      "html": "<nav class=\"ds-steps\" aria-label=\"Trip planning steps\"><button aria-current=\"step\"><span>1</span>Find a trail</button><button><span>2</span>Prepare your pack</button><button><span>3</span>Pack &amp; go</button></nav>",
-      "css": ".ds-steps{display:flex;border-bottom:1px solid var(--plan-line,#3d473a)}.ds-steps button{display:flex;flex:1;align-items:center;justify-content:center;gap:10px;padding:16px 8px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--plan-muted,#adb7a7);font-size:13px;font-weight:600;line-height:1.3;cursor:pointer;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;}.ds-steps button[aria-current]{border-bottom-color:var(--accent,#c8f04a);color:var(--cream,#f5f0e6)}.ds-steps span{color:var(--accent,#c8f04a)}.ds-steps button:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}@media(max-width:760px){.ds-steps button{flex-direction:column;padding:12px 5px;font-size:11px;gap:5px}.ds-steps span{font-size:13px}}"
+      "refersTo": "step-current",
+      "description": "The active stage uses a forest circle and semantic current state.",
+      "html": "<nav class=\"ds-steps\" aria-label=\"Trip planning steps\"><button aria-current=\"step\"><span>1</span>Choose a trail</button><button><span>2</span>Prepare your pack</button><button><span>3</span>Record your outing</button></nav>",
+      "css": ".ds-steps{display:flex;gap:24px;font-family:var(--font-inter,Inter,sans-serif);}.ds-steps button{display:flex;align-items:center;gap:8px;flex:1;min-height:36px;border:0;padding:0;background:transparent;color:var(--sage,#59665e);font:inherit;font-size:14px;text-align:left;cursor:pointer}.ds-steps span{display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:var(--surface-muted,#e9efe9);color:var(--sage,#59665e)}.ds-steps [aria-current]{color:var(--foreground,#18251f);font-weight:500}.ds-steps [aria-current] span{background:var(--accent,#245b47);color:#fff}.ds-steps button:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}@media(max-width:767px){.ds-steps{gap:10px}.ds-steps button{flex-direction:column;align-items:flex-start;font-size:12px}.ds-steps span{width:28px;height:28px;flex-basis:28px}}"
     },
     {
-      "name": "Native disclosure",
-      "kind": "custom",
-      "description": "Supporting detail stays behind a native disclosure.",
-      "html": "<details class=\"ds-details\"><summary>My trip preferences</summary><p>Saved on this device. Your explicit preferences take priority over learned trip feedback.</p></details>",
-      "css": ".ds-details{border-top:1px solid var(--plan-line,#3d473a);padding:18px 0;color:var(--cream,#f5f0e6);font-size:14px;line-height:1.6;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;}.ds-details summary{min-height:30px;font-weight:600;cursor:pointer}.ds-details[open]>summary{margin-bottom:20px}.ds-details p{margin:0;font-size:12px;color:var(--plan-muted,#adb7a7)}.ds-details summary:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}"
+      "name": "White task workspace",
+      "kind": "card",
+      "refersTo": "workspace",
+      "description": "A flat white task container paired with sage context.",
+      "html": "<section class=\"ds-workspace\"><h2>Your packing list</h2><p>Select the equipment you will carry.</p></section>",
+      "css": ".ds-workspace{padding:24px;border-radius:8px;background:var(--surface,#fff);color:var(--foreground,#18251f);font-family:var(--font-inter,Inter,sans-serif);}.ds-workspace h2{margin:0;font-size:24px;font-weight:600;line-height:1.25}.ds-workspace p{color:var(--sage,#59665e);font-size:14px;line-height:1.6}@media(max-width:767px){.ds-workspace{padding:20px}}"
     },
     {
-      "name": "Packing checkbox",
+      "name": "Context panel",
+      "kind": "card",
+      "refersTo": "context-panel",
+      "description": "A quiet supporting pane alongside the task.",
+      "html": "<aside class=\"ds-context\"><h2>Your pack, at a glance.</h2><p>Known weight so far. Add missing weights to complete the total.</p></aside>",
+      "css": ".ds-context{background:var(--surface-muted,#e9efe9);color:var(--foreground,#18251f);padding:24px;border-radius:8px;font-family:var(--font-inter,Inter,sans-serif);}.ds-context h2{margin:0;font-size:24px;line-height:1.3;font-weight:600}.ds-context p{color:var(--sage,#59665e);margin:16px 0 0;font-size:14px;line-height:1.6}"
+    },
+    {
+      "name": "Packing checklist row",
       "kind": "custom",
-      "description": "An accessible native checkbox with an associated item label.",
-      "html": "<label class=\"ds-check\"><input type=\"checkbox\"><span>Sleeping bag</span></label>",
-      "css": ".ds-check{display:flex;align-items:flex-start;gap:12px;padding:6px 0;cursor:pointer;color:var(--cream,#f5f0e6);font-size:12px;font-weight:500;line-height:1.6;font-family:var(--font-inter,Inter),Inter,system-ui,sans-serif;}.ds-check input{width:18px;height:18px;flex-shrink:0;margin:3px 0;accent-color:var(--accent,#c8f04a)}.ds-check input:focus-visible{outline:2px solid var(--accent,#c8f04a);outline-offset:4px;}"
+      "refersTo": "workspace",
+      "description": "A wrapping native checkbox row with a visible missing-weight label.",
+      "html": "<label class=\"ds-pack\"><input type=\"checkbox\"><span>Equipment item</span><small>Weight not entered</small></label>",
+      "css": ".ds-pack{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--border,#d9e1d9);color:var(--foreground,#18251f);font-size:16px;font-family:var(--font-inter,Inter,sans-serif);cursor:pointer}.ds-pack input{width:18px;height:18px;accent-color:var(--accent,#245b47)}.ds-pack input:focus-visible{outline:2px solid var(--accent,#245b47);outline-offset:4px;}.ds-pack span{flex:1;min-width:0;overflow-wrap:anywhere}.ds-pack small{color:var(--sage,#59665e);font-size:13px;text-align:right}@media(max-width:767px){.ds-pack{flex-wrap:wrap;font-size:14px}.ds-pack small{flex-basis:100%;text-align:left;margin-left:28px;font-size:12px}}"
     }
   ],
   "narrative": {
-    "northStar": "TrailPack trip planner",
-    "overview": "This records the built component boundary in `src/components/assistant`, rendered by `src/app/plan/page.tsx`. Its source of truth is `planner.css` and the assistant components, inheriting palette and font variables from `src/app/globals.css` and `src/app/layout.tsx`. The matching sidecar is `.impeccable/design.json` beside this file. Route strategy is recorded separately in the project’s `.impeccable/surfaces/` directory.\n\nThe planner uses dark forest surfaces, cream text, and a lime action color. Playfair Display supplies the conversational headings and trip prompt; Inter carries labels, controls, explanations, and measured data. Most information sits directly on the page, organized by whitespace and dividing lines. Filled panels give the trip request and calculated weight distinct places in the hierarchy.\n\nThis is documentation of an extension to the incumbent system, not a whole-app redesign. The Trailhead, Atlas, and Fieldbook mock directions remain unchosen and supply no authority here.",
+    "northStar": "Fieldbook",
+    "overview": "The planner implements the approved Fieldbook world as a personal preparation workspace: a mineral page, white task pane, sage context, and clear forest actions. Inter replaces the previous serif typography. Its three numbered stages connect route choice, personal gear, and recording.\n\nThis scoped record covers `TripPlanner.tsx`, `planner.css`, GearEditor, ProductLookup, and the guest Gear surface that reuses the planner styles. The root `DESIGN.md` is the shared visual authority. Surface behavior is recorded in `.impeccable/surfaces/src-app-plan-page-tsx.md` at the project root.",
     "keyCharacteristics": [
-      "Forest tonal layers with lime actions and state cues.",
-      "Expressive serif headings paired with compact sans-serif controls.",
-      "Line-separated information with selectively filled panels.",
-      "Native disclosures, visible focus, and a responsive main column with supporting context."
+      "White task workspace with a sage pack and memory sidebar.",
+      "Numbered stages and persistent trip context.",
+      "Ruled gear rows, tabular weights, and explicit incomplete totals.",
+      "Device-save status and optional model controls disclosed in place."
     ],
     "rules": [
       {
         "name": "The Text Carries State Rule",
-        "body": "Selection, missing values, model state, and incomplete totals are named in text; color reinforces the message.",
+        "body": "Missing weights, unsaved edits, local persistence, and model status are stated explicitly.",
         "section": "colors"
       },
       {
         "name": "The Measured Numbers Rule",
-        "body": "Weights, route statistics, numeric fields, and account-context counts use tabular numerals so comparisons stay aligned.",
+        "body": "Pack totals, route statistics, numeric inputs, and memory counts use tabular numerals.",
         "section": "typography"
-      },
-      {
-        "name": "The Line-Separated Content Rule",
-        "body": "Routes, equipment, source results, saved trips, and packing zones are separated with spacing and rules; filled panels emphasize the request and weight calculation.",
-        "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** inherit the forest, cream, lime, Playfair Display, and Inter system within this planner boundary.",
-      "**Do** use line-separated rows for repeated information and filled panels for the request and weight summary.",
-      "**Do** pair color states with text and retain visible keyboard focus.",
-      "**Do** preserve tabular numerals for measured data and allow item names and source titles to wrap.",
-      "**Do** retain the stacked mobile workflow and space for the inherited bottom navigation."
+      "Do place the route name before difficulty and distance-to-target metadata.",
+      "Do keep the pack summary and recording/export actions prominent.",
+      "Do disclose missing weights and identify browser-local save state.",
+      "Do preserve separate guest and account memory scopes.",
+      "Do keep optional model activation explicit and the ordinary planner usable without it."
     ],
     "donts": [
-      "**Don't** treat unchosen redesign mockups as approved system direction.",
-      "**Don't** promote this scoped component specification into evidence that the whole app was redesigned.",
-      "**Don't** remove native disclosure, field, checkbox, or progress semantics when extending these components.",
-      "**Don't** replace written incomplete, unknown, or local-storage states with color alone."
+      "Don't bring back forest planning backgrounds, lime buttons, or Playfair headings.",
+      "Don't invent equipment weights, trip history, or current route conditions.",
+      "Don't claim that preparing a checklist export confirms a file was delivered.",
+      "Don't label the generated landscape as a photograph of the selected trail."
     ]
   }
 }

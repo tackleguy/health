@@ -2,21 +2,47 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SearchBar } from "@/components/search/SearchBar";
-import clsx from "clsx";
+import { NavIcon } from "./NavIcon";
 
 const navLinks = [
-  { href: "/plan", label: "Plan" },
-  { href: "/explore", label: "Explore" },
-  { href: "/map", label: "Map" },
-  { href: "/gear", label: "Gear" },
-  { href: "/pack-trails", label: "Pack Trails" },
-  { href: "/record", label: "Record" },
-  { href: "/", label: "Log" },
-  { href: "/you", label: "Profile" },
+  { href: "/explore/trails", label: "Explore", icon: "explore" as const },
+  { href: "/plan", label: "My trips", icon: "trips" as const },
+  { href: "/gear", label: "Gear", icon: "gear" as const },
 ];
+const tools = [
+  { href: "/record", label: "Record activity" },
+  { href: "/map", label: "Adventure map" },
+  { href: "/", label: "Activity log" },
+  { href: "/pack-trails", label: "Route guides" },
+  { href: "/trails", label: "Custom trails" },
+  { href: "/explore/ski", label: "Ski resorts" },
+];
+function MoreTools() {
+  const pathname = usePathname();
+  const disclosure = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    function dismissOutside(event: PointerEvent) {
+      if (disclosure.current && !disclosure.current.contains(event.target as Node)) disclosure.current.open = false;
+    }
+    document.addEventListener("pointerdown", dismissOutside);
+    return () => document.removeEventListener("pointerdown", dismissOutside);
+  }, []);
+  return <details className="nav-tools" key={pathname} ref={disclosure}
+    onKeyDown={event => {
+      if (event.key === "Escape" && !event.defaultPrevented && disclosure.current?.open) {
+        event.preventDefault();
+        disclosure.current.open = false;
+        disclosure.current.querySelector("summary")?.focus();
+      }
+    }}
+    onBlur={event => {
+      if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) event.currentTarget.open = false;
+    }}
+  ><summary>More tools</summary><nav className="nav-tools-content" aria-label="Additional destinations">{tools.map(tool => <Link key={tool.href} href={tool.href} aria-current={(tool.href === "/" ? pathname === "/" : pathname === tool.href || pathname.startsWith(`${tool.href}/`)) ? "page" : undefined}>{tool.label}</Link>)}<div className="nav-search"><SearchBar /></div></nav></details>;
+}
 
 export function NavBar() {
   const pathname = usePathname();
@@ -46,69 +72,20 @@ export function NavBar() {
     window.location.href = "/";
   }
 
-  const hideOn = ["/login", "/signup", "/record/live"];
-  if (hideOn.some((p) => pathname.startsWith(p))) return null;
-
-  return (
-    <header className="sticky top-0 z-50 hidden glass-panel-dark md:block">
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-3">
-        <Link href="/" className="group flex shrink-0 items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-sm font-bold text-forest">
-            ⛰
-          </span>
-          <span className="font-display text-lg font-semibold text-cream">
-            TrailPack
-          </span>
-        </Link>
-
-        <div className="hidden w-52 shrink-0 xl:block 2xl:w-64">
-          <SearchBar variant="dark" />
-        </div>
-
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap">
-          {navLinks.map((link) => {
-            const active =
-              link.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={clsx(
-                  "rounded-lg px-2 py-2 text-sm font-medium transition",
-                  active
-                    ? "bg-accent/15 text-accent"
-                    : "text-sage hover:bg-white/5 hover:text-cream",
-                )}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {userEmail ? (
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="btn-ghost !py-2 !text-sm"
-            >
-              Sign out
-            </button>
-          ) : (
-            <>
-              <Link href="/login" className="text-sm font-medium text-sage hover:text-cream">
-                Log in
-              </Link>
-              <Link href="/signup" className="btn-primary !py-2 !text-sm">
-                Join
-              </Link>
-            </>
-          )}
-        </div>
+  return <>
+    <header className="fieldbook-mobile-header"><Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />TrailPack</Link><MoreTools /></header>
+    <aside className="fieldbook-nav" aria-label="Main navigation">
+      <Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />TrailPack</Link>
+      <nav className="fieldbook-destinations" aria-label="Main destinations">{navLinks.map(link => {
+        const active = link.label === "Explore" ? pathname.startsWith("/explore") : pathname.startsWith(link.href);
+        return <Link key={link.href} href={link.href} aria-current={active ? "page" : undefined}><NavIcon name={link.icon} />{link.label}</Link>;
+      })}</nav>
+      <MoreTools />
+      <div className="fieldbook-nav-footer">
+        <Link href="/record" className="fieldbook-record"><NavIcon name="record" />Record activity</Link>
+        <Link href="/you" className="fieldbook-profile" aria-current={pathname.startsWith("/you") ? "page" : undefined}><NavIcon name="profile" />Profile</Link>
+        <div className="fieldbook-auth">{userEmail ? <button onClick={handleSignOut}>Sign out</button> : <><Link href="/login">Log in</Link><Link href="/signup">Create account</Link></>}</div>
       </div>
-    </header>
-  );
+    </aside>
+  </>;
 }

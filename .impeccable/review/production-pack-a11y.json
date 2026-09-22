@@ -1,0 +1,20 @@
+{
+  "violations": [],
+  "manualReview": [
+    {
+      "id": "color-contrast",
+      "targets": [
+        [
+          ".pack-chart-total"
+        ],
+        [
+          ".pack-chart-label"
+        ],
+        [
+          ".planner-button > span[aria-hidden=\"true\"]"
+        ]
+      ]
+    }
+  ],
+  "passes": 54
+}

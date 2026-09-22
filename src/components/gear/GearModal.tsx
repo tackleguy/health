@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   CATEGORY_ORDER,
   type GearCategory,
@@ -16,43 +16,32 @@ interface Props {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-[var(--border)] bg-background/60 px-3 py-2.5 text-sm text-cream outline-none transition placeholder:text-mist/50 focus:border-accent/50";
+  "w-full rounded-lg border border-[var(--control-border)] bg-background/60 px-3 py-2.5 text-base text-cream outline-none transition placeholder:text-mist/50 focus:border-accent/50";
 const labelClass =
   "mb-1 block text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-sage";
 
-export function GearModal({ open, onClose, onSave, editItem }: Props) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<GearCategory>("Shelter");
-  const [qty, setQty] = useState(1);
-  const [weight, setWeight] = useState("");
-  const [price, setPrice] = useState("");
-  const [type, setType] = useState<GearType>("Base");
-  const [link, setLink] = useState("");
+export function GearModal(props: Props) {
+  return props.open ? <GearModalForm key={props.editItem?.id ?? "new"} {...props} /> : null;
+}
 
+function GearModalForm({ onClose, onSave, editItem }: Props) {
+  const id = useId();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [name, setName] = useState(editItem?.name ?? "");
+  const [category, setCategory] = useState<GearCategory>(editItem?.category ?? "Shelter");
+  const [qty, setQty] = useState(editItem?.qty ?? 1);
+  const [weight, setWeight] = useState(editItem ? String(editItem.weight) : "");
+  const [price, setPrice] = useState(editItem ? String(editItem.price) : "");
+  const [type, setType] = useState<GearType>(editItem?.type ?? "Base");
+  const [link, setLink] = useState(editItem?.link ?? "");
   useEffect(() => {
-    if (editItem) {
-      setName(editItem.name);
-      setCategory(editItem.category);
-      setQty(editItem.qty);
-      setWeight(String(editItem.weight));
-      setPrice(String(editItem.price));
-      setType(editItem.type);
-      setLink(editItem.link);
-    } else {
-      setName("");
-      setCategory("Shelter");
-      setQty(1);
-      setWeight("");
-      setPrice("");
-      setType("Base");
-      setLink("");
-    }
-  }, [editItem, open]);
-
-  if (!open) return null;
+    const element = dialog.current;
+    element?.showModal();
+    return () => element?.close();
+  }, []);
 
   const handleSave = () => {
-    if (!name.trim() || !weight) return;
+    if (!name.trim() || !Number.isFinite(Number(weight)) || Number(weight) <= 0 || !Number.isInteger(qty) || qty < 1) return;
     onSave({
       name: name.trim(),
       category,
@@ -66,32 +55,31 @@ export function GearModal({ open, onClose, onSave, editItem }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-start justify-center bg-forest/80 px-4 py-8 backdrop-blur-md sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        className="max-h-[85vh] w-full max-w-[560px] overflow-y-auto rounded-2xl border border-[var(--border-strong)] bg-surface-elevated p-8 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-6 font-display text-xl font-semibold text-cream">
+    <dialog ref={dialog} aria-labelledby={`${id}-title`} onCancel={onClose}
+      className="gear-dialog m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-[560px] overflow-y-auto rounded-2xl border border-[var(--border-strong)] bg-surface-elevated p-6 text-cream shadow-2xl sm:p-8"
+      onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <form onSubmit={event => { event.preventDefault(); handleSave(); }}>
+        <h3 id={`${id}-title`} className="mb-6 font-display text-xl font-semibold text-cream">
           {editItem ? "Edit Gear" : "Add New Gear"}
         </h3>
         <div className="mb-4">
-          <label className={labelClass}>Item Name</label>
+          <label htmlFor={`${id}-name`} className={labelClass}>Item Name</label>
           <input
             className={inputClass}
+            id={`${id}-name`}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            required maxLength={180}
             placeholder="e.g., Nemo Tensor Sleeping Pad"
           />
         </div>
         <div className="mb-4 grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Category</label>
+            <label htmlFor={`${id}-category`} className={labelClass}>Category</label>
             <select
               className={inputClass}
-              value={category}
+              id={`${id}-category`}
+            value={category}
               onChange={(e) => setCategory(e.target.value as GearCategory)}
             >
               {CATEGORY_ORDER.map((c) => (
@@ -102,44 +90,48 @@ export function GearModal({ open, onClose, onSave, editItem }: Props) {
             </select>
           </div>
           <div>
-            <label className={labelClass}>Quantity</label>
+            <label htmlFor={`${id}-qty`} className={labelClass}>Quantity</label>
             <input
               className={inputClass}
               type="number"
               min={1}
-              value={qty}
+              id={`${id}-qty`}
+            value={qty}
               onChange={(e) => setQty(parseInt(e.target.value, 10) || 1)}
             />
           </div>
         </div>
         <div className="mb-4 grid grid-cols-3 gap-3">
           <div>
-            <label className={labelClass}>Weight (oz)</label>
+            <label htmlFor={`${id}-weight`} className={labelClass}>Weight (oz)</label>
             <input
               className={inputClass}
               type="number"
-              step="0.1"
-              value={weight}
+              step="any" min="0.01" required
+              id={`${id}-weight`}
+            value={weight}
               onChange={(e) => setWeight(e.target.value)}
               placeholder="16.0"
             />
           </div>
           <div>
-            <label className={labelClass}>Price ($)</label>
+            <label htmlFor={`${id}-price`} className={labelClass}>Price ($)</label>
             <input
               className={inputClass}
               type="number"
-              step="0.01"
-              value={price}
+              step="0.01" min="0"
+              id={`${id}-price`}
+            value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="299.99"
             />
           </div>
           <div>
-            <label className={labelClass}>Type</label>
+            <label htmlFor={`${id}-type`} className={labelClass}>Type</label>
             <select
               className={inputClass}
-              value={type}
+              id={`${id}-type`}
+            value={type}
               onChange={(e) => setType(e.target.value as GearType)}
             >
               <option value="Base">Base Weight</option>
@@ -149,9 +141,10 @@ export function GearModal({ open, onClose, onSave, editItem }: Props) {
           </div>
         </div>
         <div className="mb-6">
-          <label className={labelClass}>Link / Notes</label>
+          <label htmlFor={`${id}-link`} className={labelClass}>Link / Notes</label>
           <input
             className={inputClass}
+            id={`${id}-link`}
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="Optional URL or notes"
@@ -165,11 +158,11 @@ export function GearModal({ open, onClose, onSave, editItem }: Props) {
           >
             Cancel
           </button>
-          <button type="button" onClick={handleSave} className="btn-primary">
+          <button type="submit" className="btn-primary">
             {editItem ? "Save Changes" : "Add Gear"}
           </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </dialog>
   );
 }

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 const inputClass =
-  "w-full rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface-muted px-3 py-2.5 text-sm text-cream outline-none placeholder:text-mist focus:border-accent/40 focus:ring-2 focus:ring-accent/10";
+  "w-full rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2.5 text-base text-cream placeholder:text-mist focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4";
 
 export function LoginForm() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export function LoginForm() {
 
     const supabase = createClient();
     if (!supabase) {
-      setError("Supabase is not configured.");
+      setError("Account sign-in is not connected in this preview. You can still explore trails and plan trips as a guest.");
       setLoading(false);
       return;
     }
@@ -49,6 +49,7 @@ export function LoginForm() {
         </label>
         <input
           id="email"
+          autoComplete="email"
           type="email"
           required
           value={email}
@@ -62,6 +63,7 @@ export function LoginForm() {
         </label>
         <input
           id="password"
+          autoComplete="current-password"
           type="password"
           required
           value={password}
@@ -69,7 +71,7 @@ export function LoginForm() {
           className={inputClass}
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
         {loading ? "Signing in..." : "Sign in"}
       </button>

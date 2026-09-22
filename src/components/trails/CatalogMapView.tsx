@@ -1,6 +1,6 @@
 "use client";
 import { useEffect,useRef,useState } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "@/lib/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { CatalogTrail } from "@/lib/trail-catalog/types";
 
@@ -52,5 +52,5 @@ export function CatalogMapView({ trails = NO_TRAILS,lines = NO_LINES }: { trails
     const observer = new ResizeObserver(()=>map.resize());observer.observe(container.current);
     return ()=>{ observer.disconnect();markers.forEach(m=>m.remove());map.remove(); };
   },[trails,lines]);
-  return <div><div ref={container} className="catalog-map-canvas" aria-label="Trail section map" />{failed && <p role="status" className="catalog-muted">Some map content could not load. Check your connection or use the original source link for this trail.</p>}</div>;
+  return <div><div ref={container} className="catalog-map-canvas" role="region" aria-label="Trail section map" />{failed && <p role="status" className="catalog-muted">Some map content could not load. Check your connection or use the original source link for this trail.</p>}</div>;
 }

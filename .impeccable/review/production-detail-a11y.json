@@ -1,0 +1,14 @@
+{
+  "violations": [],
+  "manualReview": [
+    {
+      "id": "color-contrast",
+      "targets": [
+        [
+          ".maplibregl-ctrl-attrib-inner > a"
+        ]
+      ]
+    }
+  ],
+  "passes": 43
+}

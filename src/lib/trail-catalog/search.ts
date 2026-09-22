@@ -1,4 +1,5 @@
-import type { CatalogFilters, CatalogTrail } from "./types";
+import type { CatalogBounds, CatalogFilters, CatalogTrail } from "./types";
+import { withinBounds } from "./map";
 
 export const normalize = (value: string) => value.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 export function searchableText(trail: CatalogTrail) {
@@ -9,9 +10,10 @@ function distanceKm(a: number, b: number, c: number, d: number) {
   const h = Math.sin((c-a)*rad/2)**2 + Math.cos(a*rad)*Math.cos(c*rad)*Math.sin((d-b)*rad/2)**2;
   return 6371*2*Math.asin(Math.sqrt(Math.min(1,h)));
 }
-export function filterCatalog(rows: CatalogTrail[], filters: CatalogFilters, texts?: string[]) {
+export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilters, texts?: string[]) {
   const terms = normalize((filters.q ?? "").slice(0,180)).split(/\s+/).filter(Boolean);
-  const matches = rows.filter((r,i) => {
+  return rows.filter((r,i) => {
+    if (filters.bbox && !withinBounds(r.longitude, r.latitude, filters.bbox)) return false;
     if (filters.country && r.country !== filters.country) return false;
     if (filters.region && normalize(r.region ?? "") !== normalize(filters.region)) return false;
     if (terms.length && !terms.every(t => (texts?.[i] ?? searchableText(r)).includes(t))) return false;
@@ -22,15 +24,27 @@ export function filterCatalog(rows: CatalogTrail[], filters: CatalogFilters, tex
     if (Number.isFinite(filters.lat) && Number.isFinite(filters.lng) && distanceKm(filters.lat!, filters.lng!, r.latitude, r.longitude) > (filters.radiusKm ?? 50)) return false;
     return true;
   });
+ }
+export function filterCatalog(rows: CatalogTrail[], filters: CatalogFilters, texts?: string[]) {
+  const matches = matchingCatalogRows(rows, filters, texts);
   const limit = Number.isFinite(filters.limit) ? Math.min(48,Math.max(1,Math.floor(filters.limit!))) : 24;
   const pages = Math.max(1,Math.ceil(matches.length/limit));
   const page = Number.isFinite(filters.page) ? Math.min(pages,Math.max(1,Math.floor(filters.page!))) : 1;
   return { trails:matches.slice((page-1)*limit,page*limit), total:matches.length, page, pages, limit };
+}
+export function parseCatalogBounds(value: string | null): CatalogBounds | undefined {
+  if (!value) return undefined;
+  const parts = value.split(",");
+  if (parts.length !== 4 || parts.some(part => !part.trim())) return undefined;
+  const bounds = parts.map(Number) as CatalogBounds;
+  const [west, south, east, north] = bounds;
+  if (!bounds.every(Number.isFinite) || west < -180 || west > 180 || east < -180 || east > 180 || south < -90 || north > 90 || south > north) return undefined;
+  return bounds;
 }
 export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
   const number = (key: string, min: number, max: number) => {
     const raw = params.get(key); if (!raw?.trim()) return undefined;
     const n = Number(raw); return Number.isFinite(n) && n >= min && n <= max ? n : undefined;
   };
-  return { q:params.get("q")?.trim().slice(0,180), country:["US","CA"].includes(params.get("country") ?? "") ? params.get("country")! : undefined, region:params.get("region")?.slice(0,100), page:number("page",1,100000), limit:number("limit",1,48), minMiles:number("minMiles",0,10000), maxMiles:number("maxMiles",0,10000), difficulty:params.get("difficulty")?.slice(0,30), dogFriendly:params.get("dogFriendly") === "true", lat:number("lat",-90,90), lng:number("lng",-180,180), radiusKm:number("radiusKm",0.1,1000) };
+  return { bbox:parseCatalogBounds(params.get("bbox")), q:params.get("q")?.trim().slice(0,180), country:["US","CA"].includes(params.get("country") ?? "") ? params.get("country")! : undefined, region:params.get("region")?.slice(0,100), page:number("page",1,100000), limit:number("limit",1,48), minMiles:number("minMiles",0,10000), maxMiles:number("maxMiles",0,10000), difficulty:params.get("difficulty")?.slice(0,30), dogFriendly:params.get("dogFriendly") === "true", lat:number("lat",-90,90), lng:number("lng",-180,180), radiusKm:number("radiusKm",0.1,1000) };
 }

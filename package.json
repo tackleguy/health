@@ -2,10 +2,12 @@
   "name": "trailpack",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=20.9.0"
   },
   "scripts": {
+    "predev": "node scripts/prepare-map-assets.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-map-assets.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -21,8 +23,8 @@
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",
-    "maplibre-gl": "^5.24.0",
-    "next": "16.2.9",
+    "maplibre-gl": "^6.10.0",
+    "next": "^16.3.5",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -32,8 +34,9 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-core": "^4.12.1",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.3.5",
     "pg": "^8.23.0",
     "supabase": "^2.116.0",
     "tailwindcss": "^4",
