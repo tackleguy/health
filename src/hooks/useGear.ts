@@ -1,5 +1,6 @@
 "use client";
 
+import { cleanStoredProductDetails } from "@/lib/assistant/product-details";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -15,6 +16,7 @@ function mapGear(row: Record<string, unknown>): GearItem {
     weight: Number(row.weight) || 0,
     price: Number(row.price) || 0,
     link: String(row.link ?? ""),
+    productDetails: cleanStoredProductDetails(row.product_details),
   };
 }
 
@@ -37,45 +39,53 @@ export function useGear(userId: string) {
     return () => { active = false; };
   }, [userId]);
 
+  const toRow = (item: Omit<GearItem, "id">) => {
+    const { productDetails, ...fields } = item;
+    return { ...fields, product_details: cleanStoredProductDetails(productDetails) };
+  };
   const addGear = async (item: Omit<GearItem, "id">) => {
     const supabase = createClient();
-    if (!supabase) return;
+    if (!supabase) return false;
     const { data, error: err } = await supabase
       .from("gear_items")
-      .insert({ user_id: userId, ...item })
+      .insert({ user_id: userId, ...toRow(item) })
       .select()
       .single();
     if (err) {
       setError(err.message);
-      return;
+      return false;
     }
     if (data) setGear((prev) => [...prev, mapGear(data)]);
+    setError(null);
+    return Boolean(data);
   };
 
   const editGear = async (id: string, item: Omit<GearItem, "id">) => {
     const supabase = createClient();
-    if (!supabase) return;
+    if (!supabase) return false;
     const { error: err } = await supabase
       .from("gear_items")
-      .update(item)
+      .update(toRow(item))
       .eq("id", id);
     if (err) {
       setError(err.message);
-      return;
+      return false;
     }
     setGear((prev) => prev.map((g) => (g.id === id ? { ...item, id } : g)));
+    setError(null);
+    return true;
   };
 
   const deleteGear = async (id: string) => {
     const supabase = createClient();
-    if (!supabase) return;
+    if (!supabase) return false;
     const { error: err } = await supabase
       .from("gear_items")
       .delete()
       .eq("id", id);
     if (err) {
       setError(err.message);
-      return;
+      return false;
     }
     setGear((prev) => prev.filter((g) => g.id !== id));
   };

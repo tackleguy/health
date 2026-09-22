@@ -1,7 +1,10 @@
 import https from "node:https";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import type { ProductFact, ProductResearch, WebSource } from "./types";
+import { decodeText, htmlText } from "./product-text";
+export { decodeText, htmlText, weightToOz } from "./product-text";
+export { parseProduct } from "./product-parser";
+import type { WebSource } from "./types";
 
 export function publicIPv4(address: string) {
   if (isIP(address) !== 4) return false;
@@ -38,44 +41,6 @@ export async function fetchSource(raw: string, redirects = 0): Promise<{ url: st
   if (response.status !== 200) throw new Error("The source did not provide a readable page.");
   return { url: url.href, body: response.body };
 }
-export function decodeText(text: string) {
-  return text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&nbsp;|&#160;/g, " ").replace(/&ndash;/g, "–").replace(/&mdash;/g, "—").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (_, n) => Number(n) <= 0x10ffff ? String.fromCodePoint(Number(n)) : "");
-}
-export function htmlText(html: string) {
-  return decodeText(html.replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<\/(?:p|div|li|tr|td|th|dt|dd|h[1-6])>|<br\s*\/?\s*>/gi, "\n").replace(/<[^>]+>/g, " ")).replace(/[\t\r ]+/g, " ").replace(/ *\n */g, "\n").replace(/\n+/g, "\n").trim();
-}
-export function weightToOz(text: string): number | null {
-  // An imperial pair and its metric equivalent describe the same weight, not two weights.
-  const lb = text.match(/(\d+(?:\.\d+)?)\s*(?:lbs?\.?|pounds?)\b/i);
-  const oz = text.match(/(\d+(?:\.\d+)?)\s*(?:oz\.?|ounces?)\b/i);
-  const kg = text.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilograms?)\b/i);
-  const grams = text.match(/(\d+(?:\.\d+)?)\s*(?:g|grams?)\b/i);
-  const value = lb ? Number(lb[1])*16 + (oz ? Number(oz[1]) : 0) : oz ? Number(oz[1]) : kg ? Number(kg[1])*35.27396195 : grams ? Number(grams[1])/28.349523125 : null;
-  return value != null && value > 0 && value < 16000 ? Math.round(value*100)/100 : null;
-}
-export function parseProduct(html: string, url: string): ProductResearch {
-  const text = htmlText(html);
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const facts: ProductFact[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.length > 200 || /shipping|dimensional weight|freight|customer|review/i.test(line)) continue;
-    const weight = line.match(/^((?:(?:minimum|packaged|packed|trail|total|average|item|product|net)\s+)?weight(?:\s*\([^)]*\))?)\s*:?[\s–-]*(.*)$/i);
-    const size = line.match(/^((?:(?:packed|pack|compressed|stuff sack|package|floor|unfolded|product)\s+)?(?:size|dimensions)|packed length|packed width|packed diameter|height|width|length|depth)\s*:?[\s–-]*(.*)$/i);
-    const match = weight ?? size;
-    if (!match) continue;
-    const value = match[2].trim() || lines[i+1] || "";
-    if (value.length > 160 || !/\d/.test(value) || /shipping/i.test(value)) continue;
-    const weightOz = weight ? weightToOz(value) : null;
-    if (weight && weightOz === null) continue;
-    if (!weight && !/\b(?:in|inch|inches|cm|mm|ft|feet|liters?|litres?|l)\b|[″′"]/i.test(value)) continue;
-    facts.push({ label: match[1], value, weightOz, kind: weight ? "weight" : /packed|pack |compressed|stuff sack/i.test(match[1]) ? "packed-size" : "dimensions", evidence: `${match[1]}: ${value}` });
-  }
-  // Only explicitly labelled facts are offered. The model never invents missing specifications.
-  const unique = facts.filter((fact, i) => facts.findIndex(f => f.evidence === fact.evidence) === i).slice(0, 20);
-  const title = decodeText(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? new URL(url).hostname).replace(/<[^>]+>/g, "").trim().slice(0, 240);
-  return { title, url, retrievedAt: new Date().toISOString(), facts: unique, excerpt: unique.map(f => f.evidence).join("\n").slice(0, 1600) };
-}
 export function parseSearch(xml: string): WebSource[] {
   return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].flatMap(match => {
     const field = (name: string) => decodeText(match[1].match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`))?.[1] ?? "").replace(/<[^>]*>/g, "").trim();
@@ -92,12 +57,36 @@ export async function searchSources(query: string, kind: "trail" | "product"): P
     }).slice(0, 6);
   }
   if (kind === "product") {
-    // An official manufacturer catalog provides useful product-name lookup without an API key.
-    if (!/msr|hubba|therm.?a.?rest|platypus|seal.?line|packtowl|cascade designs/i.test(query)) return [];
-    const terms = query.replace(/\b(msr|therm.?a.?rest|platypus|seal.?line|packtowl|cascade designs)\b/gi, "").trim() || query;
-    const result = await fetchSource(`https://cascadedesigns.com/search/suggest.json?q=${encodeURIComponent(terms)}&resources%5Btype%5D=product&resources%5Blimit%5D=5`);
-    const data = JSON.parse(result.body);
-    return (data.resources?.results?.products ?? []).map((p: { title: string; url: string; body: string; vendor: string }) => ({ title: p.title, url: sourceUrl(new URL(p.url, "https://cascadedesigns.com").href).href, snippet: `${p.vendor} · Official manufacturer catalog. ${htmlText(p.body).slice(0, 200)}` })).slice(0, 5);
+    // Public manufacturer catalogs work without a search key or model download.
+    const catalogs = [
+      { match: /\b(msr|hubba|therm.?a.?rest|platypus|seal.?line|packtowl|cascade designs)\b/i, strip: /\b(msr|therm.?a.?rest|platypus|seal.?line|packtowl|cascade designs)\b/gi, origin: "https://cascadedesigns.com" },
+      { match: /\b(nemo|tensor)\b/i, strip: /\bnemo(?: equipment)?\b/gi, origin: "https://www.nemoequipment.com" },
+      { match: /\b(big agnes|copper spur)\b/i, strip: /\bbig agnes\b/gi, origin: "https://www.bigagnes.com" },
+      { match: /\bsea\s*to\s*summit\b/i, strip: /\bsea\s*to\s*summit\b/gi, origin: "https://seatosummit.com" },
+    ];
+    const catalog = catalogs.find(c => c.match.test(query));
+    if (catalog) {
+      const terms = query.replace(catalog.strip, "").trim() || query;
+      try {
+        const result = await fetchSource(`${catalog.origin}/search/suggest.json?q=${encodeURIComponent(terms)}&resources%5Btype%5D=product&resources%5Blimit%5D=5`);
+        const data = JSON.parse(result.body);
+        const products = (data.resources?.results?.products ?? []).slice(0, 5).flatMap((p: { title?: string; url?: string; body?: string; vendor?: string }) => {
+          try {
+            if (!p.url || !p.title) return [];
+            const url = sourceUrl(new URL(p.url, catalog.origin).href);
+            for (const key of ["_pos", "_sid", "_ss", "_psq", "_psid"]) url.searchParams.delete(key);
+            return [{ title: htmlText(p.title).slice(0, 200), url: url.href, snippet: `${htmlText(p.vendor ?? "")} · Manufacturer catalog. ${htmlText(p.body ?? "").slice(0, 200)}` }];
+          } catch { return []; }
+        });
+        if (products.length) return products;
+      } catch { /* Fall back to public search when a manufacturer's catalog is unavailable. */ }
+    }
+    const result = await fetchSource(`https://www.bing.com/search?format=rss&q=${encodeURIComponent(query + " product specifications weight price")}`);
+    const tokens = query.toLowerCase().match(/[a-z0-9]+/g)?.filter(t => t.length > 2) ?? [];
+    return parseSearch(result.body).filter(s => {
+      const text = `${s.title} ${s.snippet} ${s.url}`.toLowerCase();
+      return tokens.length > 0 && tokens.filter(t => text.includes(t)).length >= Math.max(1, Math.ceil(tokens.length * 0.7));
+    });
   }
   // Public encyclopedia search is discovery only: it never supplies an automatically chosen route.
   const region = query.replace(/\b\d+(?:\.\d+)?\s*(?:miles?|days?)\b/gi, "").trim();

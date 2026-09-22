@@ -3,8 +3,8 @@ import { fetchSource, parseProduct } from "@/lib/assistant/research";
 export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin");
-  if (origin && new URL(origin).host !== request.headers.get("host")) return NextResponse.json({ error: "Use this tool from the app." }, { status: 403 });
   try {
+    if (origin && new URL(origin).host !== request.headers.get("host")) return NextResponse.json({ error: "Use this tool from the app." }, { status: 403 });
     const body = await request.text();
     if (body.length > 2400) return NextResponse.json({ error: "Product URL is too long." }, { status: 400 });
     const { url } = JSON.parse(body);

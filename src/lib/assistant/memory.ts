@@ -1,3 +1,4 @@
+import { cleanProductDetails } from "./product-details";
 import { CATEGORY_ORDER } from "@/lib/gear";
 import { EMPTY_PROFILE, EMPTY_REQUEST } from "./planning";
 import type { PlannerGear, PlannerMemory, PlannerProfile, SavedPlan, TripRequest } from "./types";
@@ -9,7 +10,7 @@ export const emptyMemory = (): PlannerMemory => ({ version: 1, profile: { ...EMP
 export function cleanGear(value: unknown): PlannerGear | null {
   const g = object(value);
   if (!str(g.id) || !str(g.name)) return null;
-  return { id: str(g.id, 160), name: str(g.name, 180), category: CATEGORY_ORDER.includes(g.category as PlannerGear["category"]) ? g.category as PlannerGear["category"] : "Misc", type: ["Base", "Worn", "Consumable"].includes(String(g.type)) ? g.type as PlannerGear["type"] : "Base", qty: Math.floor(num(g.qty, 1, 1000) ?? 1), weightOz: num(g.weightOz, 0.001, 16000), packedSize: str(g.packedSize, 160) || null, sourceUrl: /^https:\/\//i.test(str(g.sourceUrl)) ? str(g.sourceUrl, 2000) : null };
+  return { ...cleanProductDetails(g), id: str(g.id, 160), name: str(g.name, 180), category: CATEGORY_ORDER.includes(g.category as PlannerGear["category"]) ? g.category as PlannerGear["category"] : "Misc", type: ["Base", "Worn", "Consumable"].includes(String(g.type)) ? g.type as PlannerGear["type"] : "Base", qty: Math.floor(num(g.qty, 1, 1000) ?? 1), weightOz: num(g.weightOz, 0.001, 16000), packedSize: str(g.packedSize, 160) || null, sourceUrl: /^https:\/\//i.test(str(g.sourceUrl)) ? str(g.sourceUrl, 2000) : null };
 }
 export function cleanRequest(value: unknown): TripRequest {
   const r = object(value);

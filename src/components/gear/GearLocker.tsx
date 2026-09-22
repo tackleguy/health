@@ -1,5 +1,6 @@
 "use client";
 
+import { formatProductPrice } from "@/lib/assistant/product-draft";
 import { useMemo, useState } from "react";
 import {
   CATEGORY_COLORS,
@@ -16,8 +17,8 @@ interface Props {
   gear: GearItem[];
   unit: WeightUnit;
   onUnitChange: (u: WeightUnit) => void;
-  onAdd: (item: Omit<GearItem, "id">) => void;
-  onEdit: (id: string, item: Omit<GearItem, "id">) => void;
+  onAdd: (item: Omit<GearItem, "id">) => Promise<boolean>;
+  onEdit: (id: string, item: Omit<GearItem, "id">) => Promise<boolean>;
   onDelete: (id: string) => void;
 }
 
@@ -62,12 +63,7 @@ export function GearLocker({
     return groups;
   }, [filtered]);
 
-  const handleSave = (item: Omit<GearItem, "id">) => {
-    if (editItem) {
-      onEdit(editItem.id, item);
-      setEditItem(null);
-    } else onAdd(item);
-  };
+  const handleSave = async (item: Omit<GearItem, "id">) => editItem ? onEdit(editItem.id, item) : onAdd(item);
 
   const units: WeightUnit[] = ["oz", "g", "lb"];
 
@@ -130,9 +126,9 @@ export function GearLocker({
           colorClass="text-accent"
         />
         <StatCard
-          value={`$${stats.totalCost.toLocaleString()}`}
+          value={Object.entries(stats.costsByCurrency).map(([currency, amount]) => formatProductPrice(amount, currency)).join(" + ") || "—"}
           label="Total Value"
-          sub="gear investment"
+          sub="by currency · no conversion"
         />
       </div>
 
@@ -249,7 +245,7 @@ export function GearLocker({
                       {convertWeight(g.weight * g.qty, unit)} {unit}
                     </td>
                     <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 text-right font-mono text-sm text-sage transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
-                      ${(g.price * g.qty).toFixed(0)}
+                      {formatProductPrice(g.price * g.qty, g.productDetails?.priceCurrency ?? "USD")}
                     </td>
                     <td className="rounded-r-lg border-y border-r border-transparent bg-surface-muted/40 px-4 py-2.5 text-right transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
                       <button

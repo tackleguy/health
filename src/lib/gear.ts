@@ -1,3 +1,5 @@
+import type { ProductDetails } from "./assistant/types";
+
 export type GearCategory =
   | "Shelter"
   | "Sleep System"
@@ -20,6 +22,7 @@ export interface GearItem {
   price: number;
   type: GearType;
   link: string;
+  productDetails?: ProductDetails & { packedSize?: string | null };
 }
 
 /** Curated backpacking routes (not the PostGIS trails catalog). */
@@ -381,12 +384,15 @@ export function calcStats(gear: GearItem[]) {
   let wornWeight = 0;
   let consumableWeight = 0;
   let totalCost = 0;
+  const costsByCurrency: Record<string, number> = {};
   let totalItems = 0;
   for (const g of gear) {
     const w = g.weight * g.qty;
     totalWeight += w;
     totalItems += g.qty;
     totalCost += g.price * g.qty;
+    const currency = g.productDetails?.priceCurrency ?? "USD";
+    costsByCurrency[currency] = (costsByCurrency[currency] ?? 0) + g.price * g.qty;
     if (g.type === "Base") baseWeight += w;
     else if (g.type === "Worn") wornWeight += w;
     else consumableWeight += w;
@@ -397,6 +403,7 @@ export function calcStats(gear: GearItem[]) {
     wornWeight,
     consumableWeight,
     totalCost,
+    costsByCurrency,
     totalItems,
   };
 }

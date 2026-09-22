@@ -294,3 +294,22 @@
 
 .planner-shell :is(input:not([type=checkbox]),textarea,select) { border-color:var(--control-border); font-size:16px; }
 .planner-shell summary { min-height:44px; }
+
+/* Product lookup stays part of the existing equipment editor. */
+.product-matches { list-style: none; padding: 0; }
+.product-matches li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--plan-line); }
+.product-matches li > div { min-width: 0; }
+.product-matches a { overflow-wrap: anywhere; }
+.product-matches small { display: block; color: var(--plan-muted); margin-top: 4px; }
+.product-matches button { flex-shrink: 0; }
+.planner-product { padding-top: 12px; }
+.planner-product label, .product-more label { min-width: 0; }
+.planner-product select { text-overflow: ellipsis; }
+.planner-product label small { overflow-wrap: anywhere; }
+.product-variant { margin-top: 18px; }
+.product-more { margin-bottom: 18px; }
+@media (max-width: 520px) {
+  .product-matches li { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .planner-product .planner-fields { grid-template-columns: minmax(0, 1fr); }
+}
+.planner-shell.gear-dialog-content { padding: 0; }

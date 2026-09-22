@@ -37,3 +37,7 @@ Current captures: `.impeccable/review/plan-desktop.png`, `pack-desktop.png`, `pa
 ## Production hardening
 
 The existing Prepare step now includes load/category donut charts with text tables, sortable per-item weights and quantities, shared unit switching, four detailed packing zones and a reconciled weight summary. Unknown measurements stay incomplete and worn items stay separate. See `.impeccable/review/production-verification.md` for 36-test coverage, responsive checks and accessibility evidence.
+
+## Product autofill extension
+
+The equipment editor now accepts a product name or link, reviews source/variant-specific facts, and fills editable weight, price/currency, packed size, capacity, materials, brand/model/SKU and dimensions. It shares the same native-control treatment with Gear and returns keyboard focus to the draft after applying details. Missing fields preserve manual entries. See `.impeccable/review/product-autofill-verification.md` for source, storage, responsive and accessibility checks, plus the account-migration deployment limitation.
