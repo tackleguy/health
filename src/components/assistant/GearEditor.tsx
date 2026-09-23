@@ -19,7 +19,7 @@ export function GearEditor({ onSave, initial, onCancel }: { onSave: (gear: Plann
   const [type, setType] = useState<PlannerGear["type"]>(initial?.type ?? "Base");
   const [qty, setQty] = useState(initial?.qty ?? 1);
   const [source, setSource] = useState(initial?.sourceUrl ?? "");
-  const [details, setDetails] = useState<ProductDetails>(() => ({ price: initial?.price, priceCurrency: initial?.priceCurrency, brand: initial?.brand, model: initial?.model, sku: initial?.sku, capacity: initial?.capacity, materials: initial?.materials, dimensions: initial?.dimensions, sourceCheckedAt: initial?.sourceCheckedAt }));
+  const [details, setDetails] = useState<ProductDetails>(() => ({ price: initial?.price, priceCurrency: initial?.priceCurrency, brand: initial?.brand, model: initial?.model, sku: initial?.sku, capacity: initial?.capacity, materials: initial?.materials, dimensions: initial?.dimensions, sourceCheckedAt: initial?.sourceCheckedAt, sourceNote: initial?.sourceNote }));
   const [notice, setNotice] = useState("");
   function fillParameters() {
     const input = productLookupInput(name, source);
@@ -29,7 +29,7 @@ export function GearEditor({ onSave, initial, onCancel }: { onSave: (gear: Plann
     productLookup.current?.fill(input);
   }
   return <div className="planner-gear-editor">
-    <details ref={lookupDetails}><summary>Fill details from a product name or link</summary><ProductLookup ref={productLookup} onBusyChange={setLookingUp} onUse={draft => {
+    <details ref={lookupDetails}><summary>Fill details from a product name or link</summary><ProductLookup ref={productLookup} productName={name} onBusyChange={setLookingUp} onUse={draft => {
       const { name: foundName, weightOz, packedSize, sourceUrl, ...metadata } = draft;
       setName(foundName.slice(0, 180));
       if (weightOz !== undefined) { setWeight(String(weightOz)); setUnit("oz"); }

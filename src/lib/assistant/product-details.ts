@@ -8,6 +8,7 @@ export function cleanProductDetails(value: unknown): ProductDetails {
   if (typeof v.price === "number" && Number.isFinite(v.price) && v.price >= 0 && v.price <= 1_000_000) details.price = v.price;
   if (typeof v.priceCurrency === "string" && /^[A-Z]{3}$/.test(v.priceCurrency)) details.priceCurrency = v.priceCurrency;
   if (typeof v.sourceCheckedAt === "string" && !Number.isNaN(Date.parse(v.sourceCheckedAt))) details.sourceCheckedAt = new Date(v.sourceCheckedAt).toISOString();
+  if (typeof v.sourceNote === "string") details.sourceNote = v.sourceNote.trim().slice(0, 500) || null;
   return details;
 }
 

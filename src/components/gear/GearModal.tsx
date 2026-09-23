@@ -88,7 +88,7 @@ function GearModalForm({ onClose, onSave, editItem }: Props) {
         <h3 id={`${id}-title`} className="mb-6 font-display text-xl font-semibold text-cream">
           {editItem ? "Edit Gear" : "Add New Gear"}
         </h3>
-        <details ref={lookupDetails} className="product-more"><summary>Fill details from a product name or link</summary><ProductLookup ref={productLookup} onBusyChange={setLookingUp} onUse={draft => {
+        <details ref={lookupDetails} className="product-more"><summary>Fill details from a product name or link</summary><ProductLookup ref={productLookup} productName={name} onBusyChange={setLookingUp} onUse={draft => {
           const { name: foundName, weightOz, packedSize: foundSize, sourceUrl, ...metadata } = draft;
           setName(foundName.slice(0, 180)); if (weightOz !== undefined) setWeight(String(weightOz));
           if (foundSize !== undefined) setPackedSize(foundSize);

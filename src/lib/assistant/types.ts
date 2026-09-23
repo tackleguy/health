@@ -10,6 +10,7 @@ export interface ProductDetails {
   materials?: string | null;
   dimensions?: string | null;
   sourceCheckedAt?: string | null;
+  sourceNote?: string | null;
 }
 export interface PlannerGear extends ProductDetails {
   id: string;
@@ -102,6 +103,12 @@ export interface ProductResearch {
   facts: ProductFact[];
   excerpt: string;
   variants: ProductVariant[];
+  recovery?: {
+    method: "alternate-page" | "search-excerpt" | "pasted-specs" | "not-found";
+    requestedUrl: string;
+    notice: string;
+    sources: WebSource[];
+  };
 }
 export interface ProductDraft extends ProductDetails {
   name: string;

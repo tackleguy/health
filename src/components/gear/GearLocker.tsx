@@ -214,6 +214,7 @@ export function GearLocker({
                   <tr key={g.id} className="group">
                     <td className="rounded-l-lg border-y border-l border-transparent bg-surface-muted/40 px-4 py-2.5 text-sm transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
                       <strong className="text-cream">{g.name}</strong>
+                      {g.productDetails?.sourceNote && <small className="block text-sage">{g.productDetails.sourceNote}</small>}
                     </td>
                     <td className="border-y border-transparent bg-surface-muted/40 px-4 py-2.5 transition group-hover:border-[var(--border)] group-hover:bg-surface-muted/70">
                       <span

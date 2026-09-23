@@ -4,6 +4,7 @@ import type { ProductDetails } from "@/lib/assistant/types";
 export function ProductDetailsFields({ value, onChange }: { value: ProductDetails; onChange: (value: ProductDetails) => void }) {
   const set = (key: keyof ProductDetails, text: string) => onChange({ ...value, [key]: text || null });
   return <>
+    {value.sourceNote && <p className="planner-notice">{value.sourceNote}</p>}
     <div className="planner-fields">
       <label>Price per item<input type="number" min="0" max="1000000" step="0.01" value={value.price ?? ""} placeholder="Unknown" onChange={e => onChange({ ...value, price: e.target.value === "" ? null : Number(e.target.value) })} /></label>
       <label>Currency<input value={value.priceCurrency ?? ""} onChange={e => set("priceCurrency", e.target.value.toUpperCase())} placeholder="USD or CAD" pattern="[A-Z]{3}" maxLength={3} required={value.price != null} autoCapitalize="characters" /></label>

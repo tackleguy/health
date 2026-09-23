@@ -1,7 +1,7 @@
 import https from "node:https";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import { matchesProductSearch } from "./product-input";
+import { isProductCollection, matchesProductSearch, sameProductListing } from "./product-input";
 import { decodeText, htmlText } from "./product-text";
 export { decodeText, htmlText, weightToOz } from "./product-text";
 export { parseProduct } from "./product-parser";
@@ -48,6 +48,39 @@ export function parseSearch(xml: string): WebSource[] {
     try { const url = sourceUrl(field("link")); return [{ title: field("title").slice(0, 200), url: url.href, snippet: field("description").slice(0, 350) }]; } catch { return []; }
   }).slice(0, 6);
 }
+export function parsePublicSearch(html: string): WebSource[] {
+  const results: WebSource[] = [];
+  const links = [...html.matchAll(/<a\b([^>]*\bclass=["'][^"']*\bresult__a\b[^"']*["'][^>]*)>([\s\S]*?)<\/a>/gi)];
+  for (let i = 0; i < Math.min(links.length, 10); i++) {
+    const match = links[i];
+    try {
+      const href = decodeText(match[1].match(/\bhref=["']([^"']+)["']/i)?.[1] ?? "");
+      const target = new URL(href, "https://duckduckgo.com");
+      const url = sourceUrl(target.hostname === "duckduckgo.com" ? target.searchParams.get("uddg") ?? "" : target.href).href;
+      const section = html.slice(match.index! + match[0].length, links[i + 1]?.index);
+      const snippet = section.match(/<(?:a|div)\b[^>]*class=["'][^"']*\bresult__snippet\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:a|div)>/i)?.[1] ?? "";
+      results.push({ title: htmlText(match[2]).slice(0, 240), url, snippet: htmlText(snippet).slice(0, 600) });
+    } catch { /* Ignore ads, search navigation and non-public links. */ }
+  }
+  return results;
+}
+export async function searchProductWeb(query: string, requestedUrl?: string): Promise<WebSource[]> {
+  const searches = [
+    // Fixed public search endpoint: use the standard HTTP client, with no
+    // browser impersonation, cookies, challenge solving or proxy service.
+    fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + " weight")}`, { signal: AbortSignal.timeout(12_000), cache: "no-store", redirect: "error" }).then(async r => {
+      if (r.status !== 200) throw new Error("Public search is unavailable.");
+      const html = await r.text();
+      return html.length <= 2_000_000 ? parsePublicSearch(html) : [];
+    }),
+    fetchSource(`https://www.bing.com/search?format=rss&q=${encodeURIComponent(query + " product specifications weight")}`).then(r => parseSearch(r.body)),
+  ];
+  const results = await Promise.allSettled(searches);
+  if (results.every(r => r.status === "rejected")) throw new Error("Online search is unavailable.");
+  const sources = results.flatMap(r => r.status === "fulfilled" ? r.value : []);
+  return sources.filter(s => !isProductCollection(s.url) && ((requestedUrl && sameProductListing(requestedUrl, s.url)) || matchesProductSearch(query, s)))
+    .filter((s, i, all) => all.findIndex(other => sameProductListing(other.url, s.url)) === i).slice(0, 6);
+}
 export async function searchSources(query: string, kind: "trail" | "product"): Promise<WebSource[]> {
   if (process.env.BRAVE_SEARCH_API_KEY) {
     const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query + (kind === "trail" ? " backpacking trail official" : " manufacturer weight packed dimensions"))}&count=6`, { headers: { "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY, Accept: "application/json" }, signal: AbortSignal.timeout(12_000), cache: "no-store" });
@@ -82,8 +115,7 @@ export async function searchSources(query: string, kind: "trail" | "product"): P
         if (products.length) return products;
       } catch { /* Fall back to public search when a manufacturer's catalog is unavailable. */ }
     }
-    const result = await fetchSource(`https://www.bing.com/search?format=rss&q=${encodeURIComponent(query + " product specifications weight price")}`);
-    return parseSearch(result.body).filter(s => matchesProductSearch(query, s));
+    return searchProductWeb(query);
   }
   // Public encyclopedia search is discovery only: it never supplies an automatically chosen route.
   const region = query.replace(/\b\d+(?:\.\d+)?\s*(?:miles?|days?)\b/gi, "").trim();

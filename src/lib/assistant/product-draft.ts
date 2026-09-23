@@ -33,6 +33,9 @@ export function makeProductDraft(product: ProductResearch, variantIndex: string,
       else if (kind !== "weight" && kind !== "price") draft[kind] = ["materials", "dimensions"].includes(kind) ? `${f.label}: ${f.value}` : f.value;
     }
   }
+  if (Object.keys(draft).length > 3 && product.recovery) draft.sourceNote = product.recovery.method === "alternate-page"
+    ? "Specifications recovered from another public page. Check the model, size and included parts."
+    : "Unverified specifications from a search excerpt or pasted text. Verify values against the exact product or a scale.";
   return draft;
 }
 export function formatProductPrice(price: number, currency: string) {

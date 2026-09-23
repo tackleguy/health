@@ -19,10 +19,10 @@ function fact(kind: ProductFactKind, label: string, value: string): ProductFact 
 }
 function labelled(label: string, value: string): ProductFact | null {
   if (/shipping|dimensional weight|freight|review/i.test(label) || !value || value.length > 500) return null;
-  const kind: ProductFactKind | null = /^(?:(?:minimum|packaged|packed|trail|total|average|item|product|net)\s+)?weight(?:\s*\([^)]*\))?$/i.test(label) ? "weight"
+  const kind: ProductFactKind | null = /^(?:(?:minimum|packaged|packed|carry|trail|total|average|item|product|net|assembled product)\s+)?weight(?:\s*\([^)]*\))?$/i.test(label) ? "weight"
     : /^(?:packed|pack|compressed|stuff sack)\s+(?:size|dimensions|length|width|diameter)$/i.test(label) ? "packed-size"
     : /^(?:(?:floor|unfolded|product|interior peak)\s+)?(?:dimensions|height|width|length|depth|thickness)$/i.test(label) ? "dimensions"
-    : /^(?:(?:water|volume|sleeping|person)\s+)?(?:capacity|volume)$/i.test(label) ? "capacity"
+    : /^(?:(?:water|volume|sleeping|person)\s+)?(?:capacity|volume)$|^maximum occupancy$/i.test(label) ? "capacity"
     : /^(?:(?:shell|floor|canopy|rainfly|body|lining|outer|inner)\s+)?(?:materials?|fabric)$|^insulation$/i.test(label) ? "materials"
     : /^(?:brand|manufacturer)$/i.test(label) ? "brand" : /^model$/i.test(label) ? "model" : /^(?:sku|mpn)$/i.test(label) ? "sku" : null;
   if (!kind) return null;
@@ -102,6 +102,20 @@ export function parseProduct(html: string, url: string): ProductResearch {
     if (match[2].length > 500_000) continue;
     try {
       if (/type\s*=\s*["']application\/ld\+json["']/i.test(match[1])) visit(JSON.parse(match[2]));
+      // Some retailers publish the exact item's specs in their initial page
+      // data rather than JSON-LD. Never traverse recommendations or AI summaries.
+      else if (/\bid=["']__NEXT_DATA__["']/.test(match[1]) && /^(?:[\w-]+\.)?walmart\.com$/i.test(new URL(url).hostname)) {
+        const data = obj(obj(obj(obj(obj(JSON.parse(match[2])).props).pageProps).initialData).data);
+        const product = obj(data.product), specs = obj(data.idml);
+        const itemId = new URL(url).pathname.match(/^\/ip\/(?:[^/]+\/)?(\d+)\/?$/)?.[1];
+        if (itemId && clean(product.usItemId) === itemId) {
+          const price = obj(obj(product.priceInfo).currentPrice);
+          const properties = list(specs.specifications).map(obj).map(p => ({ name: clean(p.name), value: clean(p.value) }));
+          const packed = htmlText(clean(specs.longDescription, 10000)).match(/\bpacks? down to\s+(\d+(?:\.\d+)?\s*(?:in|cm|mm)?\s*[x×]\s*\d+(?:\.\d+)?\s*(?:in|cm|mm)?\s*[x×]\s*\d+(?:\.\d+)?\s*(?:in(?:ches)?|cm|mm))\b/i)?.[1];
+          if (packed) properties.push({ name: "Packed size", value: packed });
+          roots.push({ "@type": "Product", url, name: product.name, brand: product.brand, model: product.model, sku: product.manufacturerProductId, additionalProperty: properties, offers: { price: price.price, priceCurrency: price.currencyUnit } });
+        }
+      }
       // Manufacturer-published variant specs, tied to the exact variant ID (e.g. NEMO).
       else if (/data-pdp-variant-specs-data\b/.test(match[1])) {
         const data = obj(JSON.parse(match[2]));
