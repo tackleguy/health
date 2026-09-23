@@ -313,3 +313,5 @@
   .planner-product .planner-fields { grid-template-columns: minmax(0, 1fr); }
 }
 .planner-shell.gear-dialog-content { padding: 0; }
+.gear-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+@media (max-width: 520px) { .gear-form-actions > button { flex: 1 1 auto; } }

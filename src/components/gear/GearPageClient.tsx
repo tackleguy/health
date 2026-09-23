@@ -3,11 +3,12 @@
 import { useState } from "react";
 import type { WeightUnit } from "@/lib/gear";
 import { useGear } from "@/hooks/useGear";
+import { LocalGear } from "./LocalGear";
 import { GearLocker } from "./GearLocker";
 
 export function GearPageClient({ userId }: { userId: string }) {
   const [unit, setUnit] = useState<WeightUnit>("oz");
-  const { gear, loading, error, addGear, editGear, deleteGear } =
+  const { gear, loading, error, storageMissing, addGear, editGear, deleteGear } =
     useGear(userId);
 
   if (loading) {
@@ -17,6 +18,8 @@ export function GearPageClient({ userId }: { userId: string }) {
       </div>
     );
   }
+
+  if (storageMissing) return <LocalGear key={userId} userId={userId} accountStorageUnavailable />;
 
   return (
     <div>

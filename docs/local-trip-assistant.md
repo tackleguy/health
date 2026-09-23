@@ -30,8 +30,15 @@ Supabase is not configured locally, so authenticated integration is implemented 
 
 ## Product autofill
 
-In Gear or the planner equipment editor, expand **Fill details from a product name or link**. Search by brand/model or paste a public HTTPS product URL, choose the matching product and exact variant, review the sourced fields, and choose **Fill gear form**. This returns focus to the item name. All values remain editable; saving is a separate action. Missing and unselected fields preserve existing manual entries. This source importer works without loading the local model.
+In Gear or the planner equipment editor, enter the item name or a product link in the normal form, then choose **Fill out parameters**. A link fills unambiguous sourced fields directly; a name opens matching products to choose from. Products with multiple sizes still require an exact variant. The expanded lookup remains available for reviewing individual source fields. This returns focus to the item name. All values remain editable; saving is a separate action. Missing and unselected fields preserve existing manual entries. This source importer works without loading the local model.
 
 The importer never treats shipping weights, an aggregate “from” price, or a currency-less dollar amount as a confirmed specification. Variant-specific NEMO specifications are matched by variant ID; unscoped page facts require explicit confirmation on variant pages. Prices are snapshots, not checkout quotes or exchange-rate conversions. Account totals group currencies separately. Browser-local and saved-plan metadata retain the existing version-1 storage key.
 
 Product regression tests cover extraction, missing fields, variant isolation, price/currency ambiguity, metadata persistence, and separate currency totals. Browser verification exercised both name search (NEMO, exact size selection) and direct URL (MSR), form autofill, focus handoff, desktop/mobile layout, and automated accessibility checks. No existing user gear was modified during these checks.
+
+
+### Missing account storage
+
+If the server explicitly reports that `gear_items` does not exist, Gear offers the existing browser inventory under the signed-in account’s local storage key. A visible notice explains that these items are local and do not sync. The planner already reads this account-specific local inventory. Authentication, permissions, and network errors do not trigger this fallback. Once cloud storage is provisioned, these local items remain in the planner; migration into the cloud inventory is not automatic.
+
+Product discovery matches whole words to exclude unrelated substring matches such as TV trailers in a tent search. Retailer browser-verification pages return a clear blocked-lookup message. This does not bypass retailer access checks; blocked sources still require another source or manual entry.

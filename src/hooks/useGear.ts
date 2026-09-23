@@ -1,5 +1,6 @@
 "use client";
 
+import { isGearStorageMissing } from "@/lib/assistant/gear-storage";
 import { cleanStoredProductDetails } from "@/lib/assistant/product-details";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +23,7 @@ function mapGear(row: Record<string, unknown>): GearItem {
 
 export function useGear(userId: string) {
   const [gear, setGear] = useState<GearItem[]>([]);
+  const [storageMissing, setStorageMissing] = useState(false);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [error, setError] = useState<string | null>(() => isSupabaseConfigured() ? null : "Account gear is unavailable in this preview.");
 
@@ -33,6 +35,7 @@ export function useGear(userId: string) {
       .then(({ data, error: failure }) => {
         if (!active) return;
         setError(failure?.message ?? null);
+        setStorageMissing(isGearStorageMissing(failure));
         if (!failure) setGear((data ?? []).map(mapGear));
         setLoading(false);
       });
@@ -90,5 +93,5 @@ export function useGear(userId: string) {
     setGear((prev) => prev.filter((g) => g.id !== id));
   };
 
-  return { gear, loading, error, addGear, editGear, deleteGear };
+  return { gear, loading, error, storageMissing, addGear, editGear, deleteGear };
 }

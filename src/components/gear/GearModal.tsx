@@ -1,6 +1,7 @@
 "use client";
 
-import { ProductLookup } from "@/components/assistant/ProductLookup";
+import { productLookupInput } from "@/lib/assistant/product-input";
+import { ProductLookup, type ProductLookupHandle } from "@/components/assistant/ProductLookup";
 import { ProductDetailsFields } from "@/components/assistant/ProductDetailsFields";
 import type { ProductDetails } from "@/lib/assistant/types";
 import "@/components/assistant/planner.css";
@@ -30,6 +31,8 @@ export function GearModal(props: Props) {
 
 function GearModalForm({ onClose, onSave, editItem }: Props) {
   const id = useId();
+  const productLookup = useRef<ProductLookupHandle>(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const lookupDetails = useRef<HTMLDetailsElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -70,6 +73,13 @@ function GearModalForm({ onClose, onSave, editItem }: Props) {
     finally { setSaving(false); }
   };
 
+  function fillParameters() {
+    const input = productLookupInput(name, link);
+    if (!input) { setNotice("Enter an item name or product link first."); nameInput.current?.focus(); return; }
+    setNotice("");
+    if (lookupDetails.current) lookupDetails.current.open = true;
+    productLookup.current?.fill(input);
+  }
   return (
     <dialog ref={dialog} aria-labelledby={`${id}-title`} onCancel={onClose}
       className="gear-dialog m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-[560px] overflow-y-auto rounded-2xl border border-[var(--border-strong)] bg-surface-elevated p-6 text-cream shadow-2xl sm:p-8"
@@ -78,7 +88,7 @@ function GearModalForm({ onClose, onSave, editItem }: Props) {
         <h3 id={`${id}-title`} className="mb-6 font-display text-xl font-semibold text-cream">
           {editItem ? "Edit Gear" : "Add New Gear"}
         </h3>
-        <details ref={lookupDetails} className="product-more"><summary>Fill details from a product name or link</summary><ProductLookup onUse={draft => {
+        <details ref={lookupDetails} className="product-more"><summary>Fill details from a product name or link</summary><ProductLookup ref={productLookup} onBusyChange={setLookingUp} onUse={draft => {
           const { name: foundName, weightOz, packedSize: foundSize, sourceUrl, ...metadata } = draft;
           setName(foundName.slice(0, 180)); if (weightOz !== undefined) setWeight(String(weightOz));
           if (foundSize !== undefined) setPackedSize(foundSize);
@@ -166,7 +176,7 @@ function GearModalForm({ onClose, onSave, editItem }: Props) {
             placeholder="Optional URL or notes"
           />
         </div>
-        <div className="flex justify-end gap-3">
+        <div className="gear-form-actions">
           <button
             type="button"
             onClick={onClose}
@@ -177,6 +187,7 @@ function GearModalForm({ onClose, onSave, editItem }: Props) {
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving ? "Saving…" : editItem ? "Save Changes" : "Add Gear"}
           </button>
+          <button type="button" className="planner-button secondary" disabled={saving || lookingUp} onClick={fillParameters}>{lookingUp ? "Filling parameters…" : "Fill out parameters"}</button>
         </div>
         <p className="planner-help" role="status">{notice}</p>
       </form>

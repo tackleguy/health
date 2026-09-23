@@ -25,3 +25,12 @@ Incremental extension of the existing Fieldbook equipment editor, shared by the 
 ## Deployment limitation
 
 Supabase is unconfigured in this local guest preview. The migration `supabase/migrations/20260922060942_gear_product_details.sql` adds bounded optional JSON metadata to account gear with the existing owner-only RLS unchanged. Apply it before deploying account autofill. Live signed-in persistence and the migration have not been verified against a running database. No Git push or deployment was performed in this change.
+
+## Fill out parameters follow-up — 2026-09-22
+
+- Added a third action, **Fill out parameters**, beside Cancel and Add Gear in the account dialog, and the same action in the local/planner editor. It reads the existing name or product link without submitting the form. Name searches require a matching product; ambiguous variants still require selection.
+- Fixed substring matches that returned the Ozark television show for an Ozark Trail tent search. Retailer verification pages now produce a clear blocked-source error; Walmart's verification page cannot be read automatically.
+- The deployed account dialog reported a missing `public.gear_items` table. This follow-up offers account-specific browser storage when that table is missing, with an explicit no-sync notice. No remote database migration was performed, and later migration of browser gear to account storage is not automatic.
+- All 51 regression tests, scoped ESLint, TypeScript, whitespace checks, and the production webpack build passed.
+- Browser verification covered empty-input focus, ordinary name-field search, direct-link autofill, the actual three-button dialog at 1280px and 390px, and the account-local fallback notice. The checked fallback page had 0 axe violations, 0 manual-review entries, and 43 passes. Existing user drafts and inventory were not saved or changed; the temporary QA route was removed.
+- The original autofill work was pushed as `9d79969`. This follow-up was verified locally before publishing.

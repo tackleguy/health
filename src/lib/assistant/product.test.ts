@@ -74,3 +74,27 @@ test("a different product URL in page recommendations cannot become the main pro
   const d = draft(ld({ "@type": "Product", url: "https://example.com/products/other", name: "Other product", weight: "7 lb", offers: { price: 99, priceCurrency: "USD" } }) + "<title>Requested pad</title><p>Weight: 15 oz</p>");
   assert.equal(d.name, "Requested pad"); assert.equal(d.weightOz, 15); assert.equal(d.price, undefined);
 });
+
+test("the fill action uses the existing link or name, without treating notes as a URL", async () => {
+  const { productLookupInput } = await import("./product-input");
+  assert.equal(productLookupInput("Tent", "https://example.com/tent"), "https://example.com/tent");
+  assert.equal(productLookupInput(" Tent ", "packed in side pocket"), "Tent");
+  assert.equal(productLookupInput("www.example.com/tent", ""), "https://www.example.com/tent");
+  assert.equal(productLookupInput("", ""), "");
+});
+test("Ozark Trail searches reject TV results whose words only match as substrings", async () => {
+  const { matchesProductSearch } = await import("./product-input");
+  assert.equal(matchesProductSearch("ozark trail solo tent", { title: "Ozark | Rotten Tomatoes", url: "https://www.rottentomatoes.com/tv/ozark", snippet: "Discover reviews, ratings, and trailers for Ozark." }), false);
+  assert.equal(matchesProductSearch("ozark trail solo tent", { title: "Ozark Trail 1-Person Backpacking Tent", url: "https://example.com/product", snippet: "A tent for solo camping" }), true);
+});
+test("missing gear-table fallback never swallows authentication or network errors", async () => {
+  const { isGearStorageMissing } = await import("./gear-storage");
+  assert.equal(isGearStorageMissing({ code: "PGRST205", message: "Could not find the table 'public.gear_items' in the schema cache" }), true);
+  assert.equal(isGearStorageMissing({ code: "42501", message: "permission denied for table gear_items" }), false);
+  assert.equal(isGearStorageMissing({ code: "PGRST205", message: "Could not find public.profiles" }), false);
+  assert.equal(isGearStorageMissing({ message: "Network unavailable" }), false);
+});
+
+test("retailer browser checks explain why lookup cannot extract specifications", () => {
+  assert.throws(() => parseProduct("<title>Robot or human?</title>", "https://example.com/product"), /blocks automated lookup/);
+});

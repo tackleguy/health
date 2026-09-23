@@ -4,8 +4,11 @@ import { CATEGORY_ORDER } from "@/lib/gear";
 import type { PlannerGear, ProductDetails } from "@/lib/assistant/types";
 import { optionalNumber } from "@/lib/assistant/planning";
 import { ProductDetailsFields } from "./ProductDetailsFields";
-import { ProductLookup } from "./ProductLookup";
+import { productLookupInput } from "@/lib/assistant/product-input";
+import { ProductLookup, type ProductLookupHandle } from "./ProductLookup";
 export function GearEditor({ onSave, initial, onCancel }: { onSave: (gear: PlannerGear) => boolean; initial?: PlannerGear; onCancel?: () => void }) {
+  const productLookup = useRef<ProductLookupHandle>(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const lookupDetails = useRef<HTMLDetailsElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initial?.name ?? "");
@@ -18,8 +21,15 @@ export function GearEditor({ onSave, initial, onCancel }: { onSave: (gear: Plann
   const [source, setSource] = useState(initial?.sourceUrl ?? "");
   const [details, setDetails] = useState<ProductDetails>(() => ({ price: initial?.price, priceCurrency: initial?.priceCurrency, brand: initial?.brand, model: initial?.model, sku: initial?.sku, capacity: initial?.capacity, materials: initial?.materials, dimensions: initial?.dimensions, sourceCheckedAt: initial?.sourceCheckedAt }));
   const [notice, setNotice] = useState("");
+  function fillParameters() {
+    const input = productLookupInput(name, source);
+    if (!input) { setNotice("Enter an item name or product link first."); nameInput.current?.focus(); return; }
+    setNotice("");
+    if (lookupDetails.current) lookupDetails.current.open = true;
+    productLookup.current?.fill(input);
+  }
   return <div className="planner-gear-editor">
-    <details ref={lookupDetails}><summary>Fill details from a product name or link</summary><ProductLookup onUse={draft => {
+    <details ref={lookupDetails}><summary>Fill details from a product name or link</summary><ProductLookup ref={productLookup} onBusyChange={setLookingUp} onUse={draft => {
       const { name: foundName, weightOz, packedSize, sourceUrl, ...metadata } = draft;
       setName(foundName.slice(0, 180));
       if (weightOz !== undefined) { setWeight(String(weightOz)); setUnit("oz"); }
@@ -43,7 +53,7 @@ export function GearEditor({ onSave, initial, onCancel }: { onSave: (gear: Plann
       <ProductDetailsFields value={details} onChange={setDetails} />
       {details.sourceCheckedAt && <p className="planner-help">Product source checked {new Date(details.sourceCheckedAt).toLocaleDateString()}. Prices may change.</p>}
       <p className="planner-help">Leave unknown weights empty. Product dimensions alone cannot confirm that everything fits in your pack.</p>
-      <div className="planner-actions"><button className="planner-button secondary">{initial ? "Save item changes" : "Add to my gear"}</button>{onCancel && <button type="button" className="planner-link" onClick={onCancel}>Close editor</button>}</div>
+      <div className="planner-actions"><button className="planner-button secondary">{initial ? "Save item changes" : "Add to my gear"}</button>{onCancel && <button type="button" className="planner-link" onClick={onCancel}>Close editor</button>}<button type="button" className="planner-button" disabled={lookingUp} onClick={fillParameters}>{lookingUp ? "Filling parameters…" : "Fill out parameters"}</button></div>
       <p role="status" className="planner-help">{notice}</p>
     </form>
   </div>;

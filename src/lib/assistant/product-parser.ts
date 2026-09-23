@@ -83,6 +83,10 @@ function productUrl(p: Data, base: string) {
   try { const u = new URL(clean(p.url ?? obj(list(p.offers)[0]).url ?? p["@id"], 2000), base); return u.protocol === "https:" && !u.username && !u.password ? u.href.replace(/#.*$/, "") : base; } catch { return base; }
 }
 export function parseProduct(html: string, url: string): ProductResearch {
+  const pageTitle = clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
+  if (/^(?:robot or human\??|just a moment[.!…]*|access denied|verify (?:you are|you’re|you're) human)$/i.test(pageTitle)) {
+    throw new Error("This retailer blocks automated lookup. Use another public product page or enter its specifications manually.");
+  }
   const roots: Data[] = [];
   // Inspect only document entities, never recommendations or arbitrary nested objects.
   const visit = (v: unknown, depth = 0) => {

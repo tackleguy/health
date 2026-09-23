@@ -1,6 +1,7 @@
 import https from "node:https";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
+import { matchesProductSearch } from "./product-input";
 import { decodeText, htmlText } from "./product-text";
 export { decodeText, htmlText, weightToOz } from "./product-text";
 export { parseProduct } from "./product-parser";
@@ -54,7 +55,7 @@ export async function searchSources(query: string, kind: "trail" | "product"): P
     const data = await response.json();
     return (data.web?.results ?? []).flatMap((r: { title?: string; url?: string; description?: string }) => {
       try { return [{ title: htmlText(r.title ?? "").slice(0, 200), url: sourceUrl(r.url ?? "").href, snippet: htmlText(r.description ?? "").slice(0, 350) }]; } catch { return []; }
-    }).slice(0, 6);
+    }).filter((source: WebSource) => kind !== "product" || matchesProductSearch(query, source)).slice(0, 6);
   }
   if (kind === "product") {
     // Public manufacturer catalogs work without a search key or model download.
@@ -82,11 +83,7 @@ export async function searchSources(query: string, kind: "trail" | "product"): P
       } catch { /* Fall back to public search when a manufacturer's catalog is unavailable. */ }
     }
     const result = await fetchSource(`https://www.bing.com/search?format=rss&q=${encodeURIComponent(query + " product specifications weight price")}`);
-    const tokens = query.toLowerCase().match(/[a-z0-9]+/g)?.filter(t => t.length > 2) ?? [];
-    return parseSearch(result.body).filter(s => {
-      const text = `${s.title} ${s.snippet} ${s.url}`.toLowerCase();
-      return tokens.length > 0 && tokens.filter(t => text.includes(t)).length >= Math.max(1, Math.ceil(tokens.length * 0.7));
-    });
+    return parseSearch(result.body).filter(s => matchesProductSearch(query, s));
   }
   // Public encyclopedia search is discovery only: it never supplies an automatically chosen route.
   const region = query.replace(/\b\d+(?:\.\d+)?\s*(?:miles?|days?)\b/gi, "").trim();
