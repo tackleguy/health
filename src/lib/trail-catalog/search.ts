@@ -5,7 +5,7 @@ export const normalize = (value: string) => value.normalize("NFKD").replace(/\p{
 export function searchableText(trail: CatalogTrail) {
   return normalize([trail.name, trail.region, trail.country === "US" ? "United States USA US" : "Canada CA", trail.manager].join(" "));
 }
-function distanceKm(a: number, b: number, c: number, d: number) {
+export function distanceKm(a: number, b: number, c: number, d: number) {
   const rad = Math.PI/180;
   const h = Math.sin((c-a)*rad/2)**2 + Math.cos(a*rad)*Math.cos(c*rad)*Math.sin((d-b)*rad/2)**2;
   return 6371*2*Math.asin(Math.sqrt(Math.min(1,h)));
@@ -27,6 +27,12 @@ export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilter
  }
 export function filterCatalog(rows: CatalogTrail[], filters: CatalogFilters, texts?: string[]) {
   const matches = matchingCatalogRows(rows, filters, texts);
+  if (filters.targetMiles !== undefined && Number.isFinite(filters.targetMiles) && filters.targetMiles > 0) {
+    matches.sort((a, b) => (a.miles === null ? Infinity : Math.abs(a.miles - filters.targetMiles!)) - (b.miles === null ? Infinity : Math.abs(b.miles - filters.targetMiles!)) || a.name.localeCompare(b.name));
+  }
+  if (Number.isFinite(filters.lat) && Number.isFinite(filters.lng) && filters.targetMiles === undefined) {
+    matches.sort((a, b) => distanceKm(filters.lat!, filters.lng!, a.latitude, a.longitude) - distanceKm(filters.lat!, filters.lng!, b.latitude, b.longitude) || a.id.localeCompare(b.id));
+  }
   const limit = Number.isFinite(filters.limit) ? Math.min(48,Math.max(1,Math.floor(filters.limit!))) : 24;
   const pages = Math.max(1,Math.ceil(matches.length/limit));
   const page = Number.isFinite(filters.page) ? Math.min(pages,Math.max(1,Math.floor(filters.page!))) : 1;
@@ -46,5 +52,5 @@ export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
     const raw = params.get(key); if (!raw?.trim()) return undefined;
     const n = Number(raw); return Number.isFinite(n) && n >= min && n <= max ? n : undefined;
   };
-  return { bbox:parseCatalogBounds(params.get("bbox")), q:params.get("q")?.trim().slice(0,180), country:["US","CA"].includes(params.get("country") ?? "") ? params.get("country")! : undefined, region:params.get("region")?.slice(0,100), page:number("page",1,100000), limit:number("limit",1,48), minMiles:number("minMiles",0,10000), maxMiles:number("maxMiles",0,10000), difficulty:params.get("difficulty")?.slice(0,30), dogFriendly:params.get("dogFriendly") === "true", lat:number("lat",-90,90), lng:number("lng",-180,180), radiusKm:number("radiusKm",0.1,1000) };
+  return { targetMiles:number("targetMiles",0.1,10000), bbox:parseCatalogBounds(params.get("bbox")), q:params.get("q")?.trim().slice(0,180), country:["US","CA"].includes(params.get("country") ?? "") ? params.get("country")! : undefined, region:params.get("region")?.slice(0,100), page:number("page",1,100000), limit:number("limit",1,48), minMiles:number("minMiles",0,10000), maxMiles:number("maxMiles",0,10000), difficulty:params.get("difficulty")?.slice(0,30), dogFriendly:params.get("dogFriendly") === "true", lat:number("lat",-90,90), lng:number("lng",-180,180), radiusKm:number("radiusKm",0.1,1000) };
 }

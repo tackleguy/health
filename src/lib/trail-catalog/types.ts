@@ -60,6 +60,7 @@ export interface CatalogFilters {
   lat?: number;
   lng?: number;
   radiusKm?: number;
+  targetMiles?: number;
 }
 export const countryName = (country: string) => country === "CA" ? "Canada" : "United States";
 export const sourceName = (source: CatalogTrail["source"]) => ({ usgs:"USGS", "parks-canada":"Parks Canada", ontario:"Ontario Trail Network" })[source];

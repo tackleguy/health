@@ -22,7 +22,12 @@ export interface PlannerGear extends ProductDetails {
   packedSize: string | null;
   sourceUrl: string | null;
 }
+export interface TripPlace { id: string; name: string; latitude: number; longitude: number }
+export interface ShoppingItem { id: string; name: string; reason: string; status: "needed" | "obtained" | "skip" }
 export interface TripRequest {
+  locationMode?: "in" | "near";
+  radiusKm?: number;
+  place?: TripPlace | null;
   distanceMiles: number | null;
   days: number | null;
   region: string;
@@ -50,6 +55,7 @@ export interface RouteCandidate {
   sourceUrl: string | null;
   sourceLabel: string;
   catalogHref?: string;
+  kind?: "segment";
   trailId?: string;
   note: string;
 }
@@ -66,6 +72,7 @@ export interface SavedPlan {
   route: RouteCandidate | null;
   gear: PlannerGear[];
   packedIds: string[];
+  shopping?: ShoppingItem[];
   savedAt: string;
   feedback: TripFeedback | null;
 }
@@ -84,6 +91,7 @@ export interface PlannerContext {
   messages: string[];
 }
 export interface WebSource { title: string; url: string; snippet: string }
+export interface TrailResearchSource extends WebSource { publisher: string; topics: string[]; retrievedAt: string }
 export type ProductFactKind = "weight" | "packed-size" | "dimensions" | "price" | "brand" | "model" | "sku" | "capacity" | "materials";
 export interface ProductFact {
   label: string;

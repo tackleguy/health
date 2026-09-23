@@ -72,6 +72,10 @@
 .planner-route-meta span:first-child { text-transform: capitalize; }
 .planner-route h3 { font-family: var(--font-inter), sans-serif; font-weight: 600; font-size: 24px; margin-bottom: 5px; }
 .planner-route.selected h3 { color: var(--accent); }
+.planner-route-fit { margin-top: 24px; padding-block: 20px; border-block: 1px solid var(--plan-line); }
+.planner-route-fit > p { margin-top: 12px; }
+.planner-route-fit ul, .planner-route-reasons { padding-left: 20px; margin-block: 12px; font-size: 14px; line-height: 1.65; }
+.planner-route-fit li + li, .planner-route-reasons li + li { margin-top: 6px; }
 .planner-route > p { color: var(--plan-muted); }
 .planner-route-stats { display: flex; flex-wrap: wrap; gap: 28px; margin: 18px 0; font-variant-numeric: tabular-nums; }
 .planner-route-stats strong { font-size: 22px; font-weight: 500; }
@@ -315,3 +319,23 @@
 .planner-shell.gear-dialog-content { padding: 0; }
 .gear-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 @media (max-width: 520px) { .gear-form-actions > button { flex: 1 1 auto; } }
+
+.planner-place-search,.planner-shopping { margin-block: 1.5rem 2rem; padding-block: 1rem; border-block: 1px solid var(--border); }
+.planner-place-options,.planner-shopping-items { list-style: none; padding: 0; margin: 1rem 0; }
+.planner-place-options li + li { margin-top: .5rem; }
+.planner-place-options button { text-align: left; white-space: normal; }
+.planner-shopping-items > li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1rem; border-bottom: 1px solid var(--border); }
+.planner-shopping-items > li > div { min-width: 0; flex: 1; }
+.planner-shopping-items small { display: block; }
+.planner-shopping-items p { margin: .35rem 0; }
+.planner-shopping-items select { width: 100%; max-width: 15rem; }
+.planner-shopping-add { display: flex; align-items: end; gap: .75rem; margin-block: 1rem; }
+.planner-shopping-add label { flex: 1; min-width: 0; }
+.planner-trail-confirm { margin-top: 1rem; padding-block: 1rem; border-top: 1px solid var(--border); }
+.planner-trail-confirm input { max-width: 15rem; }
+.planner-catalog h4 { margin: 0; font-size: 1.1rem; }
+.planner-catalog .planner-sources > li { padding-block: 1.25rem; }
+@media (max-width: 600px) {
+  .planner-shopping-items > li,.planner-shopping-add { align-items: stretch; flex-direction: column; }
+  .planner-shopping-items select { max-width: none; }
+}

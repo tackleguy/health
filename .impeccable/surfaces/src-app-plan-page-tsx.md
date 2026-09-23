@@ -43,3 +43,7 @@ The existing Prepare step now includes load/category donut charts with text tabl
 The equipment editor now accepts a product name or link, reviews source/variant-specific facts, and fills editable weight, price/currency, packed size, capacity, materials, brand/model/SKU and dimensions. It shares the same native-control treatment with Gear and returns keyboard focus to the draft after applying details. Missing fields preserve manual entries. See `.impeccable/review/product-autofill-verification.md` for source, storage, responsive and accessibility checks, plus the account-migration deployment limitation.
 
 Blocked or unreadable pages now trigger bounded public-source recovery. Alternate pages and indexed excerpts stay open for review, with persistent source notes. A local pasted-specification extractor provides a recovery action when online lookup fails. The equipment editor's structure and third Fill out parameters action remain unchanged.
+
+## Nearby selection and shopping
+
+Location controls and paginated selectable mapped trails now lead the route step. Nearby intent requires a confirmed place and strict adjustable geographic radius; map distance and section-length provenance remain visible. Prepare includes a ruled shopping list based on the whole personal locker, owned-but-excluded actions, explicit statuses, custom needs and local save. Existing Fieldbook tokens, packing charts and three-stage structure are retained. See `.impeccable/review/trail-research-verification.md` for this pass's evidence and limits.

@@ -82,8 +82,9 @@ export async function searchProductWeb(query: string, requestedUrl?: string): Pr
     .filter((s, i, all) => all.findIndex(other => sameProductListing(other.url, s.url)) === i).slice(0, 6);
 }
 export async function searchSources(query: string, kind: "trail" | "product"): Promise<WebSource[]> {
+  if (kind === "trail") return (await import("./trail-research")).searchTrailSources(query);
   if (process.env.BRAVE_SEARCH_API_KEY) {
-    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query + (kind === "trail" ? " backpacking trail official" : " manufacturer weight packed dimensions"))}&count=6`, { headers: { "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY, Accept: "application/json" }, signal: AbortSignal.timeout(12_000), cache: "no-store" });
+    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query + " manufacturer weight packed dimensions")}&count=6`, { headers: { "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY, Accept: "application/json" }, signal: AbortSignal.timeout(12_000), cache: "no-store" });
     if (!response.ok) throw new Error("Online search is unavailable.");
     const data = await response.json();
     return (data.web?.results ?? []).flatMap((r: { title?: string; url?: string; description?: string }) => {
@@ -117,9 +118,5 @@ export async function searchSources(query: string, kind: "trail" | "product"): P
     }
     return searchProductWeb(query);
   }
-  // Public encyclopedia search is discovery only: it never supplies an automatically chosen route.
-  const region = query.replace(/\b\d+(?:\.\d+)?\s*(?:miles?|days?)\b/gi, "").trim();
-  const response = await fetchSource(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(`${region} hiking trail`)}&format=json&srlimit=6`);
-  const data = JSON.parse(response.body);
-  return (data.query?.search ?? []).map((r: { title: string; snippet: string }) => ({ title: `${r.title} · Wikipedia`, url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replaceAll(" ", "_"))}`, snippet: htmlText(r.snippet).slice(0, 350) }));
+  return [];
 }

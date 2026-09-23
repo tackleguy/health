@@ -63,3 +63,15 @@ test("server catalog paginates, isolates countries, and rejects invalid detail I
   assert.equal(await getCatalogTrail("../../package.json"),null);
   assert.equal(await getCatalogTrail("usgs-not-present"),null);
 });
+
+test("trip research orders mapped sections by target length without discarding unknowns or changing default order", () => {
+  const base = { name: "Trail", country: "US", region: "Colorado", latitude: 40, longitude: -105 } as CatalogTrail;
+  const rows = [{ ...base, id: "one", miles: null }, { ...base, id: "two", miles: 4 }, { ...base, id: "three", miles: 10 }];
+  const before = rows.map(row => row.id);
+  const result = filterCatalog(rows, { targetMiles: 5 });
+  assert.equal(result.trails[0].id, "two");
+  assert.equal(result.total, rows.length);
+  assert.deepEqual(rows.map(row => row.id), before);
+  assert.deepEqual(filterCatalog(rows, {}).trails.map(row => row.id), before);
+  assert.equal(parseCatalogFilters(new URLSearchParams("targetMiles=NaN")).targetMiles, undefined);
+});

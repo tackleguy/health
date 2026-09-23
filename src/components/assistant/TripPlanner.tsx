@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EMPTY_REQUEST, followUpQuestions, inferHistory, optionalNumber, gearWeightOz, packReport, parseTripRequest, preparationChecks, rankRoutes, REFERENCES } from "@/lib/assistant/planning";
-import type { PlannerContext, PlannerGear, PlannerProfile, RouteCandidate, SavedPlan, TripFeedback, TripRequest, WebSource } from "@/lib/assistant/types";
+import type { PlannerContext, PlannerGear, PlannerProfile, RouteCandidate, SavedPlan, TripFeedback, TripRequest, TrailResearchSource, ShoppingItem } from "@/lib/assistant/types";
+import { gearResearchGaps } from "@/lib/assistant/route-fit";
 import { planInsights } from "@/lib/assistant/insights";
 import { tripChecklist } from "@/lib/assistant/checklist";
 import { emptyMemory } from "@/lib/assistant/memory";
@@ -15,6 +16,9 @@ import { PackingGuide } from "./PackingGuide";
 import { formatPackWeight, type PackUnits } from "@/lib/assistant/packing";
 import { usePlannerMemory } from "./usePlannerMemory";
 import { useLocalModel } from "./useLocalModel";
+import { PlaceSearch } from "./PlaceSearch";
+import { TripShoppingList } from "./TripShoppingList";
+import { shoppingForTrip, shoppingText } from "@/lib/assistant/shopping";
 import { CatalogSuggestions } from "./CatalogSuggestions";
 import "./planner.css";
 
@@ -65,6 +69,7 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
   }, [started, step]);
   const [route, setRoute] = useState<RouteCandidate | null>(null);
   const [excluded, setExcluded] = useState<string[]>([]);
+  const [shopping, setShopping] = useState<ShoppingItem[]>([]);
   const [packed, setPacked] = useState<string[]>([]);
   const [editing, setEditing] = useState<PlannerGear | null>(null);
   const [explanation, setExplanation] = useState<string[]>([]);
@@ -72,34 +77,48 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
   const [aiError, setAiError] = useState("");
   const [notice, setNotice] = useState("");
   const [forgetPending, setForgetPending] = useState(false);
-  const [sources, setSources] = useState<WebSource[]>([]);
+  const [sources, setSources] = useState<TrailResearchSource[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const searchSequence = useRef(0);
+  const searchController = useRef<AbortController | null>(null);
+  const [researchingRoute, setResearchingRoute] = useState("");
+  const researchPanel = useRef<HTMLDetailsElement>(null);
+  useEffect(() => () => { searchController.current?.abort(); }, []);
   const inventory = useMemo(() => [...new Map([...context.gear, ...memory.gear].map(g => [g.id, g])).values()], [context.gear, memory.gear]);
   const selected = inventory.filter(g => !excluded.includes(g.id));
   const history = inferHistory(memory.profile, memory.plans, context.activities);
   const report = packReport(selected, request, history.comfortablePackLb);
-  const matches = rankRoutes(request, context.routes);
+  const matches = rankRoutes(request, context.routes, { usualMilesPerDay: history.usualMilesPerDay, experience: memory.profile.experience, packOverTarget: report.overTarget });
+  const gearGaps = gearResearchGaps(selected, request);
   const milesPerDay = request.days ? (route?.distanceMiles ?? request.distanceMiles ?? 0) / request.days : null;
   const followUps = followUpQuestions(request, { ...memory.profile, comfortablePackLb: history.comfortablePackLb, usualMilesPerDay: history.usualMilesPerDay }, selected);
   function togglePacked(id: string, checked: boolean) { setPacked(ids => checked ? [...new Set([...ids, id])] : ids.filter(item => item !== id)); }
-  function setTrip(patch: Partial<TripRequest>) { setRequest(current => ({ ...current, ...patch })); setExplanation([]); setNotice(""); }
+  function setTrip(patch: Partial<TripRequest>) {
+    setRequest(current => ({ ...current, ...patch, ...("region" in patch || "locationMode" in patch ? { place: null } : {}) }));
+    if ("region" in patch || "locationMode" in patch || "place" in patch || "radiusKm" in patch) setRoute(null); setExplanation([]); setNotice("");
+    if ("region" in patch || "distanceMiles" in patch || "days" in patch) { searchController.current?.abort(); ++searchSequence.current; setSources([]); setSearching(false); setResearchingRoute(""); setSearchError("Trip details changed. Refresh online research for this request."); }
+  }
   function setProfile(patch: Partial<PlannerProfile>) { update(m => ({ ...m, profile: { ...m.profile, ...patch } })); setExplanation([]); }
   function saveGear(gear: PlannerGear) { const saved = update(m => ({ ...m, gear: [...m.gear.filter(g => g.id !== gear.id), gear] })); if (saved) { setEditing(null); setExplanation([]); } return saved; }
-  async function findSources(trip: TripRequest) {
+  async function findSources(trip: TripRequest, routeName = "") {
+    searchController.current?.abort();
+    const controller = new AbortController(); searchController.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 25_000);
     const sequence = ++searchSequence.current; setSearching(true); setSearchError(""); setSources([]);
+    setResearchingRoute(routeName);
     try {
-      const q = `${trip.region} ${trip.distanceMiles ?? ""} mile ${trip.days ?? ""} day`.trim().slice(0, 180);
-      const response = await fetch(`/api/assistant/research?kind=trail&q=${encodeURIComponent(q)}`);
+      const q = `${routeName} ${trip.region} ${trip.distanceMiles ?? ""} mile ${trip.days ?? ""} day`.trim().slice(0, 180);
+      const response = await fetch(`/api/assistant/research?kind=trail&q=${encodeURIComponent(q)}`, { signal: controller.signal });
       const data = await response.json(); if (!response.ok) throw new Error(data.error);
       if (sequence === searchSequence.current) { setSources(data.sources); if (!data.sources.length) setSearchError("No online matches returned. Try a more specific region or use the web search link."); }
-    } catch (error) { if (sequence === searchSequence.current) setSearchError(error instanceof Error ? error.message : "Search failed. Try again."); }
-    finally { if (sequence === searchSequence.current) setSearching(false); }
+    } catch (error) { if (sequence === searchSequence.current) setSearchError(controller.signal.aborted ? "Trail research timed out. Try again; your route comparisons remain available." : error instanceof Error ? error.message : "Search failed. Try again."); }
+    finally { clearTimeout(timeout); if (sequence === searchSequence.current) setSearching(false); }
   }
   function buildTrip() {
+    searchController.current?.abort(); ++searchSequence.current; setSources([]); setSearchError(""); setSearching(false); setResearchingRoute("");
     setActivePlanId(null); setSavedSignature("");
-    const parsed = parseTripRequest(prompt); setRequest(parsed); setStarted(true); setStep(0); setRoute(null); setPacked([]); setExplanation([]); setNotice("");
+    const parsed = parseTripRequest(prompt); setRequest(parsed); setStarted(true); setStep(0); setRoute(null); setPacked([]); setShopping([]); setExcluded([]); setExplanation([]); setNotice("");
     if (parsed.region) void findSources(parsed);
   }
   const insights = planInsights(request, route, selected, memory.profile, memory.plans, context.activities);
@@ -110,28 +129,29 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
     try { const result = await model.explain(aiContext, insights); setExplanation(result); setExplainedSignature(aiSignature); }
     catch (error) { setAiError(error instanceof Error ? error.message : "Could not generate an explanation. The calculated plan is still available."); }
   }
-  const planSignature = JSON.stringify({ prompt, request, route, gear: selected, packed: packed.filter(id => selected.some(g => g.id === id)) });
+  const planSignature = JSON.stringify({ prompt, request, route, gear: selected, shopping, packed: packed.filter(id => selected.some(g => g.id === id)) });
   function savePlan() {
     const id = activePlanId ?? crypto.randomUUID();
-    const plan: SavedPlan = { id, prompt, request, route, gear: selected, packedIds: packed.filter(id => selected.some(g => g.id === id)), savedAt: new Date().toISOString(), feedback: memory.plans.find(p => p.id === id)?.feedback ?? null };
+    const plan: SavedPlan = { id, prompt, request, route, gear: selected, shopping, packedIds: packed.filter(id => selected.some(g => g.id === id)), savedAt: new Date().toISOString(), feedback: memory.plans.find(p => p.id === id)?.feedback ?? null };
     if (update(m => ({ ...m, plans: [plan, ...m.plans.filter(p => p.id !== id)].slice(0, 30) }))) {
       setActivePlanId(id); setSavedSignature(planSignature);
-      setNotice("Trip saved on this device. Add feedback after your outing to improve the next plan.");
+      setNotice("Trip and shopping list saved on this device. Add feedback after your outing to improve the next plan.");
     }
   }
   function downloadChecklist() {
-    const url = URL.createObjectURL(new Blob([tripChecklist(request, route, selected, packed, units)], { type: "text/plain;charset=utf-8" }));
+    const url = URL.createObjectURL(new Blob([tripChecklist(request, route, selected, packed, units), "\n", shoppingText(shoppingForTrip(request, inventory, shopping))], { type: "text/plain;charset=utf-8" }));
     const link = document.createElement("a"); link.href = url; link.download = "trailpack-checklist.txt"; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice("Checklist prepared for download. Save this trip to keep your progress in this browser too.");
   }
   function newTrip() {
-    setStarted(false); setStep(0); setRoute(null); setPrompt(""); setRequest({ ...EMPTY_REQUEST }); setPacked([]); setExcluded([]); setActivePlanId(null); setSavedSignature(""); setExplanation([]); setNotice("");
+    searchController.current?.abort(); ++searchSequence.current; setSources([]); setSearchError(""); setSearching(false); setResearchingRoute("");
+    setStarted(false); setStep(0); setRoute(null); setPrompt(""); setRequest({ ...EMPTY_REQUEST }); setPacked([]); setShopping([]); setExcluded([]); setActivePlanId(null); setSavedSignature(""); setExplanation([]); setNotice("");
   }
   function restore(plan: SavedPlan) {
     update(m => ({ ...m, gear: [...new Map([...m.gear, ...plan.gear].map(g => [g.id, g])).values()] }));
-    setActivePlanId(plan.id); setSavedSignature(JSON.stringify({ prompt: plan.prompt, request: plan.request, route: plan.route, gear: plan.gear, packed: plan.packedIds }));
-    setPrompt(plan.prompt); setRequest(plan.request); setRoute(plan.route); setPacked(plan.packedIds); setExcluded(inventory.filter(g => !plan.gear.some(p => p.id === g.id)).map(g => g.id)); setStarted(true); setStep(plan.route ? 1 : 0); setExplanation([]); setNotice("Saved trip restored."); void findSources(plan.request);
+    setActivePlanId(plan.id); setSavedSignature(JSON.stringify({ prompt: plan.prompt, request: plan.request, route: plan.route, gear: plan.gear, shopping: plan.shopping ?? [], packed: plan.packedIds }));
+    setShopping(plan.shopping ?? []); setPrompt(plan.prompt); setRequest(plan.request); setRoute(plan.route); setPacked(plan.packedIds); setExcluded(inventory.filter(g => !plan.gear.some(p => p.id === g.id)).map(g => g.id)); setStarted(true); setStep(plan.route ? 1 : 0); setExplanation([]); setNotice("Saved trip restored."); void findSources(plan.request);
   }
   if (accountChanged) return <div className="planner-shell" role="status">Updating your planning account… <button className="planner-link" onClick={() => window.location.reload()}>Reload planner</button></div>;
   return <div className="planner-shell">
@@ -148,32 +168,45 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
         </form>}
         {!started && <div className="planner-intro"><h2>Your next trip, informed by your last.</h2><p>Start with a distance, number of days, and region. We’ll find route options, calculate the gear you’re carrying, and arrange it into a packing checklist.</p><p className="planner-help">Your account’s gear and hikes are used when you’re signed in. Add preferences and trip feedback here to make recommendations more personal.</p></div>}
         {started && <>
-          {step === 0 && <div className="planner-request-summary"><h2>{prompt || `A trip in ${request.region}`}</h2><div><p>{request.region} · About {request.distanceMiles ?? "—"} mi · {request.days ?? "—"} days</p><button className="planner-button secondary" onClick={() => setStarted(false)}>Edit request</button></div></div>}
+          {step === 0 && <div className="planner-request-summary"><h2>{request.distanceMiles ? `${request.distanceMiles} miles` : "Choose your mileage"}{request.days ? ` over ${request.days} ${request.days === 1 ? "day" : "days"}` : ""}{request.region ? ` ${request.locationMode === "near" ? "near" : "in"} ${request.region}` : ""}</h2><div><p>{request.region} · About {request.distanceMiles ?? "—"} mi · {request.days ?? "—"} days</p><button className="planner-button secondary" onClick={() => setStarted(false)}>Edit request</button></div></div>}
           {step === 0 && <section className="planner-stage" aria-labelledby="trail-title">
-            <div className="planner-section-heading"><div><h2 id="trail-title" ref={stageHeading} tabIndex={-1}>{matches.length === 1 ? "One route to investigate" : "Find your route"}</h2>{!matches.length && <p>Enter a region and distance to match the route guide. Use online sources to explore more options.</p>}</div></div>
-            <div className="planner-route-list">{matches.map(({ route: candidate, difference }) => <article key={candidate.id} className={`planner-route ${route?.id === candidate.id ? "selected" : ""}`}>
+            <div className="planner-section-heading"><div><h2 id="trail-title" ref={stageHeading} tabIndex={-1}>{matches.length === 1 ? "One route to investigate" : "Find your route"}</h2>{!matches.length && <p>Choose a place, compare mapped trails and select one to prepare your trip.</p>}</div></div>
+            <div className="planner-fields"><label>Location search<select value={request.locationMode ?? "in"} onChange={e => setTrip({ locationMode: e.target.value as "in" | "near" })}><option value="in">In a state or region</option><option value="near">Near a place or landmark</option></select></label><label>Place or region<input value={request.region} maxLength={100} onChange={e => setTrip({ region: e.target.value })} /></label></div>
+            {request.locationMode === "near" && request.region.trim() && <PlaceSearch key={request.region} request={request} onChange={setTrip} />}
+            <CatalogSuggestions key={JSON.stringify([request.region, request.locationMode, request.place, request.radiusKm, request.distanceMiles])} request={request} onSelect={candidate => { setRoute(candidate); setStep(1); setExplanation([]); }} />
+            <section className="planner-route-fit" aria-label="Your trip fit"><h3>Compared with your usual trips</h3><p>Guide routes compare distance, daily mileage and experience. Mapped trails stay within your chosen area; use their length and map to plan your itinerary.</p>
+              <div className="planner-fields"><NumberField label="Usual comfortable miles per day" value={memory.profile.usualMilesPerDay} min={0.1} max={100} onChange={usualMilesPerDay => setProfile({ usualMilesPerDay })} hint={history.usualMilesPerDay && memory.profile.usualMilesPerDay === null ? `Using ${history.usualMilesPerDay.toFixed(1)} mi/day from completed-trip feedback.` : "Saved in your trip preferences."} /><label>Overnight experience<select value={memory.profile.experience} onChange={e => setProfile({ experience: e.target.value as PlannerProfile["experience"] })}><option value="new">Getting started</option><option value="some">Some overnight trips</option><option value="experienced">Experienced</option></select></label></div>
+              <p>{report.complete ? "Calculated starting pack" : "Known selected pack weight"}: <strong>{formatPackWeight(report.loadedLb * 16, units)}</strong>{history.comfortablePackLb ? ` · Personal target ${formatPackWeight(history.comfortablePackLb * 16, units)}` : " · Add a comfortable carrying target in My trip preferences."}{report.overTarget ? " Already above your target." : !report.complete ? " Add missing weights and supply amounts before comparing your full load." : ""}</p>
+              {gearGaps.length > 0 && <ul>{gearGaps.map(gap => <li key={gap}>{gap}</li>)}</ul>}
+              <p className="planner-help">This comparison does not confirm camping permission, current access, water or weather. <a href="#trip-details" onClick={() => { const details = document.getElementById("trip-details") as HTMLDetailsElement | null; if (details) details.open = true; }}>Adjust mileage, days or location</a>.</p>
+            </section>
+            <div className="planner-route-list">{matches.map(({ route: candidate, difference, reasons, cautions, suggestedDays }) => <article key={candidate.id} className={`planner-route ${route?.id === candidate.id ? "selected" : ""}`}>
 
               <h3>{candidate.name}</h3><p>{candidate.region}</p>
               <div className="planner-route-meta"><span>{candidate.difficulty}</span><span>{difference < 0.1 ? "Your target distance" : `${difference.toFixed(0)} mi from your target`}</span></div>
               <div className="planner-route-stats"><strong>{candidate.distanceMiles} <small>miles</small></strong>{request.days && <strong>{(candidate.distanceMiles/request.days).toFixed(1)} <small>mi/day</small></strong>}{candidate.elevationFt != null && <strong>{candidate.elevationFt.toLocaleString()} <small>ft gain</small></strong>}</div>
+              <ul className="planner-route-reasons">{[...reasons, ...cautions].map(reason => <li key={reason}>{reason}</li>)}</ul>
+              {suggestedDays && suggestedDays <= 365 && <button className="planner-link" onClick={() => { setTrip({ days: suggestedDays }); setNotice(`Comparing routes over ${suggestedDays} days. Review campsites and the actual daily itinerary before choosing.`); stageHeading.current?.focus(); }}>Compare over {suggestedDays} days at your usual pace</button>}
               <p className="planner-help">{candidate.note}</p>
+              <button className="planner-link" onClick={() => { if (researchPanel.current) { researchPanel.current.open = true; researchPanel.current.scrollIntoView({ behavior: "instant", block: "start" }); } void findSources(request, candidate.name); }}>Research {candidate.name}</button>
               <div className="planner-actions">{candidate.sourceUrl ? <a href={candidate.sourceUrl} target="_blank" rel="noopener noreferrer">{candidate.sourceLabel}</a> : <span className="planner-help">{candidate.sourceLabel}</span>}<button className="planner-button" onClick={() => { setRoute(candidate); setStep(1); setExplanation([]); }}>{route?.id === candidate.id ? "Selected" : "Use this route & prepare"}</button></div>
             </article>)}</div>
-            {matches.length === 0 && <p className="planner-empty">No close match in the saved route guide. The online search below may have more options.</p>}
-            <details className="planner-details" open={matches.length === 0}><summary>Search the web for more routes</summary><p className="planner-help">These discovery links may include encyclopedia results. Verify them with the land manager; they do not confirm a matching distance, conditions, or permits.</p>
+            {matches.length === 0 && request.locationMode !== "near" && <p className="planner-help">No complete route in the saved guide matches this request. Choose a mapped trail above or research a complete itinerary below.</p>}
+            <details ref={researchPanel} className="planner-details" open={matches.length === 0 && request.locationMode !== "near"}><summary>{researchingRoute ? `Research: ${researchingRoute}` : "Research more trips in this region"}</summary><p className="planner-help">Search uses your location, mileage and days. Park and land-manager sources appear first. Search excerpts are leads; confirm the complete itinerary, distance and current rules on the linked page.</p>
               <p role="status">{searching ? "Finding public trail sources…" : searchError}</p>
-              <ul className="planner-sources">{sources.map((s, i) => <li key={`${s.url}-${i}`}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a><p>{s.snippet}</p></li>)}</ul>
-              <div className="planner-actions"><button className="planner-link" disabled={searching || !request.region} onClick={() => void findSources(request)}>Search again</button><a href={`https://www.google.com/search?q=${encodeURIComponent(`${request.region} ${request.distanceMiles ?? ""} mile backpacking official trails`)}`} target="_blank" rel="noopener noreferrer">Open web search</a></div>
+              <ul className="planner-sources">{sources.map((s, i) => <li key={`${s.url}-${i}`}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a><small>{s.publisher}{s.topics?.length ? ` · ${s.topics.join(" · ")}` : ""}</small><p>{s.snippet}</p><small>Search retrieved {new Date(s.retrievedAt).toLocaleDateString()} · Current conditions not verified</small></li>)}</ul>
+              <div className="planner-actions"><button className="planner-link" disabled={searching || !request.region} onClick={() => void findSources(request, researchingRoute)}>Search again</button><a href={`https://www.google.com/search?q=${encodeURIComponent(`${researchingRoute} ${request.region} ${request.distanceMiles ?? ""} mile ${request.days ?? ""} day backpacking official trails`)}`} target="_blank" rel="noopener noreferrer">Open web search</a></div>
             </details>
             <details className="planner-details"><summary>Add a route you found</summary><form className="planner-fields" onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); setRoute({ id: `manual:${crypto.randomUUID()}`, name: String(data.get("name")), region: request.region, distanceMiles: Number(data.get("distance")), elevationFt: null, difficulty: "Check source", sourceUrl: String(data.get("source")), sourceLabel: "Your route source", note: "Route entered from your source. Verify its distance, conditions, and overnight rules before travel." }); setExplanation([]); }}>
               <label>Route name<input name="name" required maxLength={180} /></label><label>Route distance (mi)<input name="distance" type="number" min="0.1" max="10000" step="any" required /></label><label className="planner-span">Official route URL<input name="source" type="url" pattern="https://.*" required maxLength={2000} /></label><button className="planner-button secondary">Use this route</button>
             </form></details>
             {route && <p className="planner-fit">Selected: {route.name} · {route.distanceMiles} miles</p>}
-            <CatalogSuggestions region={request.region} />
             <button className="planner-button" onClick={() => setStep(1)}>Prepare my pack <span aria-hidden="true">→</span></button>
           </section>}
           {step === 1 && <section className="planner-stage" aria-labelledby="pack-title">
             <div className="planner-section-heading"><div><h2 id="pack-title" ref={stageHeading} tabIndex={-1}>Your packing list.</h2></div><button className="planner-button secondary" onClick={() => { if (gearForm.current) { gearForm.current.open = true; gearForm.current.scrollIntoView({ behavior: "instant", block: "center" }); gearForm.current.querySelector("input")?.focus(); } }}>Add gear</button></div>
+            {route?.kind === "segment" && <p className="planner-alert">{route.note} {route.catalogHref && <Link href={route.catalogHref} target="_blank" rel="noopener noreferrer">Review trail map</Link>}</p>}
+            <TripShoppingList request={request} inventory={inventory} selected={selected} edits={shopping} onChange={setShopping} onInclude={id => setExcluded(ids => ids.filter(i => i !== id))} onAddGear={() => { if (gearForm.current) { gearForm.current.open = true; gearForm.current.scrollIntoView({ behavior: "instant", block: "center" }); gearForm.current.querySelector("input")?.focus(); } }} onSave={savePlan} canSave={Boolean(request.region && request.distanceMiles && request.days)} />
             <PackWeightBreakdown gear={selected} request={request} units={units} onUnitsChange={setUnits} />
             <div className="planner-inventory"><div className="planner-section-heading"><span>{selected.filter(g => packed.includes(g.id)).length} of {selected.length} items packed</span></div>
               <progress aria-label="Packing list progress" max={Math.max(selected.length, 1)} value={selected.filter(g => packed.includes(g.id)).length} />
@@ -202,7 +235,7 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
             <h3>Before you head out</h3><ul className="planner-prep">{preparationChecks(request).map(check => <li key={check}>{check}</li>)}</ul><a href={REFERENCES.essentials} target="_blank" rel="noopener noreferrer">National Park Service: the Ten Essentials</a>
             <div className="planner-actions planner-go-actions"><button className="planner-button" onClick={savePlan} disabled={!request.region || !request.distanceMiles || !request.days}>{activePlanId ? "Save trip changes" : "Save this trip on my device"}</button><Link className="planner-button secondary" href={route?.trailId ? `/record/live?type=hike&trail_id=${encodeURIComponent(route.trailId)}` : "/record"}>Open activity recorder</Link></div>
           </section>}
-          <details className="planner-details planner-trip-details" open={!request.region || !request.distanceMiles || !request.days}>
+          <details id="trip-details" className="planner-details planner-trip-details" open={!request.region || !request.distanceMiles || !request.days}>
             <summary>Trip details <span>{request.distanceMiles ?? "—"} mi · {request.days ?? "—"} days · {request.region || "Choose a region"}</span></summary>
             {milesPerDay != null && milesPerDay > 0 && <p className="planner-fit">{milesPerDay.toFixed(1)} miles per day{history.usualMilesPerDay ? ` · ${milesPerDay > history.usualMilesPerDay * 1.15 ? "Above" : "Close to or below"} your usual ${history.usualMilesPerDay.toFixed(1)} mi/day.` : " · Add your usual daily mileage in My trip preferences to compare."} Terrain, altitude, and conditions also affect effort.</p>}
             <div className="planner-fields">
@@ -249,7 +282,7 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
           {model.status === "off" || model.status === "error" ? <button className="planner-button secondary" onClick={() => void model.load()}>{model.status === "error" ? "Retry local AI" : "Enable local AI"}</button> : <button className="planner-link" onClick={model.stop}>{model.status === "loading" ? "Cancel model loading" : model.status === "thinking" ? "Stop AI" : "Turn off local AI"}</button>}
         </details>
         <details className="planner-details" open={!started && memory.plans.length > 0}><summary>Saved trips <span>{memory.plans.length}</span></summary>{memory.plans.length === 0 ? <p className="planner-help">Save a trip after preparing your pack. When you return, add feedback here.</p> : memory.plans.map(plan => <div className="planner-saved" key={plan.id}><h4>{plan.route?.name ?? plan.request.region}</h4><p>{plan.route?.distanceMiles ?? plan.request.distanceMiles} mi · {plan.request.days} days{plan.feedback ? " · Completed" : " · Planned"}</p><button className="planner-link" onClick={() => restore(plan)}>Restore trip</button><details><summary>{plan.feedback ? "Review trip feedback" : "How did the trip go?"}</summary><FeedbackForm key={`${plan.id}-${JSON.stringify(plan.feedback)}`} plan={plan} onSave={feedback => { update(m => ({ ...m, plans: m.plans.map(p => p.id === plan.id ? { ...p, feedback } : p) })); setNotice("Trip feedback remembered. Future plans will use it."); }} /></details></div>)}</details>
-        <details className="planner-details"><summary>Privacy & memory</summary><p>Only this account’s data is used. Other users’ accounts and external apps are not connected. Guest and signed-in planning memories are separate.</p><p>Local planning data stays in this browser profile until you remove it or clear site data. It is not encrypted or synced to your account. Use a separate browser profile on shared devices.</p>{forgetPending ? <div role="group" aria-label="Confirm forgetting local planning data"><p>This removes this profile’s local preferences, gear additions, and saved trips. Account gear and activities stay in your account.</p><div className="planner-actions"><button className="planner-button secondary" onClick={() => { if (update(() => emptyMemory())) { setActivePlanId(null); setSavedSignature(""); setStarted(false); setExcluded([]); setPacked([]); setRoute(null); setExplanation([]); model.stop(); setForgetPending(false); setNotice("Local planning memory cleared."); } }}>Confirm forget</button><button className="planner-link" onClick={() => setForgetPending(false)}>Keep my data</button></div></div> : <button className="planner-link" onClick={() => setForgetPending(true)}>Forget local planning data</button>}</details>
+        <details className="planner-details"><summary>Privacy & memory</summary><p>Only this account’s data is used. Other users’ accounts and external apps are not connected. Guest and signed-in planning memories are separate.</p><p>Local planning data stays in this browser profile until you remove it or clear site data. It is not encrypted or synced to your account. Use a separate browser profile on shared devices.</p>{forgetPending ? <div role="group" aria-label="Confirm forgetting local planning data"><p>This removes this profile’s local preferences, gear additions, and saved trips. Account gear and activities stay in your account.</p><div className="planner-actions"><button className="planner-button secondary" onClick={() => { if (update(() => emptyMemory())) { setActivePlanId(null); setSavedSignature(""); setStarted(false); setExcluded([]); setPacked([]); setShopping([]); setRoute(null); setExplanation([]); model.stop(); setForgetPending(false); setNotice("Local planning memory cleared."); } }}>Confirm forget</button><button className="planner-link" onClick={() => setForgetPending(false)}>Keep my data</button></div></div> : <button className="planner-link" onClick={() => setForgetPending(true)}>Forget local planning data</button>}</details>
         {context.messages.map(message => <p className="planner-alert" key={message}>{message}</p>)}
       </aside>
     </div>

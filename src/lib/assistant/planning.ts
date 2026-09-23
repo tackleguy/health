@@ -1,11 +1,12 @@
-import type { ActivitySummary, PlannerGear, PlannerProfile, RouteCandidate, SavedPlan, TripRequest } from "./types";
+import type { ActivitySummary, PlannerGear, PlannerProfile, SavedPlan, TripRequest } from "./types";
+export { rankRoutes } from "./route-fit";
 
 export const REFERENCES = {
   packing: "https://www.rei.com/learn/expert-advice/loading-backpack.html",
   essentials: "https://www.nps.gov/articles/10essentials.htm",
   weight: "https://www.rei.com/learn/expert-advice/backpacking-weight.html",
 };
-export const EMPTY_REQUEST: TripRequest = { distanceMiles: null, days: null, region: "", startDate: "", lowTempF: null, waterLiters: null, foodOzPerDay: null, fuelOz: null, suppliesInGear: false };
+export const EMPTY_REQUEST: TripRequest = { distanceMiles: null, days: null, region: "", startDate: "", lowTempF: null, waterLiters: null, foodOzPerDay: null, fuelOz: null, suppliesInGear: false, locationMode: "in", radiusKm: 50, place: null };
 export const EMPTY_PROFILE: PlannerProfile = { usualMilesPerDay: null, comfortablePackLb: null, packCapacityL: null, experience: "some", priorities: "" };
 export function optionalNumber(value: string, min = 0, max = 10000): number | null {
   if (!value.trim()) return null;
@@ -15,11 +16,12 @@ export function parseTripRequest(text: string): TripRequest {
   const distance = text.match(/\b(\d+(?:\.\d+)?)\s*(?:-\s*)?(miles?|mi\b|kilometers?|kilometres?|km\b)/i);
   const days = text.match(/\b(\d+)\s*(?:-\s*)?days?\b/i);
   const nights = text.match(/\b(\d+)\s*(?:-\s*)?nights?\b/i);
-  const region = text.match(/\b(?:in|near|around)\s+([a-z][a-z\s,'-]*?)(?=\s+(?:with|for|during|on|starting|and)\b|[.!?;]|$)/i)?.[1]?.trim() ?? "";
+  const location = text.match(/\b(in|near|around)\s+(.+?)(?=\s+(?:with|for|during|on|starting)\b|[,;]?\s*\d+(?:\.\d+)?\s*(?:miles?|mi|km|days?|nights?)\b|[!?;]|$)/i);
+  const region = location?.[2]?.replace(/[,.\s]+$/, "").trim() ?? "";
   const date = text.match(/\b\d{4}-\d{2}-\d{2}\b/)?.[0] ?? "";
   const miles = distance ? Number(distance[1]) * (/^k/i.test(distance[2]) ? 0.621371 : 1) : null;
   const dayCount = days ? Number(days[1]) : nights ? Number(nights[1]) + 1 : null;
-  return { ...EMPTY_REQUEST, distanceMiles: miles && miles <= 10000 ? Math.round(miles * 10) / 10 : null, days: dayCount && dayCount <= 365 ? dayCount : null, region: region.slice(0, 100), startDate: date };
+  return { ...EMPTY_REQUEST, distanceMiles: miles && miles <= 10000 ? Math.round(miles * 10) / 10 : null, days: dayCount && dayCount <= 365 ? dayCount : null, region: region.slice(0, 100), locationMode: /near|around/i.test(location?.[1] ?? "") ? "near" : "in", startDate: date };
 }
 export function inferHistory(profile: PlannerProfile, plans: SavedPlan[], activities: ActivitySummary[]) {
   const completed = plans.filter(p => p.feedback);
@@ -34,17 +36,6 @@ export function inferHistory(profile: PlannerProfile, plans: SavedPlan[], activi
     typicalRecordedHike: median(activities.map(a => a.miles)),
     completedCount: completed.length,
   };
-}
-const normalized = (text: string) => text.toLowerCase().normalize("NFKD").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-const regions: Record<string, string> = { co: "colorado", ca: "california", wa: "washington", wy: "wyoming", ut: "utah", az: "arizona", or: "oregon" };
-export function rankRoutes(request: TripRequest, routes: RouteCandidate[]) {
-  const region = regions[normalized(request.region)] ?? normalized(request.region);
-  if (!region || !request.distanceMiles) return [];
-  const tokens = region.split(" ").filter(t => t.length > 1);
-  return routes.filter(r => tokens.every(t => normalized(`${r.region} ${r.name}`).includes(t)))
-    .map(route => ({ route, difference: Math.abs(route.distanceMiles - request.distanceMiles!) }))
-    .filter(r => r.difference <= Math.max(5, request.distanceMiles! * 0.3))
-    .sort((a,b) => a.difference-b.difference).slice(0, 5);
 }
 export type PackingZone = "Bottom" | "Core" | "Top / quick access" | "Worn";
 export function packingZone(gear: PlannerGear): PackingZone {
