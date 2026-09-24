@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
+import type { MapMarker } from "@/lib/types";
 import { MapView } from "@/components/map/MapView";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
-import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
-import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
 
@@ -16,8 +15,6 @@ export function SkiMapClient() {
   const [results, setResults] = useState<SkiArea[]>([]);
   const [selectedFeature, setSelectedFeature] =
     useState<SkiFeatureSummary | null>(null);
-  const [selectedTrailFeature, setSelectedTrailFeature] =
-    useState<OpenTrailFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
     lat: number;
     lng: number;
@@ -84,6 +81,18 @@ export function SkiMapClient() {
       .catch(() => {});
   }, [searchParams, flyToArea]);
 
+  const markers = useMemo((): MapMarker[] => {
+    return results.map((area) => ({
+      id: area.id,
+      type: "resort" as const,
+      name: area.name,
+      latitude: area.lat,
+      longitude: area.lng,
+      subtitle: area.region,
+      href: `/explore/ski?area=${area.id}`,
+    }));
+  }, [results]);
+
   return (
     <div className="flex h-[calc(100dvh-7rem)] min-h-[480px] flex-col md:h-[calc(100dvh-4.5rem)]">
       <div className="shrink-0 border-b border-[var(--border)] bg-surface-elevated px-4 py-3">
@@ -92,8 +101,8 @@ export function SkiMapClient() {
           Nordic ski trails
         </h1>
         <p className="mt-1 text-xs text-mist">
-          OpenTrailMap cross-country trails — search resorts to fly there, tap
-          trails on the map
+          Search resorts and view them on an in-app Leaflet map — no external
+          map apps
         </p>
         <div className="mt-3 flex gap-2">
           <input
@@ -147,31 +156,19 @@ export function SkiMapClient() {
         )}
         <MapView
           mode="ski"
+          markers={markers}
           className="h-full w-full rounded-none"
           geolocate
-          fitToMarkers={false}
+          fitToMarkers={markers.length > 0 && !mapFocus}
           focus={mapFocus}
-          onOpenTrailFeatureClick={(feature) => {
-            setSelectedTrailFeature(feature);
-            setSelectedFeature(null);
-            setMapFocus(null);
-          }}
-          onSkiFeatureClick={(feature) => {
-            setSelectedFeature(feature);
-            setSelectedTrailFeature(null);
-            setMapFocus(null);
+          onGeolocate={(lat, lng) =>
+            setMapFocus({ lat, lng, zoom: 11 })
+          }
+          onMarkerClick={(marker) => {
+            const area = results.find((r) => r.id === marker.id);
+            if (area) flyToArea(area);
           }}
         />
-
-        {selectedTrailFeature && (
-          <div className="absolute bottom-4 left-4 right-4 z-20 md:left-auto md:w-96">
-            <OpenTrailFeaturePanel
-              feature={selectedTrailFeature}
-              mode="ski"
-              onClose={() => setSelectedTrailFeature(null)}
-            />
-          </div>
-        )}
 
         {selectedFeature && (
           <div className="absolute bottom-4 left-4 right-4 z-20 md:left-auto md:w-96">

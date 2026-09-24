@@ -2,18 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { MapMarker, MapMode, Trail } from "@/lib/types";
+import type { GeoLineString, MapMarker, MapMode, Trail } from "@/lib/types";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import { MapView } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
-import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
-import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
 import {
   activityForTrail,
-  directionsUrl,
   formatDistanceAway,
   haversineKm,
   recordUrl,
@@ -26,16 +23,21 @@ interface MapPageClientProps {
   markers: MapMarker[];
 }
 
+function trailRoutes(trails: NearbyTrail[]): GeoLineString[] {
+  return trails
+    .map((t) => t.geometry)
+    .filter((g): g is GeoLineString => Boolean(g?.coordinates?.length));
+}
+
 export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   const [mode, setMode] = useState<MapMode>("trail");
-  const [explicitLocation, setUserLoc] = useState<{ lat: number; lng: number } | null>(
-    null,
-  );
+  const [explicitLocation, setUserLoc] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [nearbyTrails, setNearbyTrails] = useState<NearbyTrail[]>([]);
   const [nearbySkiAreas, setNearbySkiAreas] = useState<NearbySkiArea[]>([]);
   const [selected, setSelected] = useState<MapMarker | null>(null);
-  const [selectedOpenTrailFeature, setSelectedOpenTrailFeature] =
-    useState<OpenTrailFeatureSummary | null>(null);
   const [selectedSkiFeature, setSelectedSkiFeature] =
     useState<SkiFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
@@ -46,7 +48,12 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   const [nearbyLabel, setNearbyLabel] = useState<string | null>(null);
   const location = useLocationPermission();
   const userLoc = explicitLocation ?? location.coords;
-  const resolvedFocus = useMemo(() => mapFocus ?? (location.coords ? { ...location.coords, zoom: 11 } : null), [mapFocus, location.coords]);
+  const resolvedFocus = useMemo(
+    () =>
+      mapFocus ??
+      (location.coords ? { ...location.coords, zoom: 11 } : null),
+    [mapFocus, location.coords],
+  );
 
   const onGeolocate = useCallback((lat: number, lng: number) => {
     setUserLoc({ lat, lng });
@@ -74,7 +81,7 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           setNearbyLabel(
             trails.length > 0
               ? `${trails.length} trails near you`
-              : "No trails nearby — showing all parks",
+              : "No trails nearby — showing parks & trails",
           );
         })
         .catch(() => setNearbyLabel(null));
@@ -90,25 +97,35 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
         setNearbySkiAreas(areas);
         setNearbyLabel(
           areas.length > 0
-            ? `${areas.length} ski areas near you — tap nordic trails on the map`
-            : "Zoom in to see cross-country ski trails",
+            ? `${areas.length} ski areas near you`
+            : "Enable location to find nearby ski areas",
         );
       })
-      .catch(() =>
-        setNearbyLabel("Zoom in to see cross-country ski trails"),
-      );
+      .catch(() => setNearbyLabel(null));
   }, [mode, userLoc]);
 
   const handleModeChange = (next: MapMode) => {
     setMode(next);
     setSelected(null);
     setSelectedSkiFeature(null);
-    setSelectedOpenTrailFeature(null);
     setMapFocus(null);
   };
 
   const markers = useMemo((): MapMarker[] => {
-    if (mode !== "trail") return [];
+    if (mode !== "trail") {
+      return nearbySkiAreas.map((area) => ({
+        id: area.id,
+        type: "resort" as const,
+        name: area.name,
+        latitude: area.lat,
+        longitude: area.lng,
+        subtitle:
+          area.distance_km != null
+            ? formatDistanceAway(area.distance_km)
+            : undefined,
+        href: `/explore/ski`,
+      }));
+    }
 
     if (nearbyTrails.length > 0) {
       return nearbyTrails.map((trail) => ({
@@ -128,7 +145,12 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
     return initialMarkers.filter(
       (m) => m.type === "trail" || m.type === "park",
     );
-  }, [mode, nearbyTrails, initialMarkers]);
+  }, [mode, nearbyTrails, nearbySkiAreas, initialMarkers]);
+
+  const routes = useMemo(
+    () => (mode === "trail" ? trailRoutes(nearbyTrails) : []),
+    [mode, nearbyTrails],
+  );
 
   const selectedTrail = nearbyTrails.find((t) => t.id === selected?.id);
 
@@ -154,10 +176,9 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           </h1>
           <p className="mt-1 text-sm text-mist">
             {mode === "ski"
-              ? (nearbyLabel ??
-                "Nordic ski trails from OpenTrailMap — tap trails on the map")
+              ? (nearbyLabel ?? "Ski areas on an in-app Leaflet map")
               : (nearbyLabel ??
-                "Hiking trails from OpenTrailMap — enable location for nearby results")}
+                "Hiking trails on an in-app Leaflet map — enable location for nearby results")}
           </p>
         </div>
         <ModeSwitcher mode={mode} onChange={handleModeChange} />
@@ -208,9 +229,11 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
         key={mode}
         mode={mode}
         markers={markers}
+        routes={routes}
         className="h-[calc(100vh-280px)] min-h-[420px]"
         geolocate
         fitToMarkers={nearbyTrails.length === 0 && !userLoc}
+        fitToRoutes={routes.length > 0}
         focus={resolvedFocus}
         onGeolocate={onGeolocate}
         onMarkerClick={(marker) => {
@@ -218,18 +241,28 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
             window.location.href = marker.href;
             return;
           }
+          if (marker.type === "resort") {
+            setMapFocus({
+              lat: marker.latitude,
+              lng: marker.longitude,
+              zoom: 12,
+            });
+            setSelectedSkiFeature({
+              id: marker.id,
+              name: marker.name,
+              type: "skiArea",
+              lat: marker.latitude,
+              lng: marker.longitude,
+            });
+            setSelected(null);
+            return;
+          }
           setSelected(marker);
-          setSelectedOpenTrailFeature(null);
-        }}
-        onOpenTrailFeatureClick={(feature) => {
-          setSelectedOpenTrailFeature(feature);
-          setSelected(null);
-          setSelectedSkiFeature(null);
-        }}
-        onSkiFeatureClick={(feature) => {
-          setSelectedSkiFeature(feature);
-          setSelected(null);
-          setSelectedOpenTrailFeature(null);
+          setMapFocus({
+            lat: marker.latitude,
+            lng: marker.longitude,
+            zoom: 13,
+          });
         }}
       />
 
@@ -256,18 +289,19 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
             </button>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <a
-              href={directionsUrl(
-                selectedTrail.latitude,
-                selectedTrail.longitude,
-                selectedTrail.trail_name,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() =>
+                setMapFocus({
+                  lat: selectedTrail.latitude,
+                  lng: selectedTrail.longitude,
+                  zoom: 14,
+                })
+              }
               className="btn-ghost !py-2 !text-sm"
             >
-              Get directions
-            </a>
+              Zoom to trail
+            </button>
             <Link
               href={`/explore/trails/${selectedTrail.id}`}
               className="btn-ghost !py-2 !text-sm"
@@ -284,14 +318,6 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
             </Link>
           </div>
         </div>
-      )}
-
-      {selectedOpenTrailFeature && (
-        <OpenTrailFeaturePanel
-          feature={selectedOpenTrailFeature}
-          mode={mode}
-          onClose={() => setSelectedOpenTrailFeature(null)}
-        />
       )}
 
       {mode === "ski" && selectedSkiFeature && (

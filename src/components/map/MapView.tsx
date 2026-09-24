@@ -1,59 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as maplibregl from "@/lib/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type { MapMarker, MapMode, GeoLineString } from "@/lib/types";
 import type { SkiFeatureSummary } from "@/lib/ski";
-import {
-  isOpenTrailMapClickableLayer,
-  loadMapStyle,
-  openTrailFeatureFromProperties,
-  type OpenTrailFeatureSummary,
-} from "@/lib/opentrailmap";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import clsx from "clsx";
 
-const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
+const DEFAULT_CENTER: [number, number] = [39.8283, -98.5795]; // lat, lng for Leaflet
 const DEFAULT_ZOOM = 4;
 
-function parseMapProp<T>(value: unknown): T | undefined {
-  if (value == null) return undefined;
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return value as T;
-    }
-  }
-  return value as T;
-}
-
-function featureFromProperties(
-  props: Record<string, unknown> | null | undefined,
-  lat: number,
-  lng: number,
-): SkiFeatureSummary | null {
-  if (!props?.id) return null;
-
-  return {
-    id: String(props.id),
-    name: String(props.name ?? "Ski feature"),
-    type: props.type as SkiFeatureSummary["type"],
-    uses: parseMapProp<string[]>(props.uses),
-    activities: parseMapProp<string[]>(props.activities),
-    difficulty: props.difficulty ? String(props.difficulty) : undefined,
-    status: props.status ? String(props.status) : undefined,
-    lat,
-    lng,
-    liftType: props.liftType ? String(props.liftType) : undefined,
-  };
-}
+const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const OSM_ATTRIB =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 interface MapViewProps {
   mode: MapMode;
   markers?: MapMarker[];
   routes?: GeoLineString[];
-  center?: [number, number];
+  center?: [number, number]; // [lng, lat] — same as previous MapLibre API
   zoom?: number;
   className?: string;
   geolocate?: boolean;
@@ -64,6 +30,23 @@ interface MapViewProps {
   onGeolocate?: (lat: number, lng: number) => void;
   onSkiFeatureClick?: (feature: SkiFeatureSummary) => void;
   onOpenTrailFeatureClick?: (feature: OpenTrailFeatureSummary) => void;
+}
+
+function markerIcon(type: MapMarker["type"]) {
+  const color =
+    type === "park"
+      ? "#3d5a45"
+      : type === "resort"
+        ? "#c8f04a"
+        : type === "trailhead"
+          ? "#1d4ed8"
+          : "#059669";
+  return L.divIcon({
+    className: "hikesync-leaflet-marker",
+    html: `<span style="display:block;width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
 }
 
 export function MapView({
@@ -79,309 +62,172 @@ export function MapView({
   focus,
   onMarkerClick,
   onGeolocate,
-  onSkiFeatureClick,
-  onOpenTrailFeatureClick,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const onMarkerClickRef = useRef(onMarkerClick);
   const onGeolocateRef = useRef(onGeolocate);
-  const onOpenTrailFeatureClickRef = useRef(onOpenTrailFeatureClick);
-  const layerHandlersRef = useRef<
-    Array<{
-      layerId: string;
-      onClick: (e: maplibregl.MapLayerMouseEvent) => void;
-      onEnter: () => void;
-      onLeave: () => void;
-    }>
-  >([]);
   const [mapError, setMapError] = useState<string | null>(null);
 
-  const mapCenter = center ?? DEFAULT_CENTER;
-  const mapZoom = zoom ?? DEFAULT_ZOOM;
-  const isSki = mode === "ski";
+  useEffect(() => {
+    onMarkerClickRef.current = onMarkerClick;
+  }, [onMarkerClick]);
 
   useEffect(() => {
     onGeolocateRef.current = onGeolocate;
   }, [onGeolocate]);
 
+  // Init map once
   useEffect(() => {
-    onOpenTrailFeatureClickRef.current = onOpenTrailFeatureClick;
-  }, [onOpenTrailFeatureClick]);
+    if (!containerRef.current || mapRef.current) return;
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+    try {
+      const startLatLng: L.LatLngExpression = center
+        ? [center[1], center[0]]
+        : DEFAULT_CENTER;
 
-    let cancelled = false;
-    setMapError(null);
-
-    const clearLayerHandlers = (map: maplibregl.Map) => {
-      for (const { layerId, onClick, onEnter, onLeave } of layerHandlersRef.current) {
-        map.off("click", layerId, onClick);
-        map.off("mouseenter", layerId, onEnter);
-        map.off("mouseleave", layerId, onLeave);
-      }
-      layerHandlersRef.current = [];
-    };
-
-    const attachTrailHandlers = (map: maplibregl.Map) => {
-      clearLayerHandlers(map);
-
-      const layers = map.getStyle()?.layers ?? [];
-      const clickableLayers = layers
-        .filter((l) => isOpenTrailMapClickableLayer(l.id))
-        .map((l) => l.id)
-        .reverse();
-
-      for (const layerId of clickableLayers) {
-        const onClick = (e: maplibregl.MapLayerMouseEvent) => {
-          const props = e.features?.[0]?.properties as
-            | Record<string, unknown>
-            | undefined;
-          const lngLat = e.lngLat;
-          if (!props || !lngLat) return;
-
-          const feature = openTrailFeatureFromProperties(
-            props,
-            lngLat.lat,
-            lngLat.lng,
-          );
-          if (feature) {
-            onOpenTrailFeatureClickRef.current?.(feature);
-            return;
-          }
-
-          // Legacy ski vector tiles (if ever re-enabled)
-          const skiFeature = featureFromProperties(props, lngLat.lat, lngLat.lng);
-          if (skiFeature) onSkiFeatureClick?.(skiFeature);
-        };
-
-        const onEnter = () => {
-          map.getCanvas().style.cursor = "pointer";
-        };
-        const onLeave = () => {
-          map.getCanvas().style.cursor = "";
-        };
-
-        map.on("click", layerId, onClick);
-        map.on("mouseenter", layerId, onEnter);
-        map.on("mouseleave", layerId, onLeave);
-
-        layerHandlersRef.current.push({ layerId, onClick, onEnter, onLeave });
-      }
-    };
-
-    async function initMap() {
-      try {
-        const { style } = await loadMapStyle(mode);
-        if (cancelled || !containerRef.current) return;
-
-        const map = new maplibregl.Map({
-          container: containerRef.current,
-          style,
-          center: mapCenter,
-          zoom: mapZoom,
-          attributionControl: false,
-        });
-
-        map.addControl(new maplibregl.NavigationControl(), "top-right");
-        map.addControl(
-          new maplibregl.AttributionControl({ compact: true }),
-          "bottom-right",
-        );
-
-        if (geolocate) {
-          const geo = new maplibregl.GeolocateControl({
-            trackUserLocation: true,
-            showUserLocation: true,
-            showAccuracyCircle: true,
-          });
-          map.addControl(geo, "top-right");
-          geo.on("geolocate", (e) => {
-            onGeolocateRef.current?.(e.coords.latitude, e.coords.longitude);
-          });
-        }
-
-        map.on("style.load", () => attachTrailHandlers(map));
-
-        mapRef.current = map;
-
-        const resizeObserver = new ResizeObserver(() => {
-          map.resize();
-        });
-        resizeObserver.observe(containerRef.current);
-
-        return () => {
-          resizeObserver.disconnect();
-          clearLayerHandlers(map);
-          map.remove();
-        };
-      } catch (err) {
-        if (!cancelled) {
-          setMapError(
-            err instanceof Error ? err.message : "Failed to load OpenTrailMap",
-          );
-        }
-      }
-    }
-
-    let cleanup: (() => void) | undefined;
-    initMap().then((fn) => {
-      cleanup = fn;
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      mapRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || isSki) return;
-
-    const sourceId = "trail-routes";
-    const layerId = "trail-routes-line";
-
-    const applyRoutes = () => {
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-      if (routes.length === 0) return;
-
-      map.addSource(sourceId, {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: routes.map((geometry, index) => ({
-            type: "Feature" as const,
-            properties: { index },
-            geometry: {
-              type: "LineString" as const,
-              coordinates: geometry.coordinates.map(([lng, lat, ele]) =>
-                ele != null ? [lng, lat, ele] : [lng, lat],
-              ),
-            },
-          })),
-        },
+      const map = L.map(containerRef.current, {
+        center: startLatLng,
+        zoom: zoom ?? DEFAULT_ZOOM,
+        zoomControl: true,
       });
 
-      map.addLayer({
-        id: layerId,
-        type: "line",
-        source: sourceId,
-        paint: {
-          "line-color": "#059669",
-          "line-width": 4,
-          "line-opacity": 0.85,
-        },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
-      });
+      L.tileLayer(OSM_TILES, {
+        attribution: OSM_ATTRIB,
+        maxZoom: 19,
+      }).addTo(map);
 
-      if (fitToRoutes) {
-        const bounds = new maplibregl.LngLatBounds();
-        for (const route of routes) {
-          for (const coord of route.coordinates) {
-            bounds.extend([coord[0], coord[1]]);
-          }
-        }
-        for (const marker of markers) {
-          bounds.extend([marker.longitude, marker.latitude]);
-        }
-        if (!bounds.isEmpty()) {
-          map.fitBounds(bounds, { padding: 48, maxZoom: 14 });
-        }
-      }
-    };
+      layerGroupRef.current = L.layerGroup().addTo(map);
+      mapRef.current = map;
 
-    if (map.isStyleLoaded()) {
-      applyRoutes();
-    } else {
-      map.once("load", applyRoutes);
-    }
-  }, [routes, fitToRoutes, markers, isSki]);
+      const onResize = () => map.invalidateSize();
+      window.addEventListener("resize", onResize);
+      const ro = new ResizeObserver(onResize);
+      ro.observe(containerRef.current);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || isSki) return;
-
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-
-    markers.forEach((marker) => {
-      const el = document.createElement("button");
-      el.type = "button";
-      el.className = clsx(
-        "flex min-w-[2rem] flex-col items-center gap-0.5 rounded-xl border-2 border-accent/30 px-2 py-1.5 text-center shadow-lg transition hover:scale-105",
-        marker.type === "park"
-          ? "bg-pine text-cream"
-          : marker.type === "resort"
-            ? "bg-accent text-forest"
-            : marker.type === "trailhead"
-              ? "bg-blue-700 text-cream"
-              : "bg-surface-elevated text-cream",
+      return () => {
+        window.removeEventListener("resize", onResize);
+        ro.disconnect();
+        map.remove();
+        mapRef.current = null;
+        layerGroupRef.current = null;
+      };
+    } catch (err) {
+      setMapError(
+        err instanceof Error ? err.message : "Failed to create map",
       );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      const icon =
-        marker.type === "park"
-          ? "🏞"
-          : marker.type === "resort"
-            ? "⛷"
-            : marker.type === "trailhead"
-              ? "🅿️"
-              : "🥾";
-
-      if (marker.type === "park") {
-        el.innerHTML = `<span class="text-sm">${icon}</span>`;
-      } else {
-        el.innerHTML = `
-          <span class="text-sm">${icon}</span>
-          <span class="max-w-[72px] truncate text-[9px] font-semibold">${marker.name}</span>
-          ${marker.subtitle ? `<span class="text-[9px] font-medium opacity-90">${marker.subtitle}</span>` : ""}
-        `;
-      }
-
-      el.title = marker.name;
-      el.setAttribute("aria-label", marker.name);
-
-      el.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        onMarkerClick?.(marker);
-      });
-
-      const mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([marker.longitude, marker.latitude])
-        .addTo(map);
-
-      markersRef.current.push(mapMarker);
-    });
-  }, [markers, onMarkerClick, isSki]);
-
+  // Geolocate control
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !fitToMarkers || markers.length === 0 || isSki) return;
+    if (!map || !geolocate) return;
 
-    const bounds = new maplibregl.LngLatBounds();
-    markers.forEach((m) => bounds.extend([m.longitude, m.latitude]));
-    map.fitBounds(bounds, { padding: 60, maxZoom: 11 });
-  }, [markers, fitToMarkers, isSki]);
+    const LocateControl = L.Control.extend({
+      onAdd() {
+        const btn = L.DomUtil.create(
+          "button",
+          "leaflet-bar leaflet-control hikesync-geo-btn",
+        ) as HTMLButtonElement;
+        btn.type = "button";
+        btn.title = "Show my location";
+        btn.setAttribute("aria-label", "Show my location");
+        btn.innerHTML = "📍";
+        btn.style.cssText =
+          "width:34px;height:34px;cursor:pointer;background:#fff;border:none;font-size:16px;line-height:34px";
+        L.DomEvent.disableClickPropagation(btn);
+        btn.onclick = () => {
+          if (!navigator.geolocation) return;
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude } = pos.coords;
+              map.setView([latitude, longitude], Math.max(map.getZoom(), 11));
+              L.circleMarker([latitude, longitude], {
+                radius: 7,
+                color: "#fff",
+                weight: 2,
+                fillColor: "#2563eb",
+                fillOpacity: 1,
+              }).addTo(map);
+              onGeolocateRef.current?.(latitude, longitude);
+            },
+            () => setMapError("Location permission denied"),
+            { enableHighAccuracy: true, timeout: 12000 },
+          );
+        };
+        return btn;
+      },
+    });
 
+    const control = new LocateControl({ position: "topright" });
+    control.addTo(map);
+    return () => {
+      control.remove();
+    };
+  }, [geolocate]);
+
+  // Focus camera
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focus) return;
-    map.flyTo({
-      center: [focus.lng, focus.lat],
-      zoom: focus.zoom ?? 12,
-      essential: true,
-    });
+    map.setView([focus.lat, focus.lng], focus.zoom ?? Math.max(map.getZoom(), 11));
   }, [focus]);
+
+  // Markers + trail polylines
+  useEffect(() => {
+    const map = mapRef.current;
+    const group = layerGroupRef.current;
+    if (!map || !group) return;
+
+    group.clearLayers();
+    const bounds = L.latLngBounds([]);
+
+    for (const route of routes) {
+      const latlngs = route.coordinates.map(
+        ([lng, lat]) => [lat, lng] as L.LatLngExpression,
+      );
+      if (latlngs.length < 2) continue;
+      const line = L.polyline(latlngs, {
+        color: mode === "ski" ? "#38bdf8" : "#059669",
+        weight: 4,
+        opacity: 0.9,
+        lineJoin: "round",
+        lineCap: "round",
+      });
+      group.addLayer(line);
+      bounds.extend(line.getBounds());
+    }
+
+    for (const marker of markers) {
+      const m = L.marker([marker.latitude, marker.longitude], {
+        icon: markerIcon(marker.type),
+        title: marker.name,
+      });
+      m.bindTooltip(
+        `<strong>${marker.name}</strong>${
+          marker.subtitle ? `<br/><span>${marker.subtitle}</span>` : ""
+        }`,
+        { direction: "top", opacity: 0.95 },
+      );
+      m.on("click", () => onMarkerClickRef.current?.(marker));
+      group.addLayer(m);
+      bounds.extend([marker.latitude, marker.longitude]);
+    }
+
+    if (bounds.isValid() && (fitToRoutes || fitToMarkers)) {
+      const shouldFit =
+        (fitToRoutes && routes.length > 0) ||
+        (fitToMarkers && markers.length > 0 && !focus);
+      if (shouldFit) {
+        map.fitBounds(bounds.pad(0.12), { maxZoom: 14 });
+      }
+    }
+
+    map.invalidateSize();
+  }, [markers, routes, mode, fitToMarkers, fitToRoutes, focus]);
 
   return (
     <div
@@ -390,26 +236,19 @@ export function MapView({
         className,
       )}
     >
-      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
-      {mapError && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-forest/90 p-6 text-center">
-          <p className="text-sm text-mist">{mapError}</p>
-        </div>
-      )}
-      <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
-        <div
-          className={clsx(
-            "max-w-md rounded-full px-4 py-1.5 text-center text-xs font-medium shadow-lg backdrop-blur",
-            isSki
-              ? "bg-accent/90 text-forest"
-              : "bg-surface-elevated/90 text-cream border border-[var(--border)]",
-          )}
-        >
-          {isSki
-            ? "OpenTrailMap · cross-country ski trails from OpenStreetMap"
-            : "OpenTrailMap · hiking trails from OpenStreetMap"}
+      <div ref={containerRef} className="absolute inset-0 h-full w-full z-0" />
+      <div className="pointer-events-none absolute inset-x-0 top-4 z-[500] flex justify-center px-4">
+        <div className="max-w-md rounded-full border border-[var(--border)] bg-surface-elevated/90 px-4 py-1.5 text-center text-xs font-medium text-cream shadow-lg backdrop-blur">
+          {mode === "ski"
+            ? "Leaflet · ski areas & trails"
+            : "Leaflet · hiking trails"}
         </div>
       </div>
+      {mapError && (
+        <div className="absolute inset-x-4 bottom-4 z-[500] rounded-xl border border-red-500/30 bg-red-950/80 px-4 py-2 text-sm text-red-100">
+          {mapError}
+        </div>
+      )}
     </div>
   );
 }

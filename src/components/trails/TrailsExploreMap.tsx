@@ -22,6 +22,13 @@ export function TrailsExploreMap({ trails }: TrailsExploreMapProps) {
       href: `/explore/trails/${trail.id}`,
     }));
 
+  const routes = trails
+    .map((t) => t.geometry)
+    .filter(
+      (g): g is NonNullable<Trail["geometry"]> =>
+        Boolean(g?.coordinates && g.coordinates.length > 1),
+    );
+
   const centerLng =
     markers.reduce((sum, m) => sum + m.longitude, 0) / markers.length;
   const centerLat =
@@ -32,10 +39,12 @@ export function TrailsExploreMap({ trails }: TrailsExploreMapProps) {
       <MapView
         mode="trail"
         markers={markers}
+        routes={routes}
         center={[centerLng, centerLat]}
         zoom={markers.length === 1 ? 10 : 5}
         className="h-72"
-        fitToMarkers
+        fitToMarkers={routes.length === 0}
+        fitToRoutes={routes.length > 0}
       />
     </div>
   );

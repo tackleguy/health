@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import * as maplibregl from "@/lib/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type { GeoLineString } from "@/lib/types";
-
-const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
 interface RouteMiniMapProps {
   route: GeoLineString | null;
@@ -14,23 +12,32 @@ interface RouteMiniMapProps {
 
 export function RouteMiniMap({ route, className = "" }: RouteMiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const lineRef = useRef<L.Polyline | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    mapRef.current = new maplibregl.Map({
-      container: containerRef.current,
-      style: STYLE,
-      center: [-98.5795, 39.8283],
+    const map = L.map(containerRef.current, {
+      center: [39.8283, -98.5795],
       zoom: 10,
-      interactive: false,
+      zoomControl: false,
       attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
     });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
+    mapRef.current = map;
 
     return () => {
-      mapRef.current?.remove();
+      map.remove();
       mapRef.current = null;
+      lineRef.current = null;
     };
   }, []);
 
@@ -38,35 +45,19 @@ export function RouteMiniMap({ route, className = "" }: RouteMiniMapProps) {
     const map = mapRef.current;
     if (!map || !route || route.coordinates.length < 2) return;
 
-    const coords = route.coordinates.map((c) => [c[0], c[1]] as [number, number]);
-    const feature = {
-      type: "Feature" as const,
-      properties: {},
-      geometry: { type: "LineString" as const, coordinates: coords },
-    };
-
-    const addRoute = () => {
-      if (map.getSource("route")) {
-        (map.getSource("route") as maplibregl.GeoJSONSource).setData(feature);
-      } else {
-        map.addSource("route", { type: "geojson", data: feature });
-        map.addLayer({
-          id: "route-line",
-          type: "line",
-          source: "route",
-          paint: { "line-color": "#059669", "line-width": 3 },
-        });
-      }
-
-      const bounds = coords.reduce(
-        (b, c) => b.extend(c),
-        new maplibregl.LngLatBounds(coords[0], coords[0]),
-      );
-      map.fitBounds(bounds, { padding: 20, maxZoom: 14 });
-    };
-
-    if (map.isStyleLoaded()) addRoute();
-    else map.once("load", addRoute);
+    const latlngs = route.coordinates.map(
+      ([lng, lat]) => [lat, lng] as L.LatLngExpression,
+    );
+    if (lineRef.current) {
+      lineRef.current.setLatLngs(latlngs);
+    } else {
+      lineRef.current = L.polyline(latlngs, {
+        color: "#059669",
+        weight: 3,
+      }).addTo(map);
+    }
+    map.fitBounds(L.latLngBounds(latlngs).pad(0.15), { maxZoom: 14 });
+    map.invalidateSize();
   }, [route]);
 
   if (!route || route.coordinates.length < 2) {
@@ -80,6 +71,10 @@ export function RouteMiniMap({ route, className = "" }: RouteMiniMapProps) {
   }
 
   return (
-    <div ref={containerRef} className={`overflow-hidden ${className}`} aria-hidden />
+    <div
+      ref={containerRef}
+      className={`overflow-hidden ${className}`}
+      aria-hidden
+    />
   );
 }
