@@ -75,13 +75,14 @@ export function SpeedometerGauge({ speedMph, className = "" }: SpeedometerGaugeP
           <circle cx="50" cy="55" r="4" fill="#fafaf9" />
         </svg>
       </div>
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-stone-500">
-        Speedometer
+      <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-mist">
+        Speed
       </p>
-      <p className="text-xl font-bold tabular-nums text-stone-900">
-        {speedMph.toFixed(1)} mph
+      <p className="text-xl font-bold tabular-nums text-cream">
+        {speedMph.toFixed(1)}{" "}
+        <span className="text-sm font-medium text-mist">mph</span>
       </p>
-      <p className="text-[10px] text-stone-400">Smoothed · AgOpenGPS avg</p>
+      <p className="text-xs text-mist">Smoothed · AgOpenGPS avg</p>
     </div>
   );
 }

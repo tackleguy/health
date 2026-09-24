@@ -1,77 +1,106 @@
 "use client";
 
-import Image from "next/image";
-
 interface AltimeterGaugeProps {
   altitudeFt: number | null;
   className?: string;
 }
 
-/** Three-hand altimeter — ported from AltimeterView.setAltitude() */
-export function AltimeterGauge({ altitudeFt, className = "" }: AltimeterGaugeProps) {
-  const value = Math.max(0, altitudeFt ?? 0);
+const R = 40;
+const CX = 50;
+const CY = 50;
+const TRACK = 2 * Math.PI * R;
 
-  const hand100Deg = ((value % 1000) / 1000) * 360;
-  const hand1kDeg = ((value % 10000) / 10000) * 360;
-  const hand10kDeg = ((value % 100000) / 100000) * 360;
+/**
+ * Digital-led elevation instrument: large tabular altitude first,
+ * compact 1,000 ft confirmation ring second. Theme tokens keep it
+ * legible on Fieldbook light and the live recording shell.
+ */
+export function AltimeterGauge({ altitudeFt, className = "" }: AltimeterGaugeProps) {
+  const hasFix = altitudeFt !== null && Number.isFinite(altitudeFt);
+  const value = hasFix ? Math.max(0, altitudeFt) : 0;
+  const withinThousand = value % 1000;
+  const progress = withinThousand / 1000;
+  const needleAngle = progress * 360;
+
+  const rounded = Math.round(value);
+  const readout = hasFix ? rounded.toLocaleString() : "—";
+  const ariaLabel = hasFix
+    ? `Elevation ${rounded.toLocaleString()} feet`
+    : "Waiting for GPS elevation";
 
   return (
-    <div className={`flex flex-col items-center ${className}`}>
-      <div className="relative h-32 w-32">
-        <Image
-          src="/gauges/altimeter01.png"
-          alt=""
-          fill
-          className="rounded-full object-cover"
-          sizes="128px"
-          priority
-        />
-        <svg
-          viewBox="0 0 100 100"
-          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
-          aria-hidden
-        >
-          <Hand angle={hand10kDeg} length={28} color="#ef4444" width={2.5} />
-          <Hand angle={hand1kDeg} length={32} color="#f59e0b" width={2} />
-          <Hand angle={hand100Deg} length={36} color="#10b981" width={1.5} />
-          <circle cx="50" cy="50" r="3.5" fill="#1c1917" stroke="#fafaf9" strokeWidth="0.5" />
+    <div
+      className={`flex flex-col items-center text-center ${className}`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-label={ariaLabel}
+    >
+      <div className="relative h-24 w-24" aria-hidden>
+        <svg viewBox="0 0 100 100" className="h-full w-full">
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R}
+            fill="none"
+            stroke="var(--border-strong)"
+            strokeWidth="5"
+          />
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeDasharray={`${progress * TRACK} ${TRACK}`}
+            transform={`rotate(-90 ${CX} ${CY})`}
+            style={{
+              transition: "stroke-dasharray 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          />
+          {Array.from({ length: 10 }, (_, i) => {
+            const a = (i / 10) * 360 - 90;
+            const rad = (a * Math.PI) / 180;
+            const major = i % 5 === 0;
+            const inner = major ? 28 : 32;
+            const outer = 36;
+            return (
+              <line
+                key={i}
+                x1={CX + inner * Math.cos(rad)}
+                y1={CY + inner * Math.sin(rad)}
+                x2={CX + outer * Math.cos(rad)}
+                y2={CY + outer * Math.sin(rad)}
+                stroke={major ? "var(--cream)" : "var(--mist)"}
+                strokeWidth={major ? 1.6 : 1}
+                strokeOpacity={major ? 0.9 : 0.5}
+              />
+            );
+          })}
+          <g transform={`rotate(${needleAngle} ${CX} ${CY})`}>
+            <line
+              x1={CX}
+              y1={CY + 6}
+              x2={CX}
+              y2={CY - 30}
+              stroke="var(--cream)"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <circle cx={CX} cy={CY} r="3.5" fill="var(--cream)" />
+            <circle cx={CX} cy={CY} r="1.5" fill="var(--surface)" />
+          </g>
         </svg>
       </div>
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-stone-500">
-        Altimeter
+
+      <p className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-cream">
+        {readout}
       </p>
-      <p className="text-xl font-bold tabular-nums text-stone-900">
-        {altitudeFt !== null ? `${altitudeFt.toLocaleString()} ft` : "—"}
-      </p>
-      <p className="text-[10px] text-stone-400">
-        {altitudeFt !== null ? "10k · 1k · 100 ft hands" : "Waiting for GPS elevation…"}
+      <p className="mt-0.5 text-sm text-mist">
+        {hasFix ? "ft elevation" : "Waiting for GPS…"}
       </p>
     </div>
-  );
-}
-
-function Hand({
-  angle,
-  length,
-  color,
-  width,
-}: {
-  angle: number;
-  length: number;
-  color: string;
-  width: number;
-}) {
-  return (
-    <g transform={`rotate(${angle} 50 50)`}>
-      <line
-        x1="50"
-        y1="50"
-        x2="50"
-        y2={50 - length}
-        stroke={color}
-        strokeWidth={width}
-        strokeLinecap="round"
-      />
-    </g>
   );
 }
