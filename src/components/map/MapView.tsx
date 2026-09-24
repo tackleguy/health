@@ -7,7 +7,7 @@ import type { MapMarker, MapMode, GeoLineString } from "@/lib/types";
 import type { SkiFeatureSummary } from "@/lib/ski";
 import {
   isOpenTrailMapClickableLayer,
-  loadOpenTrailMapStyle,
+  loadMapStyle,
   openTrailFeatureFromProperties,
   type OpenTrailFeatureSummary,
 } from "@/lib/opentrailmap";
@@ -173,7 +173,7 @@ export function MapView({
 
     async function initMap() {
       try {
-        const style = await loadOpenTrailMapStyle(mode);
+        const { style } = await loadMapStyle(mode);
         if (cancelled || !containerRef.current) return;
 
         const map = new maplibregl.Map({

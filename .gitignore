@@ -37,3 +37,6 @@ supabase/.temp/
 
 # Generated from the installed MapLibre package before dev/build.
 /public/maplibre/
+
+# Generated OpenTrailMap styles (shipped copies live in public/opentrailmap)
+vendor/opentrailmap/dist/

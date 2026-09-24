@@ -1,16 +1,36 @@
 import type { StyleSpecification } from "maplibre-gl";
 import type { MapMode } from "@/lib/types";
 
-/** OpenTrailMap static styles (MIT) — https://github.com/osmus/OpenTrailMap */
-export const OPENTRAILMAP_ORIGIN =
-  process.env.NEXT_PUBLIC_OPENTRAILMAP_URL ?? "https://opentrailmap.us";
+/**
+ * OpenTrailMap styles are self-hosted under /public/opentrailmap because
+ * opentrailmap.us no longer serves /dist/styles/*.json (404 after Vite redeploy).
+ * Override with NEXT_PUBLIC_OPENTRAILMAP_URL only when serving styles elsewhere.
+ * The legacy default host is ignored so existing Vercel env vars keep working.
+ */
+function resolveOpenTrailMapOrigin(): string {
+  const raw = process.env.NEXT_PUBLIC_OPENTRAILMAP_URL?.replace(/\/$/, "") ?? "";
+  if (!raw) return "";
+  if (
+    raw === "https://opentrailmap.us" ||
+    raw === "http://opentrailmap.us"
+  ) {
+    return "";
+  }
+  return raw;
+}
 
-export const OPENTRAILMAP_SPRITE = `${OPENTRAILMAP_ORIGIN}/style/sprites/opentrailmap`;
+export const OPENTRAILMAP_ORIGIN = resolveOpenTrailMapOrigin();
+
+export const OPENTRAILMAP_SPRITE = `${OPENTRAILMAP_ORIGIN}/opentrailmap/sprites/opentrailmap`;
+
+/** Fallback basemap when OpenTrailMap styles fail to load */
+export const OPENFREEMAP_FALLBACK_STYLE =
+  "https://tiles.openfreemap.org/styles/liberty";
 
 /** Static style filenames from vendor/opentrailmap scripts/buildStaticStyles.js */
 export const OPENTRAILMAP_STYLE_BY_MODE: Record<MapMode, string> = {
-  trail: `${OPENTRAILMAP_ORIGIN}/dist/styles/otm-foot.json`,
-  ski: `${OPENTRAILMAP_ORIGIN}/dist/styles/otm-ski_nordic.json`,
+  trail: `${OPENTRAILMAP_ORIGIN}/opentrailmap/styles/otm-foot.json`,
+  ski: `${OPENTRAILMAP_ORIGIN}/opentrailmap/styles/otm-ski_nordic.json`,
 };
 
 export interface OpenTrailFeatureSummary {
@@ -48,10 +68,23 @@ export async function loadOpenTrailMapStyle(
   }
 
   const style = (await res.json()) as StyleSpecification;
-  style.sprite = OPENTRAILMAP_SPRITE;
+  // Absolute path so MapLibre resolves sprites against the app origin
+  style.sprite = OPENTRAILMAP_SPRITE || "/opentrailmap/sprites/opentrailmap";
 
   styleCache.set(url, style);
   return style;
+}
+
+/** Prefer OpenTrailMap; fall back to OpenFreeMap so the map still renders. */
+export async function loadMapStyle(
+  mode: MapMode,
+): Promise<{ style: StyleSpecification | string; source: "opentrailmap" | "openfreemap" }> {
+  try {
+    const style = await loadOpenTrailMapStyle(mode);
+    return { style, source: "opentrailmap" };
+  } catch {
+    return { style: OPENFREEMAP_FALLBACK_STYLE, source: "openfreemap" };
+  }
 }
 
 export function isOpenTrailMapClickableLayer(layerId: string): boolean {
