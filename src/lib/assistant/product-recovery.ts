@@ -1,10 +1,13 @@
 import { fetchSource, parseProduct, searchProductSources, sourceUrl } from "./research";
-import { isProductCollection, matchesProductIdentity, productNameFromUrl, sameProductListing } from "./product-input";
+import { isProductCollection, matchesProductIdentity, productNameFromUrl, productPageUrl, sameProductListing } from "./product-input";
 import { storefrontProductUrl, parseStorefrontProduct, combineSameProduct } from "./product-storefront";
+import { findCatalogProduct, lookupProductCatalog } from "./product-catalog";
+import { productReading } from "./product-ai";
 import { productFromExcerpt } from "./product-excerpt";
 import type { ProductResearch, WebSource } from "./types";
 
 type Dependencies = {
+  catalog?: typeof lookupProductCatalog;
   fetch: typeof fetchSource;
   search: (query: string, requestedUrl: string) => Promise<WebSource[]>;
 };
@@ -33,7 +36,8 @@ async function readProduct(url: string, deps: Dependencies): Promise<ProductRese
       if (new URL(data.url).origin === new URL(page.url).origin) product = combineSameProduct(product, parseStorefrontProduct(data.body, page.url, product));
     } catch { /* Preserve readable page facts if the public feed is unavailable. */ }
   }
-  return product;
+  const reading = productReading(page.body, product.title, page.url);
+  return { ...product, readings: reading ? [reading] : [] };
 }
 
 export async function researchProduct(url: string, name = "", dependencies?: Dependencies): Promise<ProductResearch> {
@@ -41,12 +45,15 @@ export async function researchProduct(url: string, name = "", dependencies?: Dep
   // Stay inside the form's 55-second limit; abort active HTTP requests as well.
   const deadline = AbortSignal.timeout(48_000);
   const deps: Dependencies = dependencies ?? {
+    catalog: lookupProductCatalog,
     fetch: target => fetchSource(target, 0, 8_000_000, true, AbortSignal.any([deadline, AbortSignal.timeout(8_000)])),
     search: (query, requestedUrl) => searchProductSources(query, requestedUrl, deadline),
   };
+  const catalog = deps.catalog?.(productPageUrl(url));
+  if (catalog) return { ...catalog, recovery: { ...catalog.recovery!, requestedUrl: url } };
   let original: ProductResearch | undefined;
   try {
-    if (!isProductCollection(url)) original = await readProduct(url, deps);
+    if (!isProductCollection(url)) original = await readProduct(productPageUrl(url), deps);
     if (original && measured(original)) return original;
   } catch { /* Search for the exact product when its original page is unreadable. */ }
   let identity = name.trim().slice(0, 180) || (original?.title && usableTitle(original.title) ? cleanTitle(original.title) : "") || productNameFromUrl(url);
@@ -69,7 +76,7 @@ export async function researchProduct(url: string, name = "", dependencies?: Dep
   function supplement(product: ProductResearch) {
     if (!original || original.variants.length || product.variants.length) return product;
     const extra = product.facts.filter(f => !original!.facts.some(known => known.kind === f.kind));
-    return { ...original, facts: [...original.facts, ...extra.map(f => ({ ...f, sourceUrl: product.url, evidence: `${f.evidence} · ${product.url}` }))] };
+    return { ...original, readings: [...(original.readings ?? []), ...(product.readings ?? [])].slice(0, 2), facts: [...original.facts, ...extra.map(f => ({ ...f, sourceUrl: product.url, evidence: `${f.evidence} · ${product.url}` }))] };
   }
   const excerpt = exact ? productFromExcerpt(exact) : undefined;
   if (excerpt && measured(excerpt)) return { ...supplement(excerpt), recovery: recovery("search-excerpt", "Missing product details were found in its public search excerpt and are unverified. Confirm your exact model and values before filling the form.") };
@@ -92,5 +99,31 @@ export async function researchProduct(url: string, name = "", dependencies?: Dep
   const alternateExcerpt = candidates.filter(s => matches(s.title)).map(productFromExcerpt).find(measured);
   if (alternateExcerpt) return { ...supplement(alternateExcerpt), recovery: recovery("search-excerpt", "Found specifications in another listing’s search excerpt. These values are unverified; confirm the exact model, size and measurements before filling the form.") };
   const partial = original ?? products.sort((a, b) => richness(b) - richness(a))[0] ?? excerpt;
-  return { ...(partial ?? { title: identity || "Find your product", url, retrievedAt: new Date().toISOString(), facts: [], variants: [], excerpt: "" }), recovery: recovery("not-found", partial?.facts.length || partial?.variants.some(v => v.facts.length) ? "Found some details, but the item’s weight is still missing. Review the available fields, choose another source below, or paste the missing specifications." : sources.length ? "Found possible matches, but no usable specifications yet. Choose your exact product below, or paste its specifications to extract them." : identity ? "No usable public specifications found yet. Paste the specifications from your product page below to extract them." : "This link does not identify the product. Enter the brand and model in Item name and try again, or paste its specifications below.") };
+  const readings = [...(original?.readings ?? []), ...products.flatMap(p => p.readings ?? [])].filter((r, i, all) => all.findIndex(other => other.url === r.url) === i).slice(0, 2);
+  return { ...(partial ?? { title: identity || "Find your product", url, retrievedAt: new Date().toISOString(), facts: [], variants: [], excerpt: "" }), readings, recovery: recovery("not-found", readings.length ? "The pages are readable, but standard extraction missed some specifications. Use local AI to read the page text and find supported details." : partial?.facts.length || partial?.variants.some(v => v.facts.length) ? "Found some details, but the item’s weight is still missing. Review the available fields, choose another source below, or paste the missing specifications." : sources.length ? "Found possible matches, but no usable specifications yet. Choose your exact product below, or paste its specifications to extract them." : identity ? "No usable public specifications found yet. Paste the specifications from your product page below to extract them." : "This link does not identify the product. Enter the brand and model in Item name and try again, or paste its specifications below.") };
+}
+
+
+export async function researchProductName(query: string, dependencies?: Dependencies): Promise<{ product?: ProductResearch; sources: WebSource[] }> {
+  const cached = dependencies ? undefined : findCatalogProduct(query);
+  if (cached) return { product: cached, sources: cached.recovery?.sources ?? [] };
+  const deadline = AbortSignal.timeout(48_000);
+  const deps: Dependencies = dependencies ?? {
+    fetch: target => fetchSource(target, 0, 8_000_000, true, AbortSignal.any([deadline, AbortSignal.timeout(8_000)])),
+    search: (name, requestedUrl) => searchProductSources(name, requestedUrl || undefined, deadline),
+  };
+  const sources = uniqueSources(await deps.search(query, "")).filter(s => !isProductCollection(s.url));
+  // Broad category requests remain a choice. Named-model searches are read
+  // automatically, with the matched product shown in the form before saving.
+  if (query.trim().split(/\s+/).length < 3) return { sources };
+  const candidates = sources.filter(s => !comparisonPage(s) && matchesProductIdentity(query, `${s.title} ${s.snippet}`)).slice(0, 3);
+  const pages = await Promise.allSettled(candidates.map(async source => {
+    const product = await readProduct(source.url, deps);
+    if (comparisonPage({ ...source, title: product.title, url: product.url }) || !matchesProductIdentity(query, `${productBrand(product)} ${product.title}`)) return;
+    return product;
+  }));
+  const products = pages.flatMap(p => p.status === "fulfilled" && p.value ? [p.value] : []);
+  const product = products.find(measured) ?? products.find(p => p.readings?.length);
+  if (!product) return { sources };
+  return { sources, product: { ...product, recovery: { method: measured(product) ? "alternate-page" : "not-found", requestedUrl: product.url, sources, notice: measured(product) ? "Read the matching product page. Confirm the model and size in your gear form before saving." : "Found the product page. Local AI can read its text for missing details." } } };
 }

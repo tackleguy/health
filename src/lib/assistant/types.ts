@@ -106,7 +106,9 @@ export interface ProductFact {
   sourceUrl?: string;
 }
 export interface ProductVariant { id: string; name: string; url: string; facts: ProductFact[] }
+export interface ProductReading { title: string; url: string; text: string }
 export interface ProductResearch {
+  readings?: ProductReading[];
   title: string;
   url: string;
   retrievedAt: string;
@@ -114,7 +116,7 @@ export interface ProductResearch {
   excerpt: string;
   variants: ProductVariant[];
   recovery?: {
-    method: "alternate-page" | "search-excerpt" | "pasted-specs" | "not-found";
+    method: "alternate-page" | "search-excerpt" | "pasted-specs" | "not-found" | "local-ai" | "catalog";
     requestedUrl: string;
     notice: string;
     sources: WebSource[];

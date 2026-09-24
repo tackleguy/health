@@ -60,3 +60,17 @@ export function matchesProductSearch(query: string, source: WebSource) {
     && tokens.filter(t => has(title, t)).length >= Math.min(2, tokens.length)
     && tokens.filter(t => has(all, t)).length >= Math.ceil(tokens.length * 0.7);
 }
+
+/** Remove ad attribution, retaining parameters that select the actual item/offer. */
+export function productPageUrl(raw: string) {
+  const url = new URL(raw);
+  url.hash = "";
+  for (const key of [...url.searchParams.keys()]) {
+    if (/^utm_|^(?:gclid|gclsrc|gbraid|wbraid|gad_source|gad_campaignid|fbclid|msclkid|wmlspartner|adid|veh|sem|semexp|cn|wl\d+)$/i.test(key)) url.searchParams.delete(key);
+  }
+  if (/^(?:www\.)?walmart\.com$/i.test(url.hostname)) {
+    const id = url.pathname.match(/^\/ip\/(?:[^/]+\/)?(\d+)\/?$/)?.[1];
+    if (id) url.pathname = `/ip/${id}`;
+  }
+  return url.href;
+}
