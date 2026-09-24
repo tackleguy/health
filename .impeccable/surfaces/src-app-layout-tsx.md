@@ -17,6 +17,8 @@ STORY: Explore, My trips, and Gear are primary destinations. More tools keeps re
 
 FIRST VIEWPORT: Desktop uses a 240px rail and 48px workspace inset; intermediate rail is 208px. At mobile widths a header and fixed four-destination bottom bar replace the rail. Shared task/context columns stack at 1000px. Root token and responsive details belong in `DESIGN.md`.
 
+NAVIGATION BEHAVIOR: At widths of 768px and above, the sidebar toggle collapses the rail to a 64px strip with an accessible reopen button, giving the workspace the released width. Hidden navigation is removed from keyboard focus. Expanding restores the 240px rail (208px at intermediate widths). The choice persists across client route changes in the shared shell and resets on reload. Mobile retains its header and bottom navigation.
+
 FORM: Implemented Fieldbook shell with explicit empty states and existing service integrations. Guest Gear shares guest planner memory; account inventory remains separate. Activity totals and trips are real data or honest empty states. Recording selection hands off to the existing live GPS route. Login, signup, and live GPS use standalone shells; `/record/live` intentionally retains its dark instrument palette scoped by AppShell. This does not change the light planning system.
 
 Evidence: `.impeccable/review/home-user-788.png`, `gear-desktop.png`, `gear-mobile.png`, `record-desktop.png`, and `record-mobile.png`; automated/browser verification is in `fieldbook-verification.md`. Live GPS permission/session, authenticated cloud flows, and model inference were not re-tested. Production responsive UI is implemented; Figma mobile verification and prototype wiring remain separate quota-blocked work.

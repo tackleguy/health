@@ -71,6 +71,16 @@ input,textarea { caret-color: var(--accent); }
 .skip-link { position: fixed; left: 260px; top: -80px; padding: 12px 20px; background: var(--surface); color: var(--accent); z-index: 100; }
 .skip-link:focus { top: 12px; }
 .fieldbook-nav { position: fixed; inset: 0 auto 0 0; width: var(--rail-width); padding: 24px; background: #173f35; color: #fff; display: flex; flex-direction: column; z-index: 60; overflow-y: auto; }
+.fieldbook-nav-content { display: flex; flex-direction: column; flex: 1; }
+.fieldbook-nav-content[hidden] { display: none; }
+.fieldbook-nav-toggle { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-height: 44px; width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 8px; color: #c4d7ca; font-size: 14px; cursor: pointer; }
+.fieldbook-nav-toggle:hover { background: #244d40; color: #fff; }
+.fieldbook-nav-toggle svg { flex-shrink: 0; }
+@media(min-width:768px) {
+  .app-shell--collapsed { --rail-width: 64px; }
+  .app-shell--collapsed .fieldbook-nav { padding: 24px 10px; }
+  .app-shell--collapsed .skip-link { left: 84px; }
+}
 .fieldbook-brand { display: inline-flex; align-items: center; gap: 12px; color: #fff; font-size: 20px; font-weight: 600; min-height: 32px; }
 .fieldbook-brand svg { flex: 0 0 24px; }
 .fieldbook-destinations { display: grid; gap: 8px; margin-top: 48px; }

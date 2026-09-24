@@ -44,7 +44,7 @@ function MoreTools() {
   ><summary>More tools</summary><nav className="nav-tools-content" aria-label="Additional destinations">{tools.map(tool => <Link key={tool.href} href={tool.href} aria-current={(tool.href === "/" ? pathname === "/" : pathname === tool.href || pathname.startsWith(`${tool.href}/`)) ? "page" : undefined}>{tool.label}</Link>)}<div className="nav-search"><SearchBar /></div></nav></details>;
 }
 
-export function NavBar() {
+export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname();
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -75,6 +75,11 @@ export function NavBar() {
   return <>
     <header className="fieldbook-mobile-header"><Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />HikeSync</Link><MoreTools /></header>
     <aside className="fieldbook-nav" aria-label="Main navigation">
+      <button type="button" className="fieldbook-nav-toggle" onClick={onToggle} aria-expanded={!collapsed} aria-controls="sidebar-content" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+        <NavIcon name="chevron" style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
+        {!collapsed && <span>Collapse sidebar</span>}
+      </button>
+      <div id="sidebar-content" className="fieldbook-nav-content" hidden={collapsed}>
       <Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />HikeSync</Link>
       <nav className="fieldbook-destinations" aria-label="Main destinations">{navLinks.map(link => {
         const active = link.label === "Explore" ? pathname.startsWith("/explore") : pathname.startsWith(link.href);
@@ -85,6 +90,7 @@ export function NavBar() {
         <Link href="/record" className="fieldbook-record"><NavIcon name="record" />Record activity</Link>
         <Link href="/you" className="fieldbook-profile" aria-current={pathname.startsWith("/you") ? "page" : undefined}><NavIcon name="profile" />Profile</Link>
         <div className="fieldbook-auth">{userEmail ? <button onClick={handleSignOut}>Sign out</button> : <><Link href="/login">Log in</Link><Link href="/signup">Create account</Link></>}</div>
+      </div>
       </div>
     </aside>
   </>;
