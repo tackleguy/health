@@ -102,6 +102,8 @@ export interface ProductFact {
   amount?: number;
   currency?: string;
   requiresChoice?: boolean;
+  variantLabel?: string;
+  sourceUrl?: string;
 }
 export interface ProductVariant { id: string; name: string; url: string; facts: ProductFact[] }
 export interface ProductResearch {

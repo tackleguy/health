@@ -9,10 +9,27 @@ export function weightToOz(text: string): number | null {
   if (/\d[^|()]*[-–—][^|()]*\d|\d[^|()]*\bto\b[^|()]*\d|(?:^|\s)[-−]\d|\d\s*\/\s*\d|[¼½¾<>≤≥≈~]|(?:^|\s)\.\d/i.test(text)) return null;
   text = text.replace(/\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b/g, number => number.replaceAll(",", ""));
   if (/\d,\d/.test(text)) return null;
+  // Separate size measurements are not one item weight, even without a range dash.
+  for (const unit of ["(?:lbs?\\.?|pounds?)", "(?:oz\\.?|ounces?)", "(?:kg|kilograms?)", "(?:g|grams?)"]) {
+    if ([...text.matchAll(new RegExp(`\\d+(?:\\.\\d+)?\\s*${unit}\\b`, "gi"))].length > 1) return null;
+  }
   const lb = text.match(/(\d+(?:\.\d+)?)\s*(?:lbs?\.?|pounds?)\b/i);
   const oz = text.match(/(\d+(?:\.\d+)?)\s*(?:oz\.?|ounces?)\b/i);
   const kg = text.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilograms?)\b/i);
   const grams = text.match(/(\d+(?:\.\d+)?)\s*(?:g|grams?)\b/i);
   const value = lb ? Number(lb[1])*16 + (oz ? Number(oz[1]) : 0) : oz ? Number(oz[1]) : kg ? Number(kg[1])*35.27396195 : grams ? Number(grams[1])/28.349523125 : null;
   return value != null && value > 0 && value < 16000 ? Math.round(value*100)/100 : null;
+}
+
+/** Discard unfinished markup/script bodies when reading a bounded page prefix. */
+export function completeHtmlPrefix(prefix: string) {
+  const result = prefix.slice(0, prefix.lastIndexOf(">") + 1);
+  let openTag = "";
+  let openIndex = -1;
+  for (const match of result.matchAll(/<(\/?)(script|style|noscript)\b[^>]*>/gi)) {
+    const tag = match[2].toLowerCase();
+    if (match[1] && openTag === tag) { openTag = ""; openIndex = -1; }
+    else if (!match[1] && !openTag) { openTag = tag; openIndex = match.index!; }
+  }
+  return openIndex >= 0 ? result.slice(0, openIndex) : result;
 }

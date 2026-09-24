@@ -10,16 +10,19 @@ export function normalizeProductInput(value: string) {
   return /^www\./i.test(input) ? `https://${input}` : input;
 }
 function words(value: string) {
-  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  return value.replace(/[™®©]/g, "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().match(/[a-z0-9]+/g) ?? [];
 }
 export function sameProductListing(a: string, b: string) {
   try {
     const left = new URL(a), right = new URL(b);
     if (left.hostname.replace(/^www\./, "") !== right.hostname.replace(/^www\./, "")) return false;
     const path = (u: URL) => u.pathname.replace(/\/$/, "");
+    // Amazon's descriptive slug and route vary; the ASIN identifies the item.
+    const amazonId = (u: URL) => /^(?:[\w-]+\.)?amazon\.(?:com|ca|co\.uk)$/i.test(u.hostname) ? u.pathname.match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})(?:\/|$)/i)?.[1].toUpperCase() : undefined;
+    if (amazonId(left) && amazonId(right) && amazonId(left) !== amazonId(right)) return false;
     // Walmart's descriptive slug changes; its public item ID stays the same.
     const walmartId = (u: URL) => u.hostname.endsWith("walmart.com") ? u.pathname.match(/^\/ip\/(?:[^/]+\/)?(\d+)\/?$/)?.[1] : undefined;
-    if (path(left) !== path(right) && !(walmartId(left) && walmartId(left) === walmartId(right))) return false;
+    if (path(left) !== path(right) && !(amazonId(left) && amazonId(left) === amazonId(right)) && !(walmartId(left) && walmartId(left) === walmartId(right))) return false;
     for (const key of ["variant", "sku", "pid", "id"]) if (left.searchParams.get(key) !== right.searchParams.get(key)) return false;
     return true;
   } catch { return false; }
@@ -27,7 +30,7 @@ export function sameProductListing(a: string, b: string) {
 export function productNameFromUrl(raw: string) {
   try {
     return new URL(raw).pathname.split("/").map(part => decodeURIComponent(part))
-      .filter(part => /[a-z]{3}/i.test(part) && !/^(?:ip|dp|p|products?|shop|item|index\.html?)$/i.test(part))
+      .filter(part => !(/^[a-z0-9]{8,}$/i.test(part) && /\d/.test(part)) && /[a-z]{3}/i.test(part) && !/^(?:ip|dp|p|products?|shop|item|index\.html?)$/i.test(part))
       .sort((a, b) => b.length - a.length)[0]?.replace(/\.html?$/i, "").replace(/[-_]+/g, " ").slice(0, 180) ?? "";
   } catch { return ""; }
 }

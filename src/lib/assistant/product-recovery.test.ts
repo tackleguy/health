@@ -94,3 +94,118 @@ test("Walmart's initial data supplies only the requested item, not AI highlights
   assert.equal(d.packedSize, "23 in x 5 in x 5 in"); assert.equal(d.capacity, "1 Person");
   assert.deepEqual(parseProduct(page("999"), url).facts, []);
 });
+
+test("recovery reads beyond the first two results and uses public feeds on alternate pages", async () => {
+  const sources = Array.from({ length: 7 }, (_, i) => ({ title: "Alpine tent 2", url: `https://store${i}.example/products/alpine-tent`, snippet: "Specifications" }));
+  const calls: string[] = [];
+  const p = await researchProduct(url, "Alpine tent 2", {
+    search: async () => sources,
+    fetch: async target => {
+      calls.push(target);
+      if (!target.startsWith("https://store4.example/")) return blocked();
+      return { url: target, body: target.endsWith(".js") ? JSON.stringify({ handle: "alpine-tent", title: "Alpine tent 2", description: "<p>Weight: 3 lb</p><p>Capacity: 2 people</p>", variants: [{ id: 1, title: "Default Title" }] }) : 'Shopify.shop' + ld({ "@type": "Product", name: "Alpine tent 2" }) };
+    },
+  });
+  assert.equal(p.recovery?.method, "alternate-page");
+  assert.equal(p.facts.find(f => f.kind === "weight")?.weightOz, 48);
+  assert.ok(calls.includes(`${sources[4].url}.js`));
+  assert.ok(!calls.includes(sources[6].url), "fan-out must remain bounded");
+});
+
+test("opaque item links learn their name from the exact listing before finding other retailers", async () => {
+  const queries: string[] = [];
+  const other = { title: exact.title, url: "https://camping.example/solo-tent", snippet: "Specifications" };
+  const p = await researchProduct(url, "", {
+    search: async query => { queries.push(query); return query === url ? [{ ...exact, snippet: "A one-person tent" }] : [other]; },
+    fetch: async target => { if (target === url) return blocked(); return { url: target, body: ld({ "@type": "Product", name: exact.title, weight: "4 lb" }) }; },
+  });
+  assert.deepEqual(queries, [url, exact.title]);
+  assert.equal(p.recovery?.method, "alternate-page");
+  assert.equal(p.facts.find(f => f.kind === "weight")?.weightOz, 64);
+});
+
+test("structured brand and model discover an item despite retailer marketing titles", async () => {
+  const queries: string[] = [];
+  const source = { title: "Acme A200", url: "https://acme.example/a200", snippet: "Specifications" };
+  const p = await researchProduct(url, "", {
+    search: async query => { queries.push(query); return query === "Acme A200" ? [source] : []; },
+    fetch: async target => ({ url: target, body: ld(target === url ? { "@type": "Product", name: "Acme A200 Premium Outdoor Camping Backpack", brand: "Acme", model: "A200", offers: { price: 90, priceCurrency: "CAD" } } : { "@type": "Product", name: "Acme A200", brand: "Acme", model: "A200", weight: "20 oz" }) }),
+  });
+  assert.ok(queries.includes("Acme A200"));
+  assert.equal(p.facts.find(f => f.kind === "weight")?.weightOz, 20);
+  assert.equal(p.facts.find(f => f.kind === "price")?.currency, "CAD");
+});
+
+test("matching alternate excerpts are reviewable when pages block access, but wrong model snippets are excluded", async () => {
+  const source = { title: "Alpine tent 2", url: "https://camping.example/tent", snippet: "Weight: 3 lb. Dimensions: 80 x 50 in" };
+  const p = await researchProduct(url, "Alpine tent 2", { fetch: blocked, search: async () => [source] });
+  assert.equal(p.recovery?.method, "search-excerpt");
+  const draft = makeProductDraft(p, "", defaultSelections(p.facts))!;
+  assert.equal(draft.weightOz, 48);
+  assert.match(draft.sourceNote!, /Unverified/);
+  const wrong = await researchProduct(url, "Alpine tent 2", { fetch: blocked, search: async () => [{ ...source, title: "Alpine tent 4" }] });
+  assert.equal(wrong.recovery?.method, "not-found");
+  assert.equal(wrong.facts.length, 0);
+});
+
+test("redirects to another model cannot supply page measurements and richer exact pages win", async () => {
+  const sources = ["wrong", "sparse", "rich"].map(id => ({ title: "Alpine tent 2", url: `https://${id}.example/product`, snippet: "Specifications" }));
+  const p = await researchProduct(url, "Alpine tent 2", {
+    search: async () => sources,
+    fetch: async target => {
+      if (target === url) return blocked();
+      return { url: target, body: ld({ "@type": "Product", name: target.includes("wrong") ? "Alpine tent 4" : "Alpine tent 2", weight: target.includes("wrong") ? "10 lb" : "3 lb", ...(target.includes("rich") ? { material: "Nylon", description: "<p>Packed size: 16 x 5 in</p>" } : {}) }) };
+    },
+  });
+  assert.equal(p.url, sources[2].url);
+  assert.equal(p.facts.find(f => f.kind === "weight")?.weightOz, 48);
+  assert.ok(p.facts.some(f => f.kind === "packed-size"));
+});
+
+test("manufacturer catalog titles can omit the brand, but the fetched page must confirm it", async () => {
+  const source = { title: "Tensor All-Season", url: "https://manufacturer.example/products/tensor", snippet: "NEMO · Manufacturer catalog" };
+  const p = await researchProduct(url, "NEMO Tensor All-Season", { search: async () => [source], fetch: async target => {
+    if (target === url) return blocked();
+    return { url: target, body: ld({ "@type": "Product", name: source.title, brand: "NEMO", weight: "14 oz" }) };
+  } });
+  assert.equal(p.recovery?.method, "alternate-page");
+  assert.equal(p.facts.find(f => f.kind === "weight")?.weightOz, 14);
+});
+
+test("supplemental source links survive filling and saving the draft", async () => {
+  const source = { title: "Alpine tent 2", url: "https://manufacturer.example/tent", snippet: "Specs" };
+  const p = await researchProduct(url, source.title, { search: async () => [source], fetch: async target => ({ url: target, body: ld({ "@type": "Product", name: source.title, ...(target === url ? { offers: { price: 80, priceCurrency: "CAD" } } : { weight: "3 lb" }) }) }) });
+  const draft = makeProductDraft(p, "", defaultSelections(p.facts))!;
+  assert.equal(draft.sourceUrl, url);
+  assert.ok(draft.sourceNote!.includes(source.url));
+  const stored = parseMemory(JSON.stringify({ version: 1, gear: [{ ...draft, id: "test", category: "Shelter", type: "Base", qty: 1 }] })).gear[0];
+  assert.equal(stored.sourceNote, draft.sourceNote);
+});
+
+test("opaque Amazon IDs recover the indexed listing across equivalent URL formats", () => {
+  assert.equal(productNameFromUrl("https://www.amazon.com/dp/B0ABC12345"), "");
+  assert.equal(sameProductListing("https://www.amazon.com/dp/B0ABC12345", "https://www.amazon.com/camping-tent/gp/product/B0ABC12345"), true);
+  assert.equal(sameProductListing("https://www.amazon.com/dp/B0ABC12345", "https://www.amazon.com/dp/B0ABC99999"), false);
+  assert.equal(sameProductListing("https://www.amazon.com/dp/B0ABC12345", "https://www.amazon.ca/dp/B0ABC12345"), false);
+});
+
+test("manufacturer trademarks and brands on size variants still identify the exact product", async () => {
+  const source = { title: "Tensor™ All-Season", url: "https://manufacturer.example/products/tensor", snippet: "NEMO Equipment · Manufacturer catalog" };
+  const p = await researchProduct(url, "NEMO Tensor All-Season", { search: async () => [source], fetch: async target => {
+    if (target === url) return blocked();
+    return { url: target, body: ld({ "@type": "ProductGroup", name: source.title, brand: "NEMO", hasVariant: [{ name: "Regular", url: `${target}?variant=1`, weight: "14 oz" }, { name: "Long", url: `${target}?variant=2`, weight: "17 oz" }] }) };
+  } });
+  assert.equal(p.recovery?.method, "alternate-page");
+  assert.equal(p.variants.length, 2);
+  assert.equal(makeProductDraft(p, "", {}) , null);
+});
+
+test("review comparison pages remain discovery links and cannot import competitor specifications", async () => {
+  const source = { title: "Alpine tent 2 Review", url: "https://review.example/reviews/alpine-tent", snippet: "Weight: 99 lb" };
+  const calls: string[] = [];
+  const p = await researchProduct(url, "Alpine tent 2", { search: async () => [source], fetch: async target => { calls.push(target); return blocked(); } });
+  assert.deepEqual(calls, [url]);
+  assert.equal(p.recovery?.method, "not-found");
+  assert.equal(p.facts.length, 0);
+  assert.equal(p.recovery?.sources[0].url, source.url);
+});

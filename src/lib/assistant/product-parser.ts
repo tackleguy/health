@@ -22,11 +22,13 @@ function labelled(label: string, value: string): ProductFact | null {
   const kind: ProductFactKind | null = /^(?:(?:minimum|packaged|packed|carry|trail|total|average|item|product|net|assembled product)\s+)?weight(?:\s*\([^)]*\))?$/i.test(label) ? "weight"
     : /^(?:packed|pack|compressed|stuff sack)\s+(?:size|dimensions|length|width|diameter)$/i.test(label) ? "packed-size"
     : /^(?:(?:floor|unfolded|product|interior peak)\s+)?(?:dimensions|height|width|length|depth|thickness)$/i.test(label) ? "dimensions"
-    : /^(?:(?:water|volume|sleeping|person)\s+)?(?:capacity|volume)$|^maximum occupancy$/i.test(label) ? "capacity"
+    : /^(?:(?:gear|water|volume|sleeping|person)\s+)?(?:capacity|volume)(?:\s*\([^)]*\))?$|^maximum occupancy$/i.test(label) ? "capacity"
     : /^(?:(?:shell|floor|canopy|rainfly|body|lining|outer|inner)\s+)?(?:materials?|fabric)$|^insulation$/i.test(label) ? "materials"
     : /^(?:brand|manufacturer)$/i.test(label) ? "brand" : /^model$/i.test(label) ? "model" : /^(?:sku|mpn)$/i.test(label) ? "sku" : null;
   if (!kind) return null;
   if (["packed-size", "dimensions", "capacity"].includes(kind) && !/\d/.test(value)) return null;
+  const unit = label.match(/\((g|kg|oz|lb|lbs|liters?|litres?|l)\)/i)?.[1];
+  if (unit && /^\d+(?:\.\d+)?$/.test(value)) value += ` ${unit}`;
   return fact(kind, label, value);
 }
 function metadataPrice(html: string): ProductFact[] {
@@ -41,15 +43,48 @@ function metadataPrice(html: string): ProductFact[] {
   return structuredFacts({ offers: { price: amount, priceCurrency: currency } });
 }
 function visibleFacts(html: string): ProductFact[] {
-  const lines = htmlText(html.replace(/<(header|footer|nav)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")).split("\n").map(l => l.trim()).filter(Boolean);
   const facts: ProductFact[] = [];
+  // Keep column and variant labels attached to each table value. Flattening a
+  // size table used to silently assign its first weight to every size.
+  const withoutTables = html.replace(/<(header|footer|nav)\b[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<table\b[^>]*>([\s\S]*?)<\/table>/gi, (_table, inner: string) => {
+    let headers: string[] = [];
+    let section = "";
+    for (const row of [...inner.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].slice(0, 100)) {
+      const cells = [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m => htmlText(m[1]));
+      if (cells.length === 1 && cells[0].length < 80) { section = cells[0].trim(); continue; }
+      if (cells.length < 2) continue;
+      const label = cells[0].trim();
+      let recognized = false;
+      for (let i = 1; i < Math.min(cells.length, 16); i++) {
+        const f = labelled(label, cells[i]);
+        if (!f) continue;
+        recognized = true;
+        const multiple = cells.length > 2;
+        const context = multiple ? headers[i] || `Column ${i}` : section;
+        facts.push({ ...f, ...(context ? { variantLabel: context, label: `${f.label} — ${context}`, evidence: `${f.label} (${context}): ${f.value}`, requiresChoice: true } : {}) });
+      }
+      if (!recognized && !headers.length) headers = cells;
+    }
+    return " ";
+  });
+  const lines = htmlText(withoutTables.replace(/<(header|footer|nav)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")).split("\n").map(l => l.trim()).filter(Boolean);
   for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(/^([A-Za-z][A-Za-z ()/-]{1,55}?)\s*:\s*(.*)$/) ?? lines[i].match(/^((?:(?:minimum|packaged|packed|trail|total|average|item|product|net)\s+)?weight|packed size|packed dimensions|floor dimensions|dimensions|capacity|materials?|fabric|brand|model|sku)(?:\s+(.+))?$/i);
+    const match = lines[i].match(/^([A-Za-z][A-Za-z ()/-]{1,55}?)\s*:\s*(.*)$/) ?? lines[i].match(/^((?:(?:minimum|packaged|packed|trail|total|average|item|product|net)\s+)?weight|packed size|packed dimensions|floor dimensions|dimensions|(?:gear )?capacity(?:\s*\([^)]*\))?|volume|materials?|fabric|brand|model|sku)(?:\s+(.+))?$/i);
     if (!match) continue;
-    const f = labelled(match[1].trim(), match[2]?.trim() || lines[i+1] || "");
+    const label = match[1].trim();
+    if (!lines[i].includes(":") && match[2] && /^(materials?|fabric|brand|model|sku)$/i.test(label)) continue;
+    let value = match[2]?.trim() || lines[i+1] || "";
+    if (/^(materials?|fabric)$/i.test(label) && /^(main|body|bottom|lining|accent)$/i.test(value) && lines[i+2]) value = `${value}: ${lines[i+2]}`;
+    const f = labelled(label, value);
     if (f) facts.push(f);
   }
   return facts;
+}
+function scopeVariantFacts(facts: ProductFact[], name: string) {
+  const normalized = ` ${name.toLowerCase().replace(/[^a-z0-9/]+/g, " ")} `;
+  const matches = (f: ProductFact) => Boolean(f.variantLabel && normalized.includes(` ${f.variantLabel.toLowerCase().replace(/[^a-z0-9/]+/g, " ").trim()} `));
+  const scopedKinds = new Set(facts.filter(matches).map(f => f.kind));
+  return facts.filter(f => !scopedKinds.has(f.kind) || matches(f)).map(f => ({ ...f, requiresChoice: !matches(f) }));
 }
 function structuredFacts(p: Data): ProductFact[] {
   const facts: ProductFact[] = [];
@@ -74,6 +109,7 @@ function structuredFacts(p: Data): ProductFact[] {
     if (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000) continue;
     facts.push({ kind: "price", label: clean(offer.name) || "Listed price", value: `${amount.toFixed(2)} ${currency}`, amount, currency, weightOz: null, evidence: `Listed price: ${amount.toFixed(2)} ${currency}${offer.availability ? ` · ${clean(offer.availability).split('/').pop()}` : ""}` });
   }
+  if (typeof p.description === "string") facts.push(...visibleFacts(p.description.slice(0, 60000)));
   return facts;
 }
 function unique(facts: ProductFact[]) {
@@ -98,8 +134,8 @@ export function parseProduct(html: string, url: string): ProductResearch {
     if (p.mainEntity) visit(p.mainEntity, depth+1);
   };
   const variantSpecs: Record<string, ProductFact[]> = {};
-  for (const match of [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].slice(0, 200)) {
-    if (match[2].length > 500_000) continue;
+  for (const match of [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].slice(0, 500)) {
+    if (match[2].length > 2_000_000) continue;
     try {
       if (/type\s*=\s*["']application\/ld\+json["']/i.test(match[1])) visit(JSON.parse(match[2]));
       // Some retailers publish the exact item's specs in their initial page
@@ -137,11 +173,11 @@ export function parseProduct(html: string, url: string): ProductResearch {
     if (selected.length === 1 && name) title = name;
     if (children.length) {
       for (const child of children.slice(0, 60)) {
-        const combined = { ...p, ...child, hasVariant: undefined, offers: child.offers, weight: child.weight, additionalProperty: child.additionalProperty };
+        const combined = { ...p, ...child, hasVariant: undefined, offers: child.offers, weight: child.weight, additionalProperty: child.additionalProperty, description: child.description };
         const childUrl = productUrl(child, url);
         const id = new URL(childUrl).searchParams.get("variant") ?? clean(child.sku) ?? String(variants.length);
         const specific = variantSpecs[id] ?? [];
-        variants.push({ id: `${variants.length}:${id}`, name: clean(child.name, 240) || name, url: childUrl, facts: unique([...structuredFacts(combined), ...specific, ...fallback(structuredFacts(combined)).map(f => ({ ...f, requiresChoice: true }))]) });
+        variants.push({ id: `${variants.length}:${id}`, name: clean(child.name, 240) || name, url: childUrl, facts: unique([...structuredFacts(combined), ...specific, ...scopeVariantFacts([...fallback(structuredFacts(combined)), ...(typeof p.description === "string" ? visibleFacts(p.description.slice(0, 60000)) : [])], clean(child.name, 240) || name)]) });
       }
     } else {
       const structured = structuredFacts(p);

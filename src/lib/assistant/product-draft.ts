@@ -21,10 +21,13 @@ export function makeProductDraft(product: ProductResearch, variantIndex: string,
   if (product.variants.length && (!variantIndex || !variant)) return null;
   const facts = variant?.facts ?? product.facts;
   const draft: ProductDraft = { name: variant?.name ?? product.title, sourceUrl: variant?.url ?? product.url, sourceCheckedAt: product.retrievedAt };
+  const supplementSources = new Set<string>();
   for (const { kind } of PRODUCT_FIELDS) {
     const index = selections[kind];
     if (index === undefined || index === "") continue;
     const f = facts[Number(index)];
+    const selectedFacts = index === "all" && ["materials", "dimensions"].includes(kind) ? facts.filter(f => f.kind === kind) : f?.kind === kind ? [f] : [];
+    for (const selected of selectedFacts) if (selected.sourceUrl) supplementSources.add(selected.sourceUrl);
     if (index === "all" && (kind === "materials" || kind === "dimensions")) draft[kind] = facts.filter(f => f.kind === kind).map(f => `${f.label}: ${f.value}`).join("; ").slice(0, 1000);
     else if (f?.kind === kind) {
       if (kind === "weight" && f.weightOz !== null) draft.weightOz = f.weightOz;
@@ -36,6 +39,7 @@ export function makeProductDraft(product: ProductResearch, variantIndex: string,
   if (Object.keys(draft).length > 3 && product.recovery) draft.sourceNote = product.recovery.method === "alternate-page"
     ? "Specifications recovered from another public page. Check the model, size and included parts."
     : "Unverified specifications from a search excerpt or pasted text. Verify values against the exact product or a scale.";
+  if (draft.sourceNote && supplementSources.size) draft.sourceNote = `${draft.sourceNote} Sources: ${[...supplementSources].join("; ")}`.slice(0, 1000);
   return draft;
 }
 export function formatProductPrice(price: number, currency: string) {
