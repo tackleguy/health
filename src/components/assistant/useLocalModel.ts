@@ -5,6 +5,7 @@ import { applyProductAI, productAIInput, PRODUCT_AI_SCHEMA, PRODUCT_AI_SYSTEM } 
 import { validateProductQueries, PRODUCT_QUERY_SYSTEM, PRODUCT_QUERY_SCHEMA } from "@/lib/assistant/product-queries";
 import type { ProductResearch } from "@/lib/assistant/types";
 import type { WebWorkerMLCEngine } from "@mlc-ai/web-llm";
+import { localModelError } from "@/lib/assistant/model-error";
 export const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 export function useLocalModel() {
   const [status, setStatus] = useState<"off"|"loading"|"ready"|"thinking"|"error">("off");
@@ -35,7 +36,7 @@ export function useLocalModel() {
       ]);
       if (run !== generation.current) return false;
       pending.current = null; engine.current = loaded; setStatus("ready"); setMessage("Running on this device"); return true;
-    } catch (error) { if (run === generation.current) { dispose(); setStatus("error"); setMessage(error instanceof Error ? error.message : "Local model could not start. Planning tools remain available."); } return false; }
+    } catch (error) { if (run === generation.current) { dispose(); setStatus("error"); setMessage(localModelError(error, "Local model could not start. Planning tools remain available.")); } return false; }
   }, [dispose]);
   const explain = useCallback(async (facts: unknown, insights: PlanInsight[]) => {
     if (!engine.current || pending.current) throw new Error("Load local AI first.");
@@ -49,7 +50,8 @@ export function useLocalModel() {
         new Promise<never>((_resolve, reject) => { pending.current = reject; }),
       ]);
       return validateInsightSelection(response.choices[0]?.message.content ?? "", insights);
-    } finally { if (run === generation.current) { pending.current = null; setStatus("ready"); } }
+    } catch (error) { throw new Error(localModelError(error, "Local AI could not explain this plan. Try again.")); }
+    finally { if (run === generation.current) { pending.current = null; setStatus("ready"); } }
   }, []);
   const extractProduct = useCallback(async (product: ProductResearch, variantIndex: string) => {
     const input = productAIInput(product, variantIndex);
@@ -67,7 +69,8 @@ export function useLocalModel() {
         new Promise<never>((_resolve, reject) => { timer = setTimeout(() => { dispose(); setStatus("error"); setMessage("Local reading timed out. Try again or use the available source details."); reject(new Error("Local reading timed out.")); }, 120_000); }),
       ]);
       return applyProductAI(response.choices[0]?.message.content ?? "", product, variantIndex);
-    } finally {
+    } catch (error) { throw new Error(localModelError(error, "Local AI could not read this page. Try again.")); }
+    finally {
       clearTimeout(timer);
       if (run === generation.current) { pending.current = null; setStatus("ready"); setMessage("Running on this device"); }
     }
@@ -84,7 +87,8 @@ export function useLocalModel() {
         new Promise<never>((_resolve, reject) => { pending.current = reject; timer = setTimeout(() => { dispose(); setStatus("error"); setMessage("AI search planning timed out. Try a more specific name or product link."); }, 60_000); }),
       ]);
       return validateProductQueries(response.choices[0]?.message.content ?? "", query);
-    } finally { clearTimeout(timer); if (run === generation.current) { pending.current = null; setStatus("ready"); setMessage("Running on this device"); } }
+    } catch (error) { throw new Error(localModelError(error, "Local AI could not plan another search. Try again.")); }
+    finally { clearTimeout(timer); if (run === generation.current) { pending.current = null; setStatus("ready"); setMessage("Running on this device"); } }
   }, [dispose, load]);
   return { status, message, progress, load, stop, explain, extractProduct, researchQueries };
 }
