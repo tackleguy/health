@@ -2,7 +2,7 @@
 
 ## Scope and results
 
-The browser model has three uses: prioritizing known trip insights, extracting additional specifications from readable product text, and generating constrained alternative product searches. Trail matching, geocoding, shopping gaps, pack arithmetic and packing zones use deterministic application logic; they do not require model inference.
+The browser model (Llama 3.2 3B) has four uses: prioritizing known trip insights, extracting additional specifications from readable product text, generating constrained alternative product searches, and selecting which public product links the app should open for specs. Trail matching, geocoding, shopping gaps, pack arithmetic and packing zones use deterministic application logic; they do not require model inference.
 
 | Check | Environment | Result |
 | --- | --- | --- |

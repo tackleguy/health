@@ -281,7 +281,7 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
           <label>What matters to you?<textarea rows={3} value={memory.profile.priorities} onChange={e => setProfile({ priorities: e.target.value })} maxLength={500} placeholder="Quieter trails, a warm sleep system…" /></label>
         </div><p className="planner-help">Saved on this device. Your explicit preferences take priority over learned trip feedback.</p></details>
         <details className="planner-local planner-details"><summary>Local AI</summary><div className="planner-section-heading"><h3>Browser assistant</h3><span className={`planner-model-status ${model.status === "ready" ? "ready" : ""}`}>{model.status === "ready" ? "On device" : model.status === "thinking" ? "Thinking" : model.status === "loading" ? "Loading" : "Off"}</span></div>
-          <p>No separate app to install. The first load downloads Qwen 2.5 1.5B model files into browser storage. A WebGPU-capable browser and available device memory are required.</p>
+          <p>No separate app to install. The first load downloads Llama 3.2 3B model files into browser storage (~2 GB). A WebGPU-capable Chrome or Edge browser and available device memory are required.</p>
           <p className="planner-help">Your trip and gear context are processed locally. Online lookup sends only the search terms or product URL. The standard planner works without loading AI.</p>
           {model.status === "loading" && <progress aria-label="Local model loading" value={model.progress} max={1} />}
           <p className="planner-model-message" role="status">{model.message}</p>

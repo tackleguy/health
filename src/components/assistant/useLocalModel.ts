@@ -1,12 +1,14 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validateInsightSelection, type PlanInsight } from "@/lib/assistant/insights";
+import { MODEL_ID } from "@/lib/assistant/local-model-id";
 import { applyProductAI, productAIInput, PRODUCT_AI_SCHEMA, PRODUCT_AI_SYSTEM } from "@/lib/assistant/product-ai";
+import { productLinkInput, PRODUCT_LINK_SCHEMA, PRODUCT_LINK_SYSTEM, validateProductLinks } from "@/lib/assistant/product-links";
 import { validateProductQueries, PRODUCT_QUERY_SYSTEM, PRODUCT_QUERY_SCHEMA } from "@/lib/assistant/product-queries";
-import type { ProductResearch } from "@/lib/assistant/types";
+import type { ProductResearch, WebSource } from "@/lib/assistant/types";
 import type { WebWorkerMLCEngine } from "@mlc-ai/web-llm";
 import { localModelError } from "@/lib/assistant/model-error";
-export const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
+export { MODEL_ID, MODEL_LABEL } from "@/lib/assistant/local-model-id";
 export function useLocalModel() {
   const [status, setStatus] = useState<"off"|"loading"|"ready"|"thinking"|"error">("off");
   const [message, setMessage] = useState("");
@@ -38,6 +40,37 @@ export function useLocalModel() {
       pending.current = null; engine.current = loaded; setStatus("ready"); setMessage("Running on this device"); return true;
     } catch (error) { if (run === generation.current) { dispose(); setStatus("error"); setMessage(localModelError(error, "Local model could not start. Planning tools remain available.")); } return false; }
   }, [dispose]);
+  const runJson = useCallback(async <T,>(
+    build: () => Promise<T>,
+    busyMessage: string,
+    timeoutMs: number,
+    timeoutMessage: string,
+    fallback: string,
+  ): Promise<T> => {
+    if (!engine.current && !await load()) throw new Error("Local AI could not start. See the browser model status below.");
+    if (!engine.current || pending.current) throw new Error("Local AI is busy. Try again when it finishes.");
+    const run = generation.current;
+    setStatus("thinking"); setMessage(busyMessage);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        build(),
+        new Promise<never>((_resolve, reject) => { pending.current = reject; }),
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => {
+            dispose();
+            setStatus("error");
+            setMessage(timeoutMessage);
+            reject(new Error(timeoutMessage));
+          }, timeoutMs);
+        }),
+      ]);
+    } catch (error) { throw new Error(localModelError(error, fallback)); }
+    finally {
+      clearTimeout(timer);
+      if (run === generation.current) { pending.current = null; setStatus("ready"); setMessage("Running on this device"); }
+    }
+  }, [dispose, load]);
   const explain = useCallback(async (facts: unknown, insights: PlanInsight[]) => {
     if (!engine.current || pending.current) throw new Error("Load local AI first.");
     const run = generation.current; setStatus("thinking");
@@ -55,40 +88,33 @@ export function useLocalModel() {
   }, []);
   const extractProduct = useCallback(async (product: ProductResearch, variantIndex: string) => {
     const input = productAIInput(product, variantIndex);
-    if (!engine.current && !await load()) throw new Error("Local AI could not start. See the browser model status below.");
-    if (!engine.current || pending.current) throw new Error("Local AI is busy. Try again when it finishes.");
-    const run = generation.current;
-    setStatus("thinking"); setMessage("Reading product text on this device…");
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const response = await Promise.race([
-        engine.current.chat.completions.create({ messages: [
-          { role: "system", content: PRODUCT_AI_SYSTEM }, { role: "user", content: JSON.stringify(input) },
-        ], temperature: 0, max_tokens: 1200, response_format: { type: "json_object", schema: JSON.stringify(PRODUCT_AI_SCHEMA) } }),
-        new Promise<never>((_resolve, reject) => { pending.current = reject; }),
-        new Promise<never>((_resolve, reject) => { timer = setTimeout(() => { dispose(); setStatus("error"); setMessage("Local reading timed out. Try again or use the available source details."); reject(new Error("Local reading timed out.")); }, 120_000); }),
-      ]);
+    return runJson(async () => {
+      const response = await engine.current!.chat.completions.create({ messages: [
+        { role: "system", content: PRODUCT_AI_SYSTEM }, { role: "user", content: JSON.stringify(input) },
+      ], temperature: 0, max_tokens: 1200, response_format: { type: "json_object", schema: JSON.stringify(PRODUCT_AI_SCHEMA) } });
       return applyProductAI(response.choices[0]?.message.content ?? "", product, variantIndex);
-    } catch (error) { throw new Error(localModelError(error, "Local AI could not read this page. Try again.")); }
-    finally {
-      clearTimeout(timer);
-      if (run === generation.current) { pending.current = null; setStatus("ready"); setMessage("Running on this device"); }
-    }
-  }, [dispose, load]);
+    }, "Reading product text on this device…", 120_000, "Local reading timed out. Try again or use the available source details.", "Local AI could not read this page. Try again.");
+  }, [runJson]);
   const researchQueries = useCallback(async (query: string) => {
-    if (!engine.current && !await load()) throw new Error("Local AI could not start. Available search results are still shown.");
-    if (!engine.current || pending.current) throw new Error("Local AI is busy.");
-    const run = generation.current;
-    setStatus("thinking"); setMessage("Planning another product search on this device…");
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const response = await Promise.race([
-        engine.current.chat.completions.create({ messages: [{ role: "system", content: PRODUCT_QUERY_SYSTEM }, { role: "user", content: query.slice(0, 180) }], temperature: 0, max_tokens: 160, response_format: { type: "json_object", schema: JSON.stringify(PRODUCT_QUERY_SCHEMA) } }),
-        new Promise<never>((_resolve, reject) => { pending.current = reject; timer = setTimeout(() => { dispose(); setStatus("error"); setMessage("AI search planning timed out. Try a more specific name or product link."); }, 60_000); }),
-      ]);
+    return runJson(async () => {
+      const response = await engine.current!.chat.completions.create({ messages: [{ role: "system", content: PRODUCT_QUERY_SYSTEM }, { role: "user", content: query.slice(0, 180) }], temperature: 0, max_tokens: 160, response_format: { type: "json_object", schema: JSON.stringify(PRODUCT_QUERY_SCHEMA) } });
       return validateProductQueries(response.choices[0]?.message.content ?? "", query);
-    } catch (error) { throw new Error(localModelError(error, "Local AI could not plan another search. Try again.")); }
-    finally { clearTimeout(timer); if (run === generation.current) { pending.current = null; setStatus("ready"); setMessage("Running on this device"); } }
-  }, [dispose, load]);
-  return { status, message, progress, load, stop, explain, extractProduct, researchQueries };
+    }, "Planning another product search on this device…", 60_000, "AI search planning timed out. Try a more specific name or product link.", "Local AI could not plan another search. Try again.");
+  }, [runJson]);
+  const selectLinks = useCallback(async (query: string, sources: WebSource[]) => {
+    if (!sources.length) return [];
+    return runJson(async () => {
+      const response = await engine.current!.chat.completions.create({
+        messages: [
+          { role: "system", content: PRODUCT_LINK_SYSTEM },
+          { role: "user", content: JSON.stringify(productLinkInput(query, sources)) },
+        ],
+        temperature: 0,
+        max_tokens: 80,
+        response_format: { type: "json_object", schema: JSON.stringify(PRODUCT_LINK_SCHEMA) },
+      });
+      return validateProductLinks(response.choices[0]?.message.content ?? "", sources);
+    }, "Choosing product pages to open on this device…", 60_000, "AI link selection timed out. Choose a product link manually.", "Local AI could not choose a product page. Try again or open a link manually.");
+  }, [runJson]);
+  return { status, message, progress, load, stop, explain, extractProduct, researchQueries, selectLinks };
 }

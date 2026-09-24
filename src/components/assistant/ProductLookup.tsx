@@ -112,6 +112,41 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
           return;
         }
       }
+      if (!page && !data.product && data.sources?.length && localEnabled) {
+        clearTimeout(timer);
+        try {
+          setStatus("Local AI is choosing product pages to open…");
+          const picks = await model.selectLinks(value.trim(), data.sources as WebSource[]);
+          if (request.current !== controller) return;
+          if (picks.length) {
+            setStatus(`Opening ${picks.length === 1 ? "a product page" : `${picks.length} product pages`} chosen by local AI…`);
+            const opened = await Promise.allSettled(picks.map(async source => {
+              const pageResponse = await fetch("/api/assistant/product", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: source.url, name: value.trim().slice(0, 240) }),
+                cache: "no-store",
+                signal: AbortSignal.any([controller.signal, AbortSignal.timeout(55_000)]),
+              });
+              if (!pageResponse.ok) throw new Error("Product page unavailable.");
+              return pageResponse.json() as Promise<ProductResearch>;
+            }));
+            if (request.current !== controller) return;
+            const products = opened.flatMap(r => r.status === "fulfilled" ? [r.value] : []);
+            const richness = (p: ProductResearch) => new Set([...p.facts, ...p.variants.flatMap(v => v.facts)].map(f => f.kind)).size;
+            const chosen = products.filter(p => [...p.facts, ...p.variants.flatMap(v => v.facts)].some(f => f.kind === "weight")).sort((a, b) => richness(b) - richness(a))[0]
+              ?? products.find(p => p.readings?.length)
+              ?? products.sort((a, b) => richness(b) - richness(a))[0];
+            if (chosen) data = { product: chosen, sources: data.sources };
+          }
+        } catch (error) {
+          if (request.current !== controller) return;
+          // Keep the source list so the user can open a page manually.
+          setSources(data.sources as WebSource[]);
+          setStatus(error instanceof Error ? `${error.message} Choose a matching product below.` : "Local AI could not open a product page. Choose a matching product below.");
+          return;
+        }
+      }
       if (page || data.product) {
         let result = (page ? data : data.product) as ProductResearch;
         setProduct(result);
@@ -172,7 +207,7 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
       {busy && <button type="button" className="planner-link" onClick={() => { request.current?.abort(); request.current = null; model.stop(); setBusy(false); onBusyChange?.(false); setStatus("Lookup cancelled. You can enter details manually."); }}>Cancel lookup</button>}
     </form>
     <label className="planner-check"><input type="checkbox" checked={localEnabled} disabled={busy} onChange={e => setLocalEnabled(e.target.checked)} aria-describedby={`${id}-local-help`} />Use local AI to research missing details</label>
-    <p id={`${id}-local-help`} className="planner-help">AI reads fetched page text on this device. AI is on by default for missing details. First use downloads and caches the browser model; no separate app is needed. A WebGPU-capable browser is required.</p>
+    <p id={`${id}-local-help`} className="planner-help">Llama 3.2 on this device can rephrase searches, pick product links to open, and extract specs from page text the app already fetched. On by default for missing details. First use downloads the browser model (~2 GB); WebGPU Chrome or Edge required.</p>
     <div ref={resultRef}><p id={`${id}-status`} role="status" className="planner-help">{busy ? model.status === "loading" ? "Loading local AI on this device…" : model.status === "thinking" ? model.message : "Checking the product page and alternate public sources…" : status}</p>
     {retryTask && !busy && <div className="planner-actions"><button type="button" className="planner-button secondary" aria-describedby={`${id}-status`} onClick={() => {
       if (retryTask.kind === "reading") void readPageWithAI(retryTask.autoFill);

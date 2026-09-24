@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {cacheModelAsset} from './model-cache';
-const url='https://huggingface.co/mlc-ai/Qwen2.5-1.5B-Instruct-q4f16_1-MLC/resolve/main/params_shard_21.bin';
+const url='https://huggingface.co/mlc-ai/Llama-3.2-3B-Instruct-q4f16_1-MLC/resolve/main/params_shard_21.bin';
 const failed=async()=>{throw new DOMException('Cache.add network error','NetworkError');};
 test('model recovery fetches complete bytes and preserves the stable cache key',async()=>{
  let saved=''; let body='';

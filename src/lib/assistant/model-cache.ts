@@ -1,4 +1,4 @@
-const MODEL_PATH = "/mlc-ai/Qwen2.5-1.5B-Instruct-q4f16_1-MLC/resolve/";
+import { MODEL_HF_PATH } from "./local-model-id";
 
 /** Retry interrupted model downloads, then cache complete bytes under the stable URL. */
 export async function cacheModelAsset(
@@ -12,7 +12,7 @@ export async function cacheModelAsset(
   catch (error) {
     original.signal.throwIfAborted();
     const url = new URL(original.url);
-    if (url.origin !== "https://huggingface.co" || !url.pathname.startsWith(MODEL_PATH)
+    if (url.origin !== "https://huggingface.co" || !url.pathname.startsWith(MODEL_HF_PATH)
       || !/NetworkError|TypeError|fetch|network/i.test(String(error))) throw error;
     for (let attempt = 0; attempt < 2; attempt++) {
       original.signal.throwIfAborted();
