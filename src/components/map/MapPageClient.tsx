@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { GeoLineString, MapMarker, MapMode, Trail } from "@/lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { GeoLineString, MapMarker, MapMode } from "@/lib/types";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
+import type { CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
+import { displayMiles, sourceName } from "@/lib/trail-catalog/types";
 import { MapView } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
@@ -16,28 +18,58 @@ import {
   recordUrl,
 } from "@/lib/map";
 
-type NearbyTrail = Trail & { distance_km?: number };
 type NearbySkiArea = SkiArea & { distance_km?: number };
 
 interface MapPageClientProps {
   markers: MapMarker[];
+  catalogMap: CatalogMapResult | null;
 }
 
-function trailRoutes(trails: NearbyTrail[]): GeoLineString[] {
-  return trails
-    .map((t) => t.geometry)
-    .filter((g): g is GeoLineString => Boolean(g?.coordinates?.length));
+function catalogMarkers(points: CatalogMapPoint[]): MapMarker[] {
+  return points.map((point) => {
+    if (point.trail) {
+      return {
+        id: point.trail.id,
+        type: "trail" as const,
+        name: point.trail.name,
+        latitude: point.latitude,
+        longitude: point.longitude,
+        subtitle: [
+          point.trail.region,
+          displayMiles(point.trail.miles),
+          sourceName(point.trail.source),
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        href: `/explore/trails?q=${encodeURIComponent(point.trail.name)}`,
+      };
+    }
+    return {
+      id: point.id,
+      type: "trail" as const,
+      name: `${point.count.toLocaleString()} trails`,
+      latitude: point.latitude,
+      longitude: point.longitude,
+      subtitle: "Zoom in to see individual sections",
+      href: "/explore/trails",
+    };
+  });
 }
 
-export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
+export function MapPageClient({
+  markers: initialMarkers,
+  catalogMap: initialCatalog,
+}: MapPageClientProps) {
   const [mode, setMode] = useState<MapMode>("trail");
   const [explicitLocation, setUserLoc] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const [nearbyTrails, setNearbyTrails] = useState<NearbyTrail[]>([]);
+  const [catalog, setCatalog] = useState<CatalogMapResult | null>(initialCatalog);
   const [nearbySkiAreas, setNearbySkiAreas] = useState<NearbySkiArea[]>([]);
   const [selected, setSelected] = useState<MapMarker | null>(null);
+  const [selectedTrail, setSelectedTrail] = useState<CatalogTrail | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<GeoLineString | null>(null);
   const [selectedSkiFeature, setSelectedSkiFeature] =
     useState<SkiFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
@@ -45,9 +77,17 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
     lng: number;
     zoom?: number;
   } | null>(null);
+  const [trailLabel, setTrailLabel] = useState<string | null>(
+    initialCatalog
+      ? `${initialCatalog.total.toLocaleString()} trail sections across Canada & the U.S.`
+      : null,
+  );
   const [nearbyLabel, setNearbyLabel] = useState<string | null>(null);
   const location = useLocationPermission();
   const userLoc = explicitLocation ?? location.coords;
+  const boundsAbort = useRef<AbortController | null>(null);
+  const geometryAbort = useRef<AbortController | null>(null);
+
   const resolvedFocus = useMemo(
     () =>
       mapFocus ??
@@ -67,26 +107,45 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
     }
   }, [location]);
 
-  useEffect(() => {
-    if (!userLoc) return;
+  const loadCatalogForBounds = useCallback(
+    (bounds: { west: number; south: number; east: number; north: number }) => {
+      boundsAbort.current?.abort();
+      const controller = new AbortController();
+      boundsAbort.current = controller;
+      const bbox = [
+        bounds.west,
+        bounds.south,
+        bounds.east,
+        bounds.north,
+      ]
+        .map((n) => n.toFixed(5))
+        .join(",");
 
-    if (mode === "trail") {
-      fetch(
-        `/api/trails/nearby?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=250&limit=40`,
-      )
-        .then((r) => r.json())
+      void fetch(`/api/trail-catalog/map?bbox=${bbox}`, {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("catalog map failed");
+          return response.json() as Promise<CatalogMapResult>;
+        })
         .then((data) => {
-          const trails: NearbyTrail[] = data.trails ?? [];
-          setNearbyTrails(trails);
-          setNearbyLabel(
-            trails.length > 0
-              ? `${trails.length} trails near you`
-              : "No trails nearby — showing parks & trails",
+          setCatalog(data);
+          setTrailLabel(
+            data.total > 0
+              ? `${data.total.toLocaleString()} trail sections in this view`
+              : "No trail sections in this view — pan or zoom out",
           );
         })
-        .catch(() => setNearbyLabel(null));
-      return;
-    }
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+          setTrailLabel("Trail sections could not refresh — try moving the map");
+        });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (mode !== "ski" || !userLoc) return;
 
     fetch(
       `/api/ski/nearby?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=150&limit=30`,
@@ -107,6 +166,8 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
   const handleModeChange = (next: MapMode) => {
     setMode(next);
     setSelected(null);
+    setSelectedTrail(null);
+    setSelectedRoute(null);
     setSelectedSkiFeature(null);
     setMapFocus(null);
   };
@@ -127,32 +188,15 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
       }));
     }
 
-    if (nearbyTrails.length > 0) {
-      return nearbyTrails.map((trail) => ({
-        id: trail.id,
-        type: "trail" as const,
-        name: trail.trail_name,
-        latitude: trail.latitude,
-        longitude: trail.longitude,
-        subtitle:
-          trail.distance_km != null
-            ? formatDistanceAway(trail.distance_km)
-            : undefined,
-        href: `/explore/trails/${trail.id}`,
-      }));
-    }
-
-    return initialMarkers.filter(
-      (m) => m.type === "trail" || m.type === "park",
-    );
-  }, [mode, nearbyTrails, nearbySkiAreas, initialMarkers]);
+    const parks = initialMarkers.filter((m) => m.type === "park");
+    const trails = catalogMarkers(catalog?.points ?? []);
+    return [...parks, ...trails];
+  }, [mode, nearbySkiAreas, initialMarkers, catalog]);
 
   const routes = useMemo(
-    () => (mode === "trail" ? trailRoutes(nearbyTrails) : []),
-    [mode, nearbyTrails],
+    () => (mode === "trail" && selectedRoute ? [selectedRoute] : []),
+    [mode, selectedRoute],
   );
-
-  const selectedTrail = nearbyTrails.find((t) => t.id === selected?.id);
 
   const skiFeatureDistance =
     selectedSkiFeature && userLoc
@@ -163,6 +207,42 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           selectedSkiFeature.lng,
         )
       : undefined;
+
+  const openCatalogTrail = useCallback((trail: CatalogTrail) => {
+    geometryAbort.current?.abort();
+    const controller = new AbortController();
+    geometryAbort.current = controller;
+    setSelected({
+      id: trail.id,
+      type: "trail",
+      name: trail.name,
+      latitude: trail.latitude,
+      longitude: trail.longitude,
+      href: `/explore/trails?q=${encodeURIComponent(trail.name)}`,
+    });
+    setSelectedTrail(trail);
+    setSelectedRoute(null);
+    setMapFocus({ lat: trail.latitude, lng: trail.longitude, zoom: 13 });
+
+    void fetch(`/api/trail-catalog/${encodeURIComponent(trail.id)}`, {
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("geometry unavailable");
+        return response.json() as Promise<{ lines: [number, number][][] }>;
+      })
+      .then((data) => {
+        const line = data.lines?.[0];
+        if (!line?.length) return;
+        setSelectedRoute({
+          type: "LineString",
+          coordinates: line.map(([lng, lat]) => [lng, lat]),
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      });
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -177,8 +257,8 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           <p className="mt-1 text-sm text-mist">
             {mode === "ski"
               ? (nearbyLabel ?? "Ski areas — switch Map / Satellite / 3D")
-              : (nearbyLabel ??
-                "Hiking trails — Map, Satellite, Hybrid & 3D like AllTrails")}
+              : (trailLabel ??
+                "All catalog trail sections — Map, Satellite, Hybrid & 3D")}
           </p>
         </div>
         <ModeSwitcher mode={mode} onChange={handleModeChange} />
@@ -232,10 +312,11 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
         routes={routes}
         className="h-[calc(100vh-280px)] min-h-[420px]"
         geolocate
-        fitToMarkers={nearbyTrails.length === 0 && !userLoc}
-        fitToRoutes={routes.length > 0}
+        fitToMarkers={mode === "trail" && !userLoc && !catalog}
+        fitToRoutes={Boolean(selectedRoute)}
         focus={resolvedFocus}
         onGeolocate={onGeolocate}
+        onBoundsChange={mode === "trail" ? loadCatalogForBounds : undefined}
         onMarkerClick={(marker) => {
           if (marker.type === "park") {
             window.location.href = marker.href;
@@ -255,9 +336,30 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
               lng: marker.longitude,
             });
             setSelected(null);
+            setSelectedTrail(null);
+            setSelectedRoute(null);
+            return;
+          }
+
+          const point = catalog?.points.find((p) => p.id === marker.id);
+          if (point?.bounds) {
+            setMapFocus({
+              lat: (point.bounds[1] + point.bounds[3]) / 2,
+              lng: ((point.bounds[0] + point.bounds[2]) / 2 + 540) % 360 - 180,
+              zoom: 9,
+            });
+            setSelected(null);
+            setSelectedTrail(null);
+            setSelectedRoute(null);
+            return;
+          }
+          if (point?.trail) {
+            openCatalogTrail(point.trail);
             return;
           }
           setSelected(marker);
+          setSelectedTrail(null);
+          setSelectedRoute(null);
           setMapFocus({
             lat: marker.latitude,
             lng: marker.longitude,
@@ -271,18 +373,27 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-display font-semibold text-cream">
-                {selectedTrail.trail_name}
+                {selectedTrail.name}
               </p>
               <p className="mt-0.5 text-sm text-mist">
-                {selectedTrail.park?.park_name} · {selectedTrail.length_miles}{" "}
-                mi · {selectedTrail.difficulty}
-                {selectedTrail.distance_km != null &&
-                  ` · ${formatDistanceAway(selectedTrail.distance_km)} away`}
+                {[
+                  selectedTrail.region,
+                  selectedTrail.country === "CA" ? "Canada" : "United States",
+                  displayMiles(selectedTrail.miles),
+                  selectedTrail.difficulty,
+                  sourceName(selectedTrail.source),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setSelected(null)}
+              onClick={() => {
+                setSelected(null);
+                setSelectedTrail(null);
+                setSelectedRoute(null);
+              }}
               className="text-mist hover:text-cream"
             >
               ✕
@@ -303,13 +414,13 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
               Zoom to trail
             </button>
             <Link
-              href={`/explore/trails/${selectedTrail.id}`}
+              href={`/explore/trails?q=${encodeURIComponent(selectedTrail.name)}`}
               className="btn-ghost !py-2 !text-sm"
             >
-              Trail details
+              Find in Explore
             </Link>
             <Link
-              href={recordUrl(activityForTrail(selectedTrail.difficulty), {
+              href={recordUrl(activityForTrail(selectedTrail.difficulty ?? "moderate"), {
                 trailId: selectedTrail.id,
               })}
               className="btn-primary !py-2 !text-sm"

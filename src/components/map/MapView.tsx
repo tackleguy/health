@@ -105,6 +105,12 @@ interface MapViewProps {
   showBasemapControls?: boolean;
   onMarkerClick?: (marker: MapMarker) => void;
   onGeolocate?: (lat: number, lng: number) => void;
+  onBoundsChange?: (bounds: {
+    west: number;
+    south: number;
+    east: number;
+    north: number;
+  }) => void;
   onSkiFeatureClick?: (feature: SkiFeatureSummary) => void;
   onOpenTrailFeatureClick?: (feature: OpenTrailFeatureSummary) => void;
 }
@@ -123,12 +129,14 @@ export function MapView({
   showBasemapControls = true,
   onMarkerClick,
   onGeolocate,
+  onBoundsChange,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onGeolocateRef = useRef(onGeolocate);
+  const onBoundsChangeRef = useRef(onBoundsChange);
   const [mapError, setMapError] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<MapBasemap>("map");
   const [is3d, setIs3d] = useState(false);
@@ -143,6 +151,9 @@ export function MapView({
   useEffect(() => {
     onGeolocateRef.current = onGeolocate;
   }, [onGeolocate]);
+  useEffect(() => {
+    onBoundsChangeRef.current = onBoundsChange;
+  }, [onBoundsChange]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -183,6 +194,13 @@ export function MapView({
       if (cancelled) return;
       mapRef.current = map;
       setReady(true);
+      const b = map.getBounds();
+      onBoundsChangeRef.current?.({
+        west: b.getWest(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        north: b.getNorth(),
+      });
     });
     map.on("error", (e) => {
       const msg = e.error?.message ?? "";
@@ -191,11 +209,27 @@ export function MapView({
       }
     });
 
+    let boundsTimer: ReturnType<typeof setTimeout> | undefined;
+    const emitBounds = () => {
+      const b = map.getBounds();
+      onBoundsChangeRef.current?.({
+        west: b.getWest(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        north: b.getNorth(),
+      });
+    };
+    map.on("moveend", () => {
+      clearTimeout(boundsTimer);
+      boundsTimer = setTimeout(emitBounds, 280);
+    });
+
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(containerRef.current);
 
     return () => {
       cancelled = true;
+      clearTimeout(boundsTimer);
       ro.disconnect();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];

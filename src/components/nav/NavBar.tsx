@@ -40,9 +40,12 @@ const tools = [
   { href: "/explore/ski", label: "Ski resorts" },
 ];
 
-const goRoutes = Object.fromEntries(
-  NAV_SHORTCUTS.filter((item) => item.chord).map((item) => [item.chord!, item.href]),
-) as Record<string, string>;
+const goRoutes: Record<string, string> = {};
+for (const item of NAV_SHORTCUTS) {
+  if ("chord" in item && "href" in item && item.chord && item.href) {
+    goRoutes[item.chord] = item.href;
+  }
+}
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
