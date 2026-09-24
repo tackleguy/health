@@ -126,7 +126,12 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
   const aiSignature = JSON.stringify({ insights, aiContext });
   async function explain() {
     setAiError("");
-    try { const result = await model.explain(aiContext, insights); setExplanation(result); setExplainedSignature(aiSignature); }
+    try {
+      if (model.status !== "ready" && !await model.load()) {
+        setAiError("The local model could not start. Retry to reload it and explain this plan."); return;
+      }
+      const result = await model.explain(aiContext, insights); setExplanation(result); setExplainedSignature(aiSignature);
+    }
     catch (error) { setAiError(error instanceof Error ? error.message : "Could not generate an explanation. The calculated plan is still available."); }
   }
   const planSignature = JSON.stringify({ prompt, request, route, gear: selected, shopping, packed: packed.filter(id => selected.some(g => g.id === id)) });
@@ -195,7 +200,7 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
             <details ref={researchPanel} className="planner-details" open={matches.length === 0 && request.locationMode !== "near"}><summary>{researchingRoute ? `Research: ${researchingRoute}` : "Research more trips in this region"}</summary><p className="planner-help">Search uses your location, mileage and days. Park and land-manager sources appear first. Search excerpts are leads; confirm the complete itinerary, distance and current rules on the linked page.</p>
               <p role="status">{searching ? "Finding public trail sources…" : searchError}</p>
               <ul className="planner-sources">{sources.map((s, i) => <li key={`${s.url}-${i}`}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a><small>{s.publisher}{s.topics?.length ? ` · ${s.topics.join(" · ")}` : ""}</small><p>{s.snippet}</p><small>Search retrieved {new Date(s.retrievedAt).toLocaleDateString()} · Current conditions not verified</small></li>)}</ul>
-              <div className="planner-actions"><button className="planner-link" disabled={searching || !request.region} onClick={() => void findSources(request, researchingRoute)}>Search again</button><a href={`https://www.google.com/search?q=${encodeURIComponent(`${researchingRoute} ${request.region} ${request.distanceMiles ?? ""} mile ${request.days ?? ""} day backpacking official trails`)}`} target="_blank" rel="noopener noreferrer">Open web search</a></div>
+              <div className="planner-actions"><button className="planner-link" disabled={searching || !request.region} onClick={() => void findSources(request, researchingRoute)}>{searchError ? "Retry trail research" : "Search again"}</button><a href={`https://www.google.com/search?q=${encodeURIComponent(`${researchingRoute} ${request.region} ${request.distanceMiles ?? ""} mile ${request.days ?? ""} day backpacking official trails`)}`} target="_blank" rel="noopener noreferrer">Open web search</a></div>
             </details>
             <details className="planner-details"><summary>Add a route you found</summary><form className="planner-fields" onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); setRoute({ id: `manual:${crypto.randomUUID()}`, name: String(data.get("name")), region: request.region, distanceMiles: Number(data.get("distance")), elevationFt: null, difficulty: "Check source", sourceUrl: String(data.get("source")), sourceLabel: "Your route source", note: "Route entered from your source. Verify its distance, conditions, and overnight rules before travel." }); setExplanation([]); }}>
               <label>Route name<input name="name" required maxLength={180} /></label><label>Route distance (mi)<input name="distance" type="number" min="0.1" max="10000" step="any" required /></label><label className="planner-span">Official route URL<input name="source" type="url" pattern="https://.*" required maxLength={2000} /></label><button className="planner-button secondary">Use this route</button>
@@ -247,9 +252,10 @@ export function TripPlanner({ context, initialRegion = "", initialPrompt = "" }:
             </div><button className="planner-button secondary" type="button" disabled={searching || !request.region} onClick={() => void findSources(request)}>Refresh online route search</button>
           </details>
           <details className="planner-details planner-questions"><summary>{followUps.length ? `${followUps.length} details to make this plan yours` : "Your trip details are filled in"}</summary><ul>{followUps.map(q => <li key={q}>{q}</li>)}</ul><p className="planner-help">Update trip details above and My trip preferences alongside the plan.</p></details>
-          <div className="planner-ai-answer"><div className="planner-section-heading"><h3>Think it through with local AI</h3>{model.status === "ready" && <button className="planner-link" onClick={() => void explain()}>Explain my plan</button>}</div>
+          <div className="planner-ai-answer"><div className="planner-section-heading"><h3>Think it through with local AI</h3>{model.status === "ready" && !aiError && <button className="planner-link" onClick={() => void explain()}>Explain my plan</button>}</div>
             <p className="planner-help">{model.status === "off" || model.status === "error" ? "Enable the browser model in Local AI to get an explanation using this trip, your gear, and past-trip feedback." : model.status === "loading" ? "The browser model is loading. Keep building your plan while it finishes." : model.status === "thinking" ? "Thinking on this device…" : "The local model prioritizes facts and questions from your current plan. Displayed weights and specifications come from the planner’s verified data."}</p>
-            {explanation.length > 0 && explainedSignature === aiSignature && <ul className="planner-explanation">{explanation.map(text => <li key={text}>{text}</li>)}</ul>}<p role="status" className="planner-help">{aiError}</p>
+            {explanation.length > 0 && explainedSignature === aiSignature && <ul className="planner-explanation">{explanation.map(text => <li key={text}>{text}</li>)}</ul>}<p id="planner-ai-error" role="status" className="planner-help">{aiError}</p>
+            {aiError && <button type="button" className="planner-button secondary" aria-describedby="planner-ai-error" disabled={model.status === "loading" || model.status === "thinking"} onClick={() => void explain()}>Retry explanation</button>}
           </div>
         </>}
         <p role="status" className="planner-notice">{memoryError || notice}</p>

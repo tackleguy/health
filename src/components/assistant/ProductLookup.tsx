@@ -7,6 +7,8 @@ import { productFromPastedSpecs } from "@/lib/assistant/product-excerpt";
 import type { ProductDraft, ProductFactKind, ProductResearch, WebSource } from "@/lib/assistant/types";
 
 export interface ProductLookupHandle { fill: (input: string) => void }
+type RetryTask = { kind: "lookup"; value: string; isPage: boolean; sourceName: string; autoFill: boolean }
+  | { kind: "reading"; autoFill: boolean };
 export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { onUse: (draft: ProductDraft) => void; ref?: Ref<ProductLookupHandle>; onBusyChange?: (busy: boolean) => void; productName?: string }) {
   const id = useId();
   const model = useLocalModel();
@@ -18,6 +20,7 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
   const [selections, setSelections] = useState<Partial<Record<ProductFactKind, string>>>({});
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
+  const [retryTask, setRetryTask] = useState<RetryTask | null>(null);
   const [pasted, setPasted] = useState("");
   const request = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,20 +42,29 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
   } }));
   useEffect(() => () => request.current?.abort(), []);
 
-  async function readPageWithAI() {
+  async function readPageWithAI(fillAfterReading = false) {
     if (!product) return;
     setLocalEnabled(true);
     request.current?.abort();
     const controller = new AbortController(); request.current = controller;
+    setRetryTask(null);
     setBusy(true); onBusyChange?.(true); setStatus("Reading the product page with local AI…");
     try {
       const result = await model.extractProduct(product, variantIndex);
       if (request.current !== controller) return;
       setProduct(result);
-      setSelections(defaultSelections(variantIndex !== "" ? result.variants[Number(variantIndex)].facts : result.facts));
+      const defaults = defaultSelections(variantIndex !== "" ? result.variants[Number(variantIndex)].facts : result.facts);
+      setSelections(defaults);
+      if (fillAfterReading) {
+        const draft = makeProductDraft(result, variantIndex, defaults);
+        if (draft) { onUse(draft); setStatus("Parameters filled. Review your gear before saving."); return; }
+      }
       setStatus(result.recovery!.notice);
     } catch (error) {
-      if (request.current === controller) setStatus(error instanceof Error ? error.message : "Local AI could not read this page. Your existing details are unchanged.");
+      if (request.current === controller) {
+        setStatus(error instanceof Error ? error.message : "Local AI could not read this page. Your existing details are unchanged.");
+        setRetryTask({ kind: "reading", autoFill: fillAfterReading });
+      }
     } finally {
       if (request.current === controller) { setBusy(false); onBusyChange?.(false); }
     }
@@ -67,6 +79,9 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
     setPasted("");
     if (!isPage) setSources([]);
     value = normalizeProductInput(value);
+    sourceName = (sourceName || productName).slice(0, 240);
+    const retry: RetryTask = { kind: "lookup", value, isPage, sourceName, autoFill: autoFill.current };
+    setRetryTask(null);
     const page = isPage || /^https?:\/\//i.test(value.trim());
     try {
       const response = await fetch(page ? "/api/assistant/product" : `/api/assistant/research?kind=product&q=${encodeURIComponent(value.trim())}`, {
@@ -93,6 +108,7 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
         } catch (error) {
           if (request.current !== controller) return;
           setStatus(error instanceof Error ? error.message : "The AI search could not finish. Try the exact model or a product link.");
+          setRetryTask(retry);
           return;
         }
       }
@@ -120,6 +136,8 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
         const facts = selected !== "" ? result.variants[Number(selected)].facts : result.facts;
         const defaults = defaultSelections(facts);
         setSelections(defaults);
+        if (aiNotice) setRetryTask({ kind: "reading", autoFill: autoFill.current });
+        else if (result.recovery?.method === "not-found" || (!facts.length && !result.variants.length)) setRetryTask(retry);
         if (autoFill.current && (!result.recovery || ["catalog", "alternate-page", "local-ai"].includes(result.recovery.method)) && (!result.variants.length || selected !== "") && facts.length && Object.values(defaults).some(v => v !== "")) {
           const draft = makeProductDraft(result, selected, defaults);
           if (draft) { onUse(draft); setStatus("Parameters filled. Review your gear before saving."); return; }
@@ -128,9 +146,13 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
       } else {
         setSources(data.sources);
         setStatus(data.sources.length ? `${data.sources.length} matches. Choose your product to read its specifications.` : "No matching product found. Try the exact brand and model, or paste a manufacturer or retailer link.");
+        if (!data.sources.length) setRetryTask(retry);
       }
     } catch (e) {
-      if (request.current === controller) setStatus(controller.signal.aborted ? "Lookup timed out. Try another product link." : e instanceof Error ? e.message : "Lookup failed. Try another product link.");
+      if (request.current === controller) {
+        setStatus(controller.signal.aborted ? "Lookup timed out. Try another product link." : e instanceof Error ? e.message : "Lookup failed. Try another product link.");
+        setRetryTask(retry);
+      }
     } finally {
       clearTimeout(timer);
       if (request.current === controller) {
@@ -145,13 +167,17 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
   return <div className="planner-product">
     <p id={`${id}-help`}>Paste a product link or enter its brand and model. Review weight, price, dimensions, capacity, and materials before saving.</p>
     <form className="planner-inline" onSubmit={e => { e.preventDefault(); autoFill.current = false; void lookup(query); }}>
-      <label className="planner-grow">Product name or link<input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} placeholder="e.g. NEMO Tensor All-Season or https://…" maxLength={2000} minLength={3} required aria-describedby={`${id}-help`} /></label>
+      <label className="planner-grow">Product name or link<input ref={inputRef} value={query} disabled={busy} onChange={e => { setQuery(e.target.value); setRetryTask(null); }} placeholder="e.g. NEMO Tensor All-Season or https://…" maxLength={2000} minLength={3} required aria-describedby={`${id}-help`} /></label>
       <button className="planner-button secondary" disabled={busy}>{busy ? "Looking up…" : "Find product details"}</button>
       {busy && <button type="button" className="planner-link" onClick={() => { request.current?.abort(); request.current = null; model.stop(); setBusy(false); onBusyChange?.(false); setStatus("Lookup cancelled. You can enter details manually."); }}>Cancel lookup</button>}
     </form>
     <label className="planner-check"><input type="checkbox" checked={localEnabled} disabled={busy} onChange={e => setLocalEnabled(e.target.checked)} aria-describedby={`${id}-local-help`} />Use local AI to research missing details</label>
     <p id={`${id}-local-help`} className="planner-help">AI reads fetched page text on this device. AI is on by default for missing details. First use downloads and caches the browser model; no separate app is needed. A WebGPU-capable browser is required.</p>
-    <div ref={resultRef}><p role="status" className="planner-help">{busy ? model.status === "loading" ? "Loading local AI on this device…" : model.status === "thinking" ? model.message : "Checking the product page and alternate public sources…" : status}</p>
+    <div ref={resultRef}><p id={`${id}-status`} role="status" className="planner-help">{busy ? model.status === "loading" ? "Loading local AI on this device…" : model.status === "thinking" ? model.message : "Checking the product page and alternate public sources…" : status}</p>
+    {retryTask && !busy && <div className="planner-actions"><button type="button" className="planner-button secondary" aria-describedby={`${id}-status`} onClick={() => {
+      if (retryTask.kind === "reading") void readPageWithAI(retryTask.autoFill);
+      else { autoFill.current = retryTask.autoFill; void lookup(retryTask.value, retryTask.isPage, retryTask.sourceName); }
+    }}>{retryTask.kind === "reading" ? "Retry AI reading" : "Retry lookup"}</button><span className="planner-help">{retryTask.kind === "reading" ? "Try the failed AI step again with the same product and size." : "Search again and check public sources for this product."}</span></div>}
     {model.status === "loading" && <progress aria-label="Local AI download progress" value={model.progress} max={1} />}
     {model.message && <p className="planner-help planner-model-message" role="status">{model.message}</p>}
     {product && product.recovery?.method !== "catalog" && <div className="planner-local">
@@ -167,7 +193,7 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
       {product.recovery?.method === "local-ai" && <p><strong>Local AI · verify source quotes</strong></p>}
       {product.recovery?.method === "alternate-page" && <p><strong>Alternate source · confirm the model</strong></p>}
       <p>Listed prices may change and exclude tax or delivery. Check what is included in each weight.</p>
-      {product.variants.length > 0 && <label className="product-variant">Size / variant<select disabled={busy} value={variantIndex} onChange={e => { setVariantIndex(e.target.value); setSelections(defaultSelections(e.target.value === "" ? [] : product.variants[Number(e.target.value)].facts)); }}><option value="">Choose your exact variant</option>{product.variants.map((v, i) => <option key={v.id} value={i}>{v.name}</option>)}</select></label>}
+      {product.variants.length > 0 && <label className="product-variant">Size / variant<select disabled={busy} value={variantIndex} onChange={e => { setVariantIndex(e.target.value); setRetryTask(null); setSelections(defaultSelections(e.target.value === "" ? [] : product.variants[Number(e.target.value)].facts)); }}><option value="">Choose your exact variant</option>{product.variants.map((v, i) => <option key={v.id} value={i}>{v.name}</option>)}</select></label>}
       {hasVariant && <div className="planner-fields">{PRODUCT_FIELDS.map(({ kind, label }) => {
         const options = facts.map((f, i) => ({ ...f, i })).filter(f => f.kind === kind);
         return <label key={kind}>{label}<select aria-label={label} aria-describedby={selections[kind] ? `${id}-${kind}-evidence` : undefined} disabled={busy || !options.length} value={selections[kind] ?? ""} onChange={e => setSelections(s => ({ ...s, [kind]: e.target.value }))}>
@@ -181,7 +207,7 @@ export function ProductLookup({ onUse, ref, onBusyChange, productName = "" }: { 
     </div>}
     {product?.recovery && product.recovery.method !== "catalog" && !busy && <details className="product-more"><summary>Extract details from copied specifications</summary><p className="planner-help">Open the product page yourself and paste its specification list here. Include units and the price currency. This text is processed in your browser.</p><label>Product specifications<textarea value={pasted} onChange={e => setPasted(e.target.value)} rows={5} maxLength={12000} placeholder={"Weight: 4.4 lb\nPacked size: 18 x 5 in\nPrice: 39.95 USD"} /></label><button type="button" className="planner-button secondary" disabled={!pasted.trim()} onClick={() => {
       const result = productFromPastedSpecs(pasted, productName || product.title, product.recovery!.requestedUrl);
-      setProduct(result); setVariantIndex(""); setSelections(defaultSelections(result.facts)); setSources([]);
+      setProduct(result); setRetryTask(null); setVariantIndex(""); setSelections(defaultSelections(result.facts)); setSources([]);
       setStatus(result.facts.length ? result.recovery!.notice : "No labelled specifications found. Paste lines such as Weight: 4.4 lb or Packed size: 18 x 5 in, including units.");
       resultRef.current?.scrollIntoView({ behavior: "instant", block: "nearest" });
     }}>Extract pasted specifications</button></details>}
