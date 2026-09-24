@@ -73,9 +73,9 @@ export function NavBar() {
   }
 
   return <>
-    <header className="fieldbook-mobile-header"><Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />TrailPack</Link><MoreTools /></header>
+    <header className="fieldbook-mobile-header"><Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />HikeSync</Link><MoreTools /></header>
     <aside className="fieldbook-nav" aria-label="Main navigation">
-      <Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />TrailPack</Link>
+      <Link href="/explore/trails" className="fieldbook-brand"><NavIcon name="mountain" />HikeSync</Link>
       <nav className="fieldbook-destinations" aria-label="Main destinations">{navLinks.map(link => {
         const active = link.label === "Explore" ? pathname.startsWith("/explore") : pathname.startsWith(link.href);
         return <Link key={link.href} href={link.href} aria-current={active ? "page" : undefined}><NavIcon name={link.icon} />{link.label}</Link>;

@@ -3,7 +3,7 @@
  */
 
 const NWS_BASE = "https://api.weather.gov";
-const USER_AGENT = "TrailPack-TrailPlatform/1.0 (https://github.com/tackleguy/health)";
+const USER_AGENT = "HikeSync-TrailPlatform/1.0 (https://github.com/tackleguy/health)";
 
 export interface WeatherForecast {
   source: "nws";

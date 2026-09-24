@@ -1,5 +1,5 @@
 ---
-name: "TrailPack Fieldbook catalog"
+name: "HikeSync Fieldbook catalog"
 description: "Source-attributed trail discovery in the approved light Fieldbook workspace."
 colors:
   background: "#f6f7f4"
@@ -86,7 +86,7 @@ components:
     padding: "24px 0"
 ---
 
-# Design System: TrailPack Fieldbook catalog
+# Design System: HikeSync Fieldbook catalog
 
 ## Overview
 

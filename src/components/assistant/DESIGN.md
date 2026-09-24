@@ -1,5 +1,5 @@
 ---
-name: "TrailPack Fieldbook planner"
+name: "HikeSync Fieldbook planner"
 description: "The implemented light trip planner, pack checklist, and guest equipment patterns."
 colors:
   background: "#f6f7f4"
@@ -97,7 +97,7 @@ components:
     size: "32px"
 ---
 
-# Design System: TrailPack Fieldbook planner
+# Design System: HikeSync Fieldbook planner
 
 ## Overview
 

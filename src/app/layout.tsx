@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TrailPack — Trails, Maps & Adventure",
+  title: "HikeSync — Trails, Maps & Adventure",
   description:
     "Your unified outdoor operating system for trail discovery, maps, and adventure planning.",
 };

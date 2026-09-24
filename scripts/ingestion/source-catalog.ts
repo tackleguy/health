@@ -50,7 +50,7 @@ async function fetchPage(url: string, key: string): Promise<ResponseData> {
   if (!refresh) { try { return JSON.parse(gunzipSync(await readFile(filename)).toString()); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; } }
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      const response = await fetch(url, { headers: { "User-Agent": "TrailPack/1.0 (https://github.com/tackleguy/health)" }, signal: AbortSignal.timeout(90_000) });
+      const response = await fetch(url, { headers: { "User-Agent": "HikeSync/1.0 (https://github.com/tackleguy/health)" }, signal: AbortSignal.timeout(90_000) });
       if (!response.ok) {
         if (response.status === 429) {
           const retry = response.headers.get("retry-after");

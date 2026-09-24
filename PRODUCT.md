@@ -1,4 +1,4 @@
-# TrailPack
+# HikeSync
 
 <!-- impeccable:product-schema 1 -->
 
@@ -8,7 +8,7 @@ web
 
 ## Product Purpose
 
-Unify trail discovery, maps, GPS activity recording, gear management, and packing preparation under TrailPack. The user requested a new, modern, simplified interface that makes the combined apps work together.
+Unify trail discovery, maps, GPS activity recording, gear management, and packing preparation under HikeSync. The user requested a new, modern, simplified interface that makes the combined apps work together.
 
 ## Users
 
@@ -20,7 +20,7 @@ The active app is the Next.js application at the repository root. Preserve exist
 
 ## Brand Commitments
 
-TrailPack is the confirmed app name. The user selected the Fieldbook visual mockup and requested trail coverage for Canada and the United States. The user explicitly requests modern and simple; no binding color or typography choice was supplied.
+HikeSync is the confirmed app name (renamed from TrailPack at the user’s request). The user selected the Fieldbook visual mockup and requested trail coverage for Canada and the United States. The user explicitly requests modern and simple; no binding color or typography choice was supplied.
 
 ## Evidence on Hand
 

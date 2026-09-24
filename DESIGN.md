@@ -1,5 +1,5 @@
 ---
-name: "TrailPack Fieldbook"
+name: "HikeSync Fieldbook"
 description: "The implemented light workspace connecting trail discovery, personal packing, and recording."
 colors:
   background: "#f6f7f4"
@@ -97,7 +97,7 @@ components:
     padding: "24px"
 ---
 
-# Design System: TrailPack Fieldbook
+# Design System: HikeSync Fieldbook
 
 ## Overview
 

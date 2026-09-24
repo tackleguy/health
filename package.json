@@ -1,5 +1,5 @@
 {
-  "name": "trailpack",
+  "name": "hikesync",
   "private": true,
   "engines": {
     "node": ">=20.9.0"

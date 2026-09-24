@@ -33,7 +33,7 @@ export async function generateMetadata({
   const { id } = await params;
   if (/^(usgs|parks-canada|ontario)-/.test(id)) {
     const record = await getCatalogTrail(id);
-    return { title: record ? `${record.trail.name} — TrailPack` : "Trail not found", description: "Source-linked trail section from the TrailPack Canada and U.S. catalog." };
+    return { title: record ? `${record.trail.name} — HikeSync` : "Trail not found", description: "Source-linked trail section from the HikeSync Canada and U.S. catalog." };
   }
   const trail = await getTrail(id);
   if (!trail) return { title: "Trail not found" };

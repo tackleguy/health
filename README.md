@@ -1,4 +1,4 @@
-# TrailPack
+# HikeSync
 
 Next.js app at the **repository root** — standard layout for Vercel.
 
