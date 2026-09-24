@@ -45,6 +45,7 @@ export function TrailsExploreMap({ trails }: TrailsExploreMapProps) {
         className="h-72"
         fitToMarkers={routes.length === 0}
         fitToRoutes={routes.length > 0}
+        showBasemapControls
       />
     </div>
   );

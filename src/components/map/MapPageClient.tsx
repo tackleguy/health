@@ -176,9 +176,9 @@ export function MapPageClient({ markers: initialMarkers }: MapPageClientProps) {
           </h1>
           <p className="mt-1 text-sm text-mist">
             {mode === "ski"
-              ? (nearbyLabel ?? "Ski areas on an in-app Leaflet map")
+              ? (nearbyLabel ?? "Ski areas — switch Map / Satellite / 3D")
               : (nearbyLabel ??
-                "Hiking trails on an in-app Leaflet map — enable location for nearby results")}
+                "Hiking trails — Map, Satellite, Hybrid & 3D like AllTrails")}
           </p>
         </div>
         <ModeSwitcher mode={mode} onChange={handleModeChange} />
