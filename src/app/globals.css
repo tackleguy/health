@@ -75,8 +75,6 @@ input,textarea { caret-color: var(--accent); }
 .fieldbook-nav-toggle { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-height: 44px; width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 8px; color: #c4d7ca; font-size: 14px; cursor: pointer; }
 .fieldbook-nav-toggle:hover { background: #244d40; color: #fff; }
 .fieldbook-nav-toggle svg { flex-shrink: 0; }
-.fieldbook-nav-kbd { margin-left: auto; border: 1px solid #91ac9c66; border-radius: 6px; padding: 2px 6px; font: 600 12px/1.2 var(--font-sans); color: #c4d7ca; letter-spacing: 0.04em; }
-.fieldbook-nav-kbd--rail { margin-left: auto; }
 .fieldbook-brand { display: inline-flex; align-items: center; gap: 12px; color: #fff; font-size: 20px; font-weight: 600; min-height: 32px; }
 .fieldbook-brand svg { flex: 0 0 24px; }
 .fieldbook-destinations { display: grid; gap: 8px; margin-top: 48px; }
@@ -96,7 +94,6 @@ input,textarea { caret-color: var(--accent); }
 .fieldbook-nav-footer { margin-top: auto; padding-top: 32px; }
 .fieldbook-record { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 8px; border: 1px solid #91ac9c; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; }
 .fieldbook-record:hover { background: #315c4d; }
-.fieldbook-record .fieldbook-nav-kbd { border-color: #91ac9c99; color: #e7f0ea; }
 .fieldbook-profile { margin-top: 20px; }
 .fieldbook-auth { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 4px 16px; color: #c4d7ca; font-size: 12px; }
 .fieldbook-auth a,.fieldbook-auth button { display: inline-flex; align-items: center; min-height: 44px; }
@@ -106,7 +103,6 @@ input,textarea { caret-color: var(--accent); }
   .app-shell--collapsed .skip-link { left: 84px; }
   .app-shell--collapsed .fieldbook-nav-toggle { justify-content: center; padding: 10px; margin-bottom: 12px; }
   .app-shell--collapsed .fieldbook-nav-label,
-  .app-shell--collapsed .fieldbook-nav-kbd,
   .app-shell--collapsed .fieldbook-auth { display: none; }
   .app-shell--collapsed .fieldbook-brand { justify-content: center; width: 44px; min-height: 44px; margin-inline: auto; }
   .app-shell--collapsed .fieldbook-destinations { width: 100%; margin-top: 20px; gap: 4px; }

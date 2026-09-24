@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActivities, getWeeklyStats } from "@/lib/activities";
 import { formatDistance, formatDuration } from "@/lib/gps";
+import { NAV_SHORTCUTS } from "@/lib/nav-shortcuts";
 import { ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityType } from "@/lib/types";
 import { ActivityListRow } from "@/components/activities/ActivityListRow";
 import { getAuthUser } from "@/lib/supabase/server";
@@ -104,6 +105,26 @@ export default async function YouPage() {
           <p className="mt-2 text-xs text-mist">
             {(milesThisMonth / 1609.34).toFixed(1)} mi of 100 mi goal
           </p>
+        </section>
+
+        <section className="mt-8 surface-card p-5">
+          <h2 className="font-display text-base font-semibold text-cream">Keyboard shortcuts</h2>
+          <p className="mt-1 text-sm text-mist">
+            Desktop only. Shortcuts are paused while typing in a field. Hover a sidebar item to see its shortcut.
+          </p>
+          <ul className="mt-4 divide-y divide-[var(--border)]">
+            {NAV_SHORTCUTS.map((shortcut) => (
+              <li
+                key={shortcut.keys}
+                className="flex items-center justify-between gap-4 py-3 text-sm first:pt-0 last:pb-0"
+              >
+                <span className="text-cream">{shortcut.label}</span>
+                <kbd className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface-muted px-2.5 py-1 font-sans text-xs font-semibold tabular-nums tracking-wide text-sage">
+                  {shortcut.keys}
+                </kbd>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="mt-8">

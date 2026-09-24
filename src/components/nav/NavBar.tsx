@@ -5,37 +5,44 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SearchBar } from "@/components/search/SearchBar";
+import { NAV_SHORTCUTS } from "@/lib/nav-shortcuts";
 import { NavIcon } from "./NavIcon";
 
 const navLinks = [
-  { href: "/explore/trails", label: "Explore", icon: "explore" as const, chord: "e", hint: "G then E" },
-  { href: "/plan", label: "My trips", icon: "trips" as const, chord: "t", hint: "G then T" },
-  { href: "/gear", label: "Gear", icon: "gear" as const, chord: "g", hint: "G then G" },
+  { href: "/explore/trails", label: "Explore", icon: "explore" as const, hint: "G then E" },
+  { href: "/plan", label: "My trips", icon: "trips" as const, hint: "G then T" },
+  { href: "/gear", label: "Gear", icon: "gear" as const, hint: "G then G" },
 ];
 
 const footerLinks = [
-  { href: "/record", label: "Record activity", icon: "record" as const, chord: "r", hint: "G then R", className: "fieldbook-record" },
-  { href: "/you", label: "Profile", icon: "profile" as const, chord: "p", hint: "G then P", className: "fieldbook-profile" },
+  {
+    href: "/record",
+    label: "Record activity",
+    icon: "record" as const,
+    hint: "G then R",
+    className: "fieldbook-record",
+  },
+  {
+    href: "/you",
+    label: "Profile",
+    icon: "profile" as const,
+    hint: "G then P",
+    className: "fieldbook-profile",
+  },
 ];
 
 const tools = [
-  { href: "/record", label: "Record activity", chord: "r" },
-  { href: "/map", label: "Adventure map", chord: "m" },
-  { href: "/", label: "Activity log", chord: "a" },
+  { href: "/record", label: "Record activity", hint: "G then R" },
+  { href: "/map", label: "Adventure map", hint: "G then M" },
+  { href: "/", label: "Activity log", hint: "G then A" },
   { href: "/pack-trails", label: "Route guides" },
   { href: "/trails", label: "Custom trails" },
   { href: "/explore/ski", label: "Ski resorts" },
 ];
 
-const goRoutes: Record<string, string> = {
-  e: "/explore/trails",
-  t: "/plan",
-  g: "/gear",
-  r: "/record",
-  p: "/you",
-  m: "/map",
-  a: "/",
-};
+const goRoutes = Object.fromEntries(
+  NAV_SHORTCUTS.filter((item) => item.chord).map((item) => [item.chord!, item.href]),
+) as Record<string, string>;
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
@@ -80,14 +87,14 @@ function MoreTools({ collapsed }: { collapsed?: boolean }) {
           <Link
             key={tool.href}
             href={tool.href}
+            title={tool.hint ? `${tool.label} · ${tool.hint}` : tool.label}
             aria-current={
               (tool.href === "/" ? pathname === "/" : pathname === tool.href || pathname.startsWith(`${tool.href}/`))
                 ? "page"
                 : undefined
             }
           >
-            <span>{tool.label}</span>
-            {tool.chord && <kbd className="fieldbook-nav-kbd">G {tool.chord.toUpperCase()}</kbd>}
+            {tool.label}
           </Link>
         ))}
         <div className="nav-search">
@@ -198,11 +205,10 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
           aria-expanded={!collapsed}
           aria-controls="sidebar-content"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar ([)" : "Collapse sidebar ([)"}
+          title={collapsed ? "Expand sidebar · [" : "Collapse sidebar · ["}
         >
           <NavIcon name="chevron" style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
           <span className="fieldbook-nav-label">Collapse sidebar</span>
-          <kbd className="fieldbook-nav-kbd fieldbook-nav-kbd--rail">[</kbd>
         </button>
         <div id="sidebar-content" className="fieldbook-nav-content">
           <Link
@@ -223,12 +229,11 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
                   key={link.href}
                   href={link.href}
                   aria-current={active ? "page" : undefined}
-                  aria-label={`${link.label} (${link.hint})`}
+                  aria-label={collapsed ? link.label : undefined}
                   title={`${link.label} · ${link.hint}`}
                 >
                   <NavIcon name={link.icon} />
                   <span className="fieldbook-nav-label">{link.label}</span>
-                  <kbd className="fieldbook-nav-kbd">G {link.chord.toUpperCase()}</kbd>
                 </Link>
               );
             })}
@@ -241,12 +246,11 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
                 href={link.href}
                 className={link.className}
                 aria-current={pathname.startsWith(link.href) ? "page" : undefined}
-                aria-label={`${link.label} (${link.hint})`}
+                aria-label={collapsed ? link.label : undefined}
                 title={`${link.label} · ${link.hint}`}
               >
                 <NavIcon name={link.icon} />
                 <span className="fieldbook-nav-label">{link.label}</span>
-                <kbd className="fieldbook-nav-kbd">G {link.chord.toUpperCase()}</kbd>
               </Link>
             ))}
             <div className="fieldbook-auth">
