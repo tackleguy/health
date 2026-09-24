@@ -192,6 +192,84 @@ html { scroll-padding-block:20px 100px; }
 
 .gear-dialog::backdrop { background: #173f35cc; backdrop-filter: blur(4px); }
 
+/* Adventure map pins + MapLibre popups */
+.hs-map-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px #18251f55;
+  padding: 0;
+  cursor: pointer;
+  background: #245b47;
+}
+.hs-map-pin--park { background: #173f35; width: 10px; height: 10px; }
+.hs-map-pin--resort { background: #c8f04a; border-color: #173f35; }
+.hs-map-pin--trail { background: #36745b; }
+.hs-map-pin--cluster {
+  min-width: 28px;
+  height: 28px;
+  width: auto;
+  padding: 0 7px;
+  background: #245b47;
+  color: #fff;
+  font: 600 11px/1 var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hs-maplibre-popup .maplibregl-popup-content {
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--cream);
+  box-shadow: 0 8px 24px #18251f33;
+  overflow: hidden;
+}
+.hs-maplibre-popup .maplibregl-popup-close-button {
+  font-size: 18px;
+  color: var(--mist);
+  padding: 4px 8px;
+}
+.hs-popup { padding: 12px 14px 12px; max-width: 260px; }
+.hs-popup-title {
+  margin: 0 20px 10px 0;
+  font: 600 15px/1.3 var(--font-sans);
+  color: var(--cream);
+}
+.hs-popup-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+.hs-popup-row span { color: var(--mist); }
+.hs-popup-row strong { color: var(--cream); font-weight: 600; text-align: right; }
+.hs-popup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.hs-popup-primary,
+.hs-popup-secondary {
+  flex: 1;
+  text-align: center;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: 600 12px/1.2 var(--font-sans);
+  text-decoration: none;
+}
+.hs-popup-primary { background: var(--accent); color: #fff; }
+.app-shell--recording .hs-popup-primary { color: var(--forest); }
+.hs-popup-secondary {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--accent);
+}
+
 /* Leaflet map chrome */
 .hikesync-leaflet-marker {
   background: transparent !important;

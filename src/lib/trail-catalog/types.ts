@@ -57,6 +57,8 @@ export interface CatalogFilters {
   maxMiles?: number;
   difficulty?: string;
   dogFriendly?: boolean;
+  /** When true, keep ski/snowshoe/snowmobile-named sections. Default excludes them. */
+  includeWinter?: boolean;
   lat?: number;
   lng?: number;
   radiusKm?: number;

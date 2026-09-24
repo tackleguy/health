@@ -57,7 +57,10 @@ test("bundled snapshot contains 90,000 unique source records with complete map g
 test("server catalog paginates, isolates countries, and rejects invalid detail IDs",async()=>{
   const first = await searchCatalog({country:"CA",limit:5});
   const second = await searchCatalog({country:"CA",limit:5,page:2});
-  assert.equal(first.trails.length,5);assert.equal(first.total,first.manifest.countries.CA);
+  const withWinter = await searchCatalog({country:"CA",limit:5,includeWinter:true});
+  assert.equal(first.trails.length,5);
+  assert.ok(first.total < first.manifest.countries.CA);
+  assert.equal(withWinter.total, first.manifest.countries.CA);
   assert.ok(first.trails.every(t=>t.country==="CA"));assert.ok(second.trails.every(t=>!first.trails.some(f=>f.id===t.id)));
   const detail = await getCatalogTrail(first.trails[0].id);assert.ok(detail?.lines.length);
   assert.equal(await getCatalogTrail("../../package.json"),null);

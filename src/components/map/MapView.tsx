@@ -10,6 +10,17 @@ import clsx from "clsx";
 
 export type MapBasemap = "map" | "satellite" | "hybrid";
 
+export interface MapPopupInfo {
+  longitude: number;
+  latitude: number;
+  title: string;
+  rows: { label: string; value: string }[];
+  primaryHref?: string;
+  primaryLabel?: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
+}
+
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
 const DEFAULT_ZOOM = 4;
 
@@ -19,10 +30,9 @@ const ESRI_LABELS =
   "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 const ESRI_ROADS =
   "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
-const OSM_RASTER =
-  "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const OSM_RASTER = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TERRARIUM_DEM =
-  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{y}/{x}.png";
 
 function buildStyle(basemap: MapBasemap): maplibregl.StyleSpecification {
   const sources: maplibregl.StyleSpecification["sources"] = {
@@ -91,6 +101,38 @@ function buildStyle(basemap: MapBasemap): maplibregl.StyleSpecification {
   return { version: 8, sources, layers };
 }
 
+function popupHtml(info: MapPopupInfo): string {
+  const rows = info.rows
+    .map(
+      (row) =>
+        `<div class="hs-popup-row"><span>${escapeHtml(row.label)}</span><strong>${escapeHtml(row.value)}</strong></div>`,
+    )
+    .join("");
+  const actions = [
+    info.primaryHref && info.primaryLabel
+      ? `<a class="hs-popup-primary" href="${escapeAttr(info.primaryHref)}">${escapeHtml(info.primaryLabel)}</a>`
+      : "",
+    info.secondaryHref && info.secondaryLabel
+      ? `<a class="hs-popup-secondary" href="${escapeAttr(info.secondaryHref)}">${escapeHtml(info.secondaryLabel)}</a>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+  return `<div class="hs-popup"><p class="hs-popup-title">${escapeHtml(info.title)}</p>${rows}${actions ? `<div class="hs-popup-actions">${actions}</div>` : ""}</div>`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function escapeAttr(value: string) {
+  return escapeHtml(value).replaceAll("'", "&#39;");
+}
+
 interface MapViewProps {
   mode: MapMode;
   markers?: MapMarker[];
@@ -102,6 +144,7 @@ interface MapViewProps {
   fitToMarkers?: boolean;
   fitToRoutes?: boolean;
   focus?: { lat: number; lng: number; zoom?: number } | null;
+  popup?: MapPopupInfo | null;
   showBasemapControls?: boolean;
   onMarkerClick?: (marker: MapMarker) => void;
   onGeolocate?: (lat: number, lng: number) => void;
@@ -111,6 +154,7 @@ interface MapViewProps {
     east: number;
     north: number;
   }) => void;
+  onPopupClose?: () => void;
   onSkiFeatureClick?: (feature: SkiFeatureSummary) => void;
   onOpenTrailFeatureClick?: (feature: OpenTrailFeatureSummary) => void;
 }
@@ -126,20 +170,25 @@ export function MapView({
   fitToMarkers = true,
   fitToRoutes = true,
   focus,
+  popup = null,
   showBasemapControls = true,
   onMarkerClick,
   onGeolocate,
   onBoundsChange,
+  onPopupClose,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onGeolocateRef = useRef(onGeolocate);
   const onBoundsChangeRef = useRef(onBoundsChange);
+  const onPopupCloseRef = useRef(onPopupClose);
   const [mapError, setMapError] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<MapBasemap>("map");
   const [is3d, setIs3d] = useState(false);
+  const [bearing, setBearing] = useState(0);
   const [ready, setReady] = useState(false);
 
   const mapCenter = center ?? DEFAULT_CENTER;
@@ -154,6 +203,9 @@ export function MapView({
   useEffect(() => {
     onBoundsChangeRef.current = onBoundsChange;
   }, [onBoundsChange]);
+  useEffect(() => {
+    onPopupCloseRef.current = onPopupClose;
+  }, [onPopupClose]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -169,14 +221,18 @@ export function MapView({
       pitch: 0,
       bearing: 0,
       attributionControl: false,
-      maxPitch: 70,
+      maxPitch: 85,
+      dragRotate: true,
+      touchPitch: true,
+      pitchWithRotate: true,
+      touchZoomRotate: true,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
     map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      "bottom-right",
+      new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }),
+      "top-right",
     );
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
 
     if (geolocate) {
       const geo = new maplibregl.GeolocateControl({
@@ -204,10 +260,10 @@ export function MapView({
     });
     map.on("error", (e) => {
       const msg = e.error?.message ?? "";
-      if (msg && !msg.includes("Failed to fetch")) {
-        setMapError(msg);
-      }
+      if (msg && !msg.includes("Failed to fetch")) setMapError(msg);
     });
+    map.on("rotate", () => setBearing(map.getBearing()));
+    map.on("pitch", () => setBearing(map.getBearing()));
 
     let boundsTimer: ReturnType<typeof setTimeout> | undefined;
     const emitBounds = () => {
@@ -231,17 +287,17 @@ export function MapView({
       cancelled = true;
       clearTimeout(boundsTimer);
       ro.disconnect();
+      popupRef.current?.remove();
+      popupRef.current = null;
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
       setReady(false);
     };
-    // Re-init when basemap changes so raster sources swap cleanly
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basemap, geolocate]);
 
-  // 3D terrain + pitch (AllTrails-style)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
@@ -254,7 +310,7 @@ export function MapView({
         try {
           map.setTerrain({ source: "terrain", exaggeration: 1.35 });
         } catch {
-          /* terrain source may still be loading */
+          /* terrain may still be loading */
         }
         map.easeTo({ pitch: 58, bearing: map.getBearing() || -18, duration: 700 });
       } else {
@@ -262,7 +318,7 @@ export function MapView({
           map.setLayoutProperty("hillshade", "visibility", "none");
         }
         map.setTerrain(null);
-        map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
+        map.easeTo({ pitch: 0, duration: 500 });
       }
     };
 
@@ -270,7 +326,6 @@ export function MapView({
     else map.once("idle", apply);
   }, [is3d, ready, basemap]);
 
-  // Focus
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focus || !ready) return;
@@ -281,7 +336,6 @@ export function MapView({
     });
   }, [focus, ready]);
 
-  // Routes
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
@@ -294,7 +348,6 @@ export function MapView({
       if (map.getLayer(lineId)) map.removeLayer(lineId);
       if (map.getLayer(casingId)) map.removeLayer(casingId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
-
       if (routes.length === 0) return;
 
       map.addSource(sourceId, {
@@ -314,42 +367,32 @@ export function MapView({
         },
       });
 
-      const color = mode === "ski" ? "#38bdf8" : "#22c55e";
+      const color = mode === "ski" ? "#38bdf8" : "#245b47";
       map.addLayer({
         id: casingId,
         type: "line",
         source: sourceId,
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": 7,
-          "line-opacity": 0.85,
-        },
+        paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.85 },
         layout: { "line-cap": "round", "line-join": "round" },
       });
       map.addLayer({
         id: lineId,
         type: "line",
         source: sourceId,
-        paint: {
-          "line-color": color,
-          "line-width": 4,
-          "line-opacity": 0.95,
-        },
+        paint: { "line-color": color, "line-width": 4, "line-opacity": 0.95 },
         layout: { "line-cap": "round", "line-join": "round" },
       });
 
       if (fitToRoutes) {
         const bounds = new maplibregl.LngLatBounds();
         for (const route of routes) {
-          for (const coord of route.coordinates) {
-            bounds.extend([coord[0], coord[1]]);
-          }
+          for (const coord of route.coordinates) bounds.extend([coord[0], coord[1]]);
         }
         if (!bounds.isEmpty()) {
           map.fitBounds(bounds, {
             padding: 48,
             maxZoom: 14,
-            pitch: is3d ? 58 : 0,
+            pitch: is3d ? 58 : map.getPitch(),
             duration: 0,
           });
         }
@@ -360,7 +403,6 @@ export function MapView({
     else map.once("idle", apply);
   }, [routes, fitToRoutes, mode, ready, is3d, basemap]);
 
-  // Markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
@@ -371,29 +413,26 @@ export function MapView({
     markers.forEach((marker) => {
       const el = document.createElement("button");
       el.type = "button";
-      el.className = clsx(
-        "flex min-w-[2rem] flex-col items-center gap-0.5 rounded-xl border-2 px-2 py-1.5 text-center shadow-lg transition hover:scale-105",
-        marker.type === "park"
-          ? "border-white/40 bg-pine text-cream"
-          : marker.type === "resort"
-            ? "border-white/40 bg-accent text-forest"
-            : "border-white/50 bg-emerald-600 text-white",
-      );
-      const icon =
-        marker.type === "park"
-          ? "🏞"
-          : marker.type === "resort"
-            ? "⛷"
-            : "🥾";
-      el.innerHTML = `<span class="text-sm">${icon}</span><span class="max-w-[72px] truncate text-[9px] font-semibold">${marker.name}</span>`;
       el.title = marker.name;
+      el.setAttribute("aria-label", marker.name);
+      const isCluster = (marker.clusterCount ?? 0) > 1;
+      el.className = clsx(
+        "hs-map-pin",
+        marker.type === "park" && "hs-map-pin--park",
+        marker.type === "resort" && "hs-map-pin--resort",
+        marker.type === "trail" && !isCluster && "hs-map-pin--trail",
+        isCluster && "hs-map-pin--cluster",
+      );
+      el.textContent = isCluster
+        ? String(marker.clusterCount! > 99 ? "99+" : marker.clusterCount)
+        : "";
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
         onMarkerClickRef.current?.(marker);
       });
 
       markersRef.current.push(
-        new maplibregl.Marker({ element: el, anchor: "bottom" })
+        new maplibregl.Marker({ element: el, anchor: "center" })
           .setLngLat([marker.longitude, marker.latitude])
           .addTo(map),
       );
@@ -406,64 +445,93 @@ export function MapView({
         map.fitBounds(bounds, {
           padding: 48,
           maxZoom: 12,
-          pitch: is3d ? 58 : 0,
+          pitch: is3d ? 58 : map.getPitch(),
           duration: 0,
         });
       }
     }
   }, [markers, fitToMarkers, focus, routes.length, ready, is3d, basemap]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+
+    popupRef.current?.remove();
+    popupRef.current = null;
+    if (!popup) return;
+
+    const next = new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      offset: 18,
+      maxWidth: "280px",
+      className: "hs-maplibre-popup",
+      anchor: "bottom",
+    })
+      .setLngLat([popup.longitude, popup.latitude])
+      .setHTML(popupHtml(popup))
+      .addTo(map);
+
+    next.on("close", () => onPopupCloseRef.current?.());
+    popupRef.current = next;
+  }, [popup, ready, basemap]);
+
   return (
-    <div
-      className={clsx(
-        "relative min-h-[320px] overflow-hidden rounded-2xl",
-        className,
-      )}
-    >
+    <div className={clsx("relative min-h-[320px] overflow-hidden rounded-2xl", className)}>
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
 
       {showBasemapControls && (
-        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-full border border-white/20 bg-forest/85 p-1 shadow-xl backdrop-blur-md">
-          {(
-            [
-              ["map", "Map"],
-              ["satellite", "Satellite"],
-              ["hybrid", "Hybrid"],
-            ] as const
-          ).map(([id, label]) => (
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex items-start justify-between gap-2">
+          <div className="pointer-events-auto flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-surface/95 p-0.5 shadow-md backdrop-blur">
+            {(
+              [
+                ["map", "Map"],
+                ["satellite", "Sat"],
+                ["hybrid", "Hybrid"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setBasemap(id)}
+                className={clsx(
+                  "rounded-md px-2.5 py-1.5 text-xs font-semibold transition",
+                  basemap === id
+                    ? "bg-accent text-forest"
+                    : "text-mist hover:bg-surface-muted hover:text-cream",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+            <span className="mx-0.5 h-4 w-px bg-[var(--border)]" aria-hidden />
             <button
-              key={id}
               type="button"
-              onClick={() => setBasemap(id)}
+              onClick={() => setIs3d((v) => !v)}
               className={clsx(
-                "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                basemap === id
-                  ? "bg-accent text-forest shadow"
-                  : "text-cream/90 hover:bg-white/10",
+                "rounded-md px-2.5 py-1.5 text-xs font-semibold transition",
+                is3d ? "bg-accent text-forest" : "text-mist hover:bg-surface-muted hover:text-cream",
               )}
+              aria-pressed={is3d}
             >
-              {label}
+              3D
             </button>
-          ))}
-          <span className="mx-0.5 h-4 w-px bg-white/20" aria-hidden />
-          <button
-            type="button"
-            onClick={() => setIs3d((v) => !v)}
-            className={clsx(
-              "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-              is3d
-                ? "bg-accent text-forest shadow"
-                : "text-cream/90 hover:bg-white/10",
-            )}
-            aria-pressed={is3d}
-          >
-            3D
-          </button>
+          </div>
+          {Math.abs(bearing) > 1 && (
+            <button
+              type="button"
+              className="pointer-events-auto rounded-lg border border-[var(--border)] bg-surface/95 px-2.5 py-1.5 text-xs font-semibold text-cream shadow-md backdrop-blur"
+              onClick={() => mapRef.current?.easeTo({ bearing: 0, duration: 400 })}
+              title="Reset north"
+            >
+              N {Math.round(((bearing % 360) + 360) % 360)}°
+            </button>
+          )}
         </div>
       )}
 
       {mapError && (
-        <div className="absolute inset-x-4 top-4 z-10 rounded-xl border border-amber-500/30 bg-amber-950/80 px-4 py-2 text-sm text-amber-100">
+        <div className="absolute inset-x-4 top-16 z-10 rounded-xl border border-amber-500/30 bg-amber-950/80 px-4 py-2 text-sm text-amber-100">
           {mapError}
         </div>
       )}

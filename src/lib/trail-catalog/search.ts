@@ -1,5 +1,6 @@
 import type { CatalogBounds, CatalogFilters, CatalogTrail } from "./types";
 import { withinBounds } from "./map";
+import { isWinterActivityTrail } from "./winter";
 
 export const normalize = (value: string) => value.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 export function searchableText(trail: CatalogTrail) {
@@ -12,7 +13,9 @@ export function distanceKm(a: number, b: number, c: number, d: number) {
 }
 export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilters, texts?: string[]) {
   const terms = normalize((filters.q ?? "").slice(0,180)).split(/\s+/).filter(Boolean);
+  const includeWinter = filters.includeWinter === true;
   return rows.filter((r,i) => {
+    if (!includeWinter && isWinterActivityTrail(r)) return false;
     if (filters.bbox && !withinBounds(r.longitude, r.latitude, filters.bbox)) return false;
     if (filters.country && r.country !== filters.country) return false;
     if (filters.region && normalize(r.region ?? "") !== normalize(filters.region)) return false;
@@ -52,5 +55,21 @@ export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
     const raw = params.get(key); if (!raw?.trim()) return undefined;
     const n = Number(raw); return Number.isFinite(n) && n >= min && n <= max ? n : undefined;
   };
-  return { targetMiles:number("targetMiles",0.1,10000), bbox:parseCatalogBounds(params.get("bbox")), q:params.get("q")?.trim().slice(0,180), country:["US","CA"].includes(params.get("country") ?? "") ? params.get("country")! : undefined, region:params.get("region")?.slice(0,100), page:number("page",1,100000), limit:number("limit",1,48), minMiles:number("minMiles",0,10000), maxMiles:number("maxMiles",0,10000), difficulty:params.get("difficulty")?.slice(0,30), dogFriendly:params.get("dogFriendly") === "true", lat:number("lat",-90,90), lng:number("lng",-180,180), radiusKm:number("radiusKm",0.1,1000) };
+  return {
+    targetMiles: number("targetMiles", 0.1, 10000),
+    bbox: parseCatalogBounds(params.get("bbox")),
+    q: params.get("q")?.trim().slice(0, 180),
+    country: ["US", "CA"].includes(params.get("country") ?? "") ? params.get("country")! : undefined,
+    region: params.get("region")?.slice(0, 100),
+    page: number("page", 1, 100000),
+    limit: number("limit", 1, 48),
+    minMiles: number("minMiles", 0, 10000),
+    maxMiles: number("maxMiles", 0, 10000),
+    difficulty: params.get("difficulty")?.slice(0, 30),
+    dogFriendly: params.get("dogFriendly") === "true",
+    includeWinter: params.get("includeWinter") === "true",
+    lat: number("lat", -90, 90),
+    lng: number("lng", -180, 180),
+    radiusKm: number("radiusKm", 0.1, 1000),
+  };
 }

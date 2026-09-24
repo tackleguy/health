@@ -6,7 +6,7 @@ import type { GeoLineString, MapMarker, MapMode } from "@/lib/types";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import type { CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
 import { displayMiles, sourceName } from "@/lib/trail-catalog/types";
-import { MapView } from "@/components/map/MapView";
+import { MapView, type MapPopupInfo } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
@@ -19,6 +19,24 @@ import {
 } from "@/lib/map";
 
 type NearbySkiArea = SkiArea & { distance_km?: number };
+
+interface MapFilters {
+  country: "" | "US" | "CA";
+  difficulty: string;
+  minMiles: string;
+  maxMiles: string;
+  showParks: boolean;
+  includeWinter: boolean;
+}
+
+const EMPTY_FILTERS: MapFilters = {
+  country: "",
+  difficulty: "",
+  minMiles: "",
+  maxMiles: "",
+  showParks: false,
+  includeWinter: false,
+};
 
 interface MapPageClientProps {
   markers: MapMarker[];
@@ -52,8 +70,49 @@ function catalogMarkers(points: CatalogMapPoint[]): MapMarker[] {
       longitude: point.longitude,
       subtitle: "Zoom in to see individual sections",
       href: "/explore/trails",
+      clusterCount: point.count,
     };
   });
+}
+
+function trailPopup(trail: CatalogTrail): MapPopupInfo {
+  const rows = [
+    { label: "Difficulty", value: trail.difficulty?.trim() || "Not listed" },
+    { label: "Distance", value: displayMiles(trail.miles) },
+    {
+      label: "Location",
+      value: [trail.region, trail.country === "CA" ? "Canada" : "United States"]
+        .filter(Boolean)
+        .join(", "),
+    },
+    { label: "Source", value: sourceName(trail.source) },
+  ];
+  if (trail.surface) rows.push({ label: "Surface", value: trail.surface });
+  if (trail.manager) rows.push({ label: "Manager", value: trail.manager });
+
+  return {
+    longitude: trail.longitude,
+    latitude: trail.latitude,
+    title: trail.name,
+    rows,
+    primaryHref: recordUrl(activityForTrail(trail.difficulty ?? "moderate"), {
+      trailId: trail.id,
+    }),
+    primaryLabel: "Record",
+    secondaryHref: `/explore/trails?q=${encodeURIComponent(trail.name)}`,
+    secondaryLabel: "Explore",
+  };
+}
+
+function filterQuery(filters: MapFilters): string {
+  const params = new URLSearchParams();
+  if (filters.country) params.set("country", filters.country);
+  if (filters.difficulty) params.set("difficulty", filters.difficulty);
+  if (filters.minMiles) params.set("minMiles", filters.minMiles);
+  if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
+  if (filters.includeWinter) params.set("includeWinter", "true");
+  const qs = params.toString();
+  return qs ? `&${qs}` : "";
 }
 
 export function MapPageClient({
@@ -61,13 +120,14 @@ export function MapPageClient({
   catalogMap: initialCatalog,
 }: MapPageClientProps) {
   const [mode, setMode] = useState<MapMode>("trail");
+  const [filters, setFilters] = useState<MapFilters>(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [explicitLocation, setUserLoc] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const [catalog, setCatalog] = useState<CatalogMapResult | null>(initialCatalog);
   const [nearbySkiAreas, setNearbySkiAreas] = useState<NearbySkiArea[]>([]);
-  const [selected, setSelected] = useState<MapMarker | null>(null);
   const [selectedTrail, setSelectedTrail] = useState<CatalogTrail | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<GeoLineString | null>(null);
   const [selectedSkiFeature, setSelectedSkiFeature] =
@@ -79,7 +139,7 @@ export function MapPageClient({
   } | null>(null);
   const [trailLabel, setTrailLabel] = useState<string | null>(
     initialCatalog
-      ? `${initialCatalog.total.toLocaleString()} trail sections across Canada & the U.S.`
+      ? `${initialCatalog.total.toLocaleString()} hiking sections across Canada & the U.S.`
       : null,
   );
   const [nearbyLabel, setNearbyLabel] = useState<string | null>(null);
@@ -87,6 +147,14 @@ export function MapPageClient({
   const userLoc = explicitLocation ?? location.coords;
   const boundsAbort = useRef<AbortController | null>(null);
   const geometryAbort = useRef<AbortController | null>(null);
+  const lastBounds = useRef<{
+    west: number;
+    south: number;
+    east: number;
+    north: number;
+  } | null>(null);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
 
   const resolvedFocus = useMemo(
     () =>
@@ -94,6 +162,15 @@ export function MapPageClient({
       (location.coords ? { ...location.coords, zoom: 11 } : null),
     [mapFocus, location.coords],
   );
+
+  const activeFilterCount = [
+    filters.country,
+    filters.difficulty,
+    filters.minMiles,
+    filters.maxMiles,
+    filters.showParks,
+    filters.includeWinter,
+  ].filter(Boolean).length;
 
   const onGeolocate = useCallback((lat: number, lng: number) => {
     setUserLoc({ lat, lng });
@@ -108,20 +185,19 @@ export function MapPageClient({
   }, [location]);
 
   const loadCatalogForBounds = useCallback(
-    (bounds: { west: number; south: number; east: number; north: number }) => {
+    (
+      bounds: { west: number; south: number; east: number; north: number },
+      nextFilters: MapFilters = filtersRef.current,
+    ) => {
+      lastBounds.current = bounds;
       boundsAbort.current?.abort();
       const controller = new AbortController();
       boundsAbort.current = controller;
-      const bbox = [
-        bounds.west,
-        bounds.south,
-        bounds.east,
-        bounds.north,
-      ]
+      const bbox = [bounds.west, bounds.south, bounds.east, bounds.north]
         .map((n) => n.toFixed(5))
         .join(",");
 
-      void fetch(`/api/trail-catalog/map?bbox=${bbox}`, {
+      void fetch(`/api/trail-catalog/map?bbox=${bbox}${filterQuery(nextFilters)}`, {
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
       })
         .then(async (response) => {
@@ -132,8 +208,8 @@ export function MapPageClient({
           setCatalog(data);
           setTrailLabel(
             data.total > 0
-              ? `${data.total.toLocaleString()} trail sections in this view`
-              : "No trail sections in this view — pan or zoom out",
+              ? `${data.total.toLocaleString()} hiking sections in this view`
+              : "No hiking sections in this view — pan, zoom, or clear filters",
           );
         })
         .catch((error: unknown) => {
@@ -143,6 +219,30 @@ export function MapPageClient({
     },
     [],
   );
+
+  useEffect(() => {
+    if (mode !== "trail") return;
+    if (lastBounds.current) {
+      loadCatalogForBounds(lastBounds.current, filters);
+      return;
+    }
+    const params = new URLSearchParams();
+    if (filters.country) params.set("country", filters.country);
+    if (filters.difficulty) params.set("difficulty", filters.difficulty);
+    if (filters.minMiles) params.set("minMiles", filters.minMiles);
+    if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
+    if (filters.includeWinter) params.set("includeWinter", "true");
+    const qs = params.toString();
+    void fetch(`/api/trail-catalog/map${qs ? `?${qs}` : ""}`)
+      .then((r) => r.json())
+      .then((data: CatalogMapResult) => {
+        setCatalog(data);
+        setTrailLabel(
+          `${data.total.toLocaleString()} hiking sections across Canada & the U.S.`,
+        );
+      })
+      .catch(() => undefined);
+  }, [filters, mode, loadCatalogForBounds]);
 
   useEffect(() => {
     if (mode !== "ski" || !userLoc) return;
@@ -165,7 +265,6 @@ export function MapPageClient({
 
   const handleModeChange = (next: MapMode) => {
     setMode(next);
-    setSelected(null);
     setSelectedTrail(null);
     setSelectedRoute(null);
     setSelectedSkiFeature(null);
@@ -188,14 +287,20 @@ export function MapPageClient({
       }));
     }
 
-    const parks = initialMarkers.filter((m) => m.type === "park");
-    const trails = catalogMarkers(catalog?.points ?? []);
-    return [...parks, ...trails];
-  }, [mode, nearbySkiAreas, initialMarkers, catalog]);
+    const parks = filters.showParks
+      ? initialMarkers.filter((m) => m.type === "park")
+      : [];
+    return [...parks, ...catalogMarkers(catalog?.points ?? [])];
+  }, [mode, nearbySkiAreas, initialMarkers, catalog, filters.showParks]);
 
   const routes = useMemo(
     () => (mode === "trail" && selectedRoute ? [selectedRoute] : []),
     [mode, selectedRoute],
+  );
+
+  const popup = useMemo(
+    () => (selectedTrail ? trailPopup(selectedTrail) : null),
+    [selectedTrail],
   );
 
   const skiFeatureDistance =
@@ -212,14 +317,6 @@ export function MapPageClient({
     geometryAbort.current?.abort();
     const controller = new AbortController();
     geometryAbort.current = controller;
-    setSelected({
-      id: trail.id,
-      type: "trail",
-      name: trail.name,
-      latitude: trail.latitude,
-      longitude: trail.longitude,
-      href: `/explore/trails?q=${encodeURIComponent(trail.name)}`,
-    });
     setSelectedTrail(trail);
     setSelectedRoute(null);
     setMapFocus({ lat: trail.latitude, lng: trail.longitude, zoom: 13 });
@@ -246,27 +343,149 @@ export function MapPageClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="section-label">
-            {mode === "ski" ? "Winter layer" : "Trail layer"}
-          </p>
           <h1 className="font-display text-3xl font-semibold text-cream">
             Adventure Map
           </h1>
           <p className="mt-1 text-sm text-mist">
             {mode === "ski"
-              ? (nearbyLabel ?? "Ski areas — switch Map / Satellite / 3D")
+              ? (nearbyLabel ?? "Ski areas — drag to rotate satellite · 3D available")
               : (trailLabel ??
-                "All catalog trail sections — Map, Satellite, Hybrid & 3D")}
+                "Hiking sections — tap a pin for difficulty and stats")}
           </p>
         </div>
-        <ModeSwitcher mode={mode} onChange={handleModeChange} />
+        <div className="flex flex-wrap items-center gap-2">
+          {mode === "trail" && (
+            <button
+              type="button"
+              className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-surface px-3 py-2 text-sm font-semibold text-cream"
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+            </button>
+          )}
+          <ModeSwitcher mode={mode} onChange={handleModeChange} />
+        </div>
       </div>
+
+      {mode === "trail" && filtersOpen && (
+        <form
+          className="surface-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-cream">Country</span>
+            <select
+              className="rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-cream"
+              value={filters.country}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  country: event.target.value as MapFilters["country"],
+                }))
+              }
+            >
+              <option value="">Canada & U.S.</option>
+              <option value="US">United States</option>
+              <option value="CA">Canada</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-cream">Difficulty</span>
+            <select
+              className="rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-cream"
+              value={filters.difficulty}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  difficulty: event.target.value,
+                }))
+              }
+            >
+              <option value="">Any</option>
+              <option value="easy">Easy</option>
+              <option value="moderate">Moderate</option>
+              <option value="hard">Hard</option>
+              <option value="expert">Expert</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-cream">Min miles</span>
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              placeholder="Any"
+              className="rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-cream"
+              value={filters.minMiles}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  minMiles: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-cream">Max miles</span>
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              placeholder="Any"
+              className="rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-cream"
+              value={filters.maxMiles}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  maxMiles: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <div className="grid gap-2 self-end text-sm">
+            <label className="flex items-center gap-2 text-cream">
+              <input
+                type="checkbox"
+                checked={filters.showParks}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    showParks: event.target.checked,
+                  }))
+                }
+              />
+              Show parks
+            </label>
+            <label className="flex items-center gap-2 text-cream">
+              <input
+                type="checkbox"
+                checked={filters.includeWinter}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    includeWinter: event.target.checked,
+                  }))
+                }
+              />
+              Include ski / snow routes
+            </label>
+            <button
+              type="button"
+              className="justify-self-start text-sm font-semibold text-accent"
+              onClick={() => setFilters(EMPTY_FILTERS)}
+            >
+              Clear filters
+            </button>
+          </div>
+        </form>
+      )}
 
       {mode === "ski" && nearbySkiAreas.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {nearbySkiAreas.slice(0, 8).map((area) => (
+          {nearbySkiAreas.slice(0, 6).map((area) => (
             <button
               key={area.id}
               type="button"
@@ -283,11 +502,11 @@ export function MapPageClient({
                   activities: area.activities,
                 });
               }}
-              className="shrink-0 rounded-full border border-accent/20 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent/15"
+              className="shrink-0 rounded-lg border border-[var(--border)] bg-surface px-3 py-1.5 text-xs font-semibold text-cream"
             >
               {area.name}
               {area.distance_km != null && (
-                <span className="ml-1 text-sky-600">
+                <span className="ml-1 text-mist">
                   · {formatDistanceAway(area.distance_km)}
                 </span>
               )}
@@ -310,12 +529,17 @@ export function MapPageClient({
         mode={mode}
         markers={markers}
         routes={routes}
-        className="h-[calc(100vh-280px)] min-h-[420px]"
+        popup={popup}
+        className="h-[calc(100vh-240px)] min-h-[420px]"
         geolocate
         fitToMarkers={mode === "trail" && !userLoc && !catalog}
         fitToRoutes={Boolean(selectedRoute)}
         focus={resolvedFocus}
         onGeolocate={onGeolocate}
+        onPopupClose={() => {
+          setSelectedTrail(null);
+          setSelectedRoute(null);
+        }}
         onBoundsChange={mode === "trail" ? loadCatalogForBounds : undefined}
         onMarkerClick={(marker) => {
           if (marker.type === "park") {
@@ -335,7 +559,6 @@ export function MapPageClient({
               lat: marker.latitude,
               lng: marker.longitude,
             });
-            setSelected(null);
             setSelectedTrail(null);
             setSelectedRoute(null);
             return;
@@ -348,7 +571,6 @@ export function MapPageClient({
               lng: ((point.bounds[0] + point.bounds[2]) / 2 + 540) % 360 - 180,
               zoom: 9,
             });
-            setSelected(null);
             setSelectedTrail(null);
             setSelectedRoute(null);
             return;
@@ -357,9 +579,6 @@ export function MapPageClient({
             openCatalogTrail(point.trail);
             return;
           }
-          setSelected(marker);
-          setSelectedTrail(null);
-          setSelectedRoute(null);
           setMapFocus({
             lat: marker.latitude,
             lng: marker.longitude,
@@ -368,75 +587,22 @@ export function MapPageClient({
         }}
       />
 
-      {selected && selectedTrail && (
-        <div className="surface-card p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-display font-semibold text-cream">
-                {selectedTrail.name}
-              </p>
-              <p className="mt-0.5 text-sm text-mist">
-                {[
-                  selectedTrail.region,
-                  selectedTrail.country === "CA" ? "Canada" : "United States",
-                  displayMiles(selectedTrail.miles),
-                  selectedTrail.difficulty,
-                  sourceName(selectedTrail.source),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setSelected(null);
-                setSelectedTrail(null);
-                setSelectedRoute(null);
-              }}
-              className="text-mist hover:text-cream"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setMapFocus({
-                  lat: selectedTrail.latitude,
-                  lng: selectedTrail.longitude,
-                  zoom: 14,
-                })
-              }
-              className="btn-ghost !py-2 !text-sm"
-            >
-              Zoom to trail
-            </button>
-            <Link
-              href={`/explore/trails?q=${encodeURIComponent(selectedTrail.name)}`}
-              className="btn-ghost !py-2 !text-sm"
-            >
-              Find in Explore
-            </Link>
-            <Link
-              href={recordUrl(activityForTrail(selectedTrail.difficulty ?? "moderate"), {
-                trailId: selectedTrail.id,
-              })}
-              className="btn-primary !py-2 !text-sm"
-            >
-              Start GPS record
-            </Link>
-          </div>
-        </div>
-      )}
-
       {mode === "ski" && selectedSkiFeature && (
         <SkiFeaturePanel
           feature={selectedSkiFeature}
           distanceKm={skiFeatureDistance}
           onClose={() => setSelectedSkiFeature(null)}
         />
+      )}
+
+      {mode === "trail" && (
+        <p className="text-xs text-mist">
+          Right-drag or two-finger twist to rotate (works on satellite). Compass resets north.
+          Ski and snowmobile-named sections stay hidden unless you enable them in Filters.{" "}
+          <Link href="/explore/trails" className="font-semibold text-accent">
+            Browse the trail list
+          </Link>
+        </p>
       )}
     </div>
   );

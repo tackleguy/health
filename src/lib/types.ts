@@ -196,6 +196,8 @@ export interface MapMarker {
   longitude: number;
   subtitle?: string;
   href: string;
+  /** When set, render as a compact cluster pin instead of a trail pin. */
+  clusterCount?: number;
 }
 
 export interface SearchResult {
