@@ -32,9 +32,15 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (/^(usgs|parks-canada|ontario)-/.test(id)) {
+  if (/^(usgs|parks-canada|ontario|route)-/.test(id)) {
     const record = await getCatalogTrail(id);
-    return { title: record ? `${record.trail.name} — HikeSync` : "Trail not found", description: "Source-linked trail section from the HikeSync Canada and U.S. catalog." };
+    const isRoute = record?.trail.kind === "route";
+    return {
+      title: record ? `${record.trail.name} — HikeSync` : "Trail not found",
+      description: isRoute
+        ? "Through-hike guide from the HikeSync trail catalog."
+        : "Source-linked trail section from the HikeSync catalog.",
+    };
   }
   const trail = await getTrail(id);
   if (!trail) return { title: "Trail not found" };
@@ -61,7 +67,7 @@ export default async function ExploreTrailDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (/^(usgs|parks-canada|ontario)-/.test(id)) {
+  if (/^(usgs|parks-canada|ontario|route)-/.test(id)) {
     const record = await getCatalogTrail(id);
     if (!record) notFound();
     return <CatalogTrailDetail {...record} />;

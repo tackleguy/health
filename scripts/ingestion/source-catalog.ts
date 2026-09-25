@@ -7,6 +7,7 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import type { CatalogManifest, CatalogTrail } from "../../src/lib/trail-catalog/types";
+import { isPriorityThroughHikeSection } from "../../src/lib/trail-catalog/through-hikes";
 
 const root = process.cwd();
 const output = path.join(root, "data/trail-catalog");
@@ -135,10 +136,41 @@ async function main() {
     sources.push({ name: source.name, url: source.url, license: source.license, count: rows.length-before, query: source.where, retrievedAt });
   }
   if (rows.length < target) throw new Error(`Only ${rows.length} valid distinct records. Catalog has not been replaced; need ${target}.`);
-  // Keep all Canadian records, select U.S. records deterministically across the eligible population.
-  rows.sort((a,b) => (a.country === b.country ? hash(a.id).localeCompare(hash(b.id)) : a.country === "CA" ? -1 : 1));
-  const selected = rows.slice(0, target).sort((a,b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-  const selectedIds = new Set(selected.map(r => r.id));
+  // Prefer: all of Canada, pinned National Scenic / long-trail sections, then unique U.S. names, then hash-diverse fillers.
+  const canada = rows.filter((r) => r.country === "CA");
+  const us = rows.filter((r) => r.country === "US");
+  const pinned = us
+    .filter((r) => isPriorityThroughHikeSection(r.name))
+    .sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
+  const unpinned = us.filter((r) => !isPriorityThroughHikeSection(r.name));
+  const uniqueByName = new Map<string, CatalogTrail>();
+  for (const row of [...unpinned].sort(
+    (a, b) => (b.miles ?? 0) - (a.miles ?? 0) || hash(a.id).localeCompare(hash(b.id)),
+  )) {
+    const key = row.name.trim().toLowerCase();
+    if (!uniqueByName.has(key)) uniqueByName.set(key, row);
+  }
+  const uniqueFirst = [...uniqueByName.values()].sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
+  const uniqueIds = new Set(uniqueFirst.map((r) => r.id));
+  const fillers = unpinned
+    .filter((r) => !uniqueIds.has(r.id))
+    .sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
+  const usSlots = Math.max(0, target - canada.length);
+  const selectedUs: CatalogTrail[] = [];
+  const selectedUsIds = new Set<string>();
+  const take = (pool: CatalogTrail[]) => {
+    for (const row of pool) {
+      if (selectedUs.length >= usSlots) break;
+      if (selectedUsIds.has(row.id)) continue;
+      selectedUs.push(row);
+      selectedUsIds.add(row.id);
+    }
+  };
+  take(pinned);
+  take(uniqueFirst);
+  take(fillers);
+  const selected = [...canada, ...selectedUs].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  const selectedIds = new Set(selected.map((r) => r.id));
   const index = gzipSync(JSON.stringify(selected), { level: 9 });
   const countries: Record<string, number> = {}, regionCounts = new Map<string, { name: string; country: string; count: number }>();
   for (const r of selected) {
@@ -146,7 +178,7 @@ async function main() {
     if (r.region) { const key = `${r.country}:${r.region}`; const entry = regionCounts.get(key) ?? { name:r.region, country:r.country, count:0 }; entry.count++; regionCounts.set(key, entry); }
   }
   sources.forEach((source,i)=>{ source.count = selected.filter(r=>r.source === sourcesToImport[i].key).length; });
-  const manifest: CatalogManifest = { version:1, generatedAt:new Date().toISOString(), total:selected.length, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:["Counts are distinct source trail-section records, not 90,000 independent end-to-end hikes. Multiple sections can belong to one named trail.", "Generalized source geometry is for discovery, not navigation. Map pins are points on sections, not verified trailheads.", "U.S. distances are source-reported section miles. Parks Canada distances are computed from generalized geometry, not official route distances. Ontario distances are source-reported section lengths converted from km.", "State/province is inferred from a representative point and Natural Earth public-domain boundaries; cross-border sections can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date."] };
+  const manifest: CatalogManifest = { version:1, generatedAt:new Date().toISOString(), total:selected.length, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:["Counts are distinct source trail-section records, not 90,000 independent end-to-end hikes. Multiple sections can belong to one named trail.", "Generalized source geometry is for discovery, not navigation. Map pins are points on sections, not verified trailheads.", "U.S. distances are source-reported section miles. Parks Canada distances are computed from generalized geometry, not official route distances. Ontario distances are source-reported section lengths converted from km.", "State/province is inferred from a representative point and Natural Earth public-domain boundaries; cross-border sections can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. selection pins National Scenic / major long-trail sections, then prefers unique trail names before hash-diverse fillers so the catalog maximizes named coverage without dropping through-hike corridors."] };
   const stage = path.join(output, `snapshot-${Date.now()}`); await mkdir(stage);
   for (const [shard, entries] of Object.entries(geometries)) {
     for (const id of Object.keys(entries)) if (!selectedIds.has(id)) delete entries[id];

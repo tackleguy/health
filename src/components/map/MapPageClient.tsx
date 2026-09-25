@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GeoLineString, MapMarker, MapMode } from "@/lib/types";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import type { CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
-import { displayMiles, sourceName } from "@/lib/trail-catalog/types";
+import { displayMiles, sourceName, countryName } from "@/lib/trail-catalog/types";
 import { MapView, type MapPopupInfo } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
@@ -22,7 +22,8 @@ import { resolveDifficulty } from "@/lib/trail-difficulty";
 type NearbySkiArea = SkiArea & { distance_km?: number };
 
 interface MapFilters {
-  country: "" | "US" | "CA";
+  country: "" | "US" | "CA" | "intl";
+  kind: "" | "route" | "segment";
   difficulty: string;
   minMiles: string;
   maxMiles: string;
@@ -32,6 +33,7 @@ interface MapFilters {
 
 const EMPTY_FILTERS: MapFilters = {
   country: "",
+  kind: "",
   difficulty: "",
   minMiles: "",
   maxMiles: "",
@@ -87,12 +89,13 @@ function trailPopup(trail: CatalogTrail): MapPopupInfo {
     { label: "Distance", value: displayMiles(trail.miles) },
     {
       label: "Location",
-      value: [trail.region, trail.country === "CA" ? "Canada" : "United States"]
-        .filter(Boolean)
-        .join(", "),
+      value: [trail.region, countryName(trail.country)].filter(Boolean).join(", "),
     },
     { label: "Source", value: sourceName(trail.source) },
   ];
+  if (trail.kind === "route") {
+    rows.unshift({ label: "Type", value: "Through-hike" });
+  }
   if (trail.surface) rows.push({ label: "Surface", value: trail.surface });
   if (trail.manager) rows.push({ label: "Manager", value: trail.manager });
 
@@ -105,7 +108,7 @@ function trailPopup(trail: CatalogTrail): MapPopupInfo {
       trailId: trail.id,
     }),
     primaryLabel: "Record",
-    secondaryHref: `/explore/trails?q=${encodeURIComponent(trail.name)}`,
+    secondaryHref: `/explore/trails/${trail.id}`,
     secondaryLabel: "Explore",
   };
 }
@@ -113,6 +116,7 @@ function trailPopup(trail: CatalogTrail): MapPopupInfo {
 function filterQuery(filters: MapFilters): string {
   const params = new URLSearchParams();
   if (filters.country) params.set("country", filters.country);
+  if (filters.kind) params.set("kind", filters.kind);
   if (filters.difficulty) params.set("difficulty", filters.difficulty);
   if (filters.minMiles) params.set("minMiles", filters.minMiles);
   if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
@@ -171,6 +175,7 @@ export function MapPageClient({
 
   const activeFilterCount = [
     filters.country,
+    filters.kind,
     filters.difficulty,
     filters.minMiles,
     filters.maxMiles,
@@ -234,6 +239,7 @@ export function MapPageClient({
     }
     const params = new URLSearchParams();
     if (filters.country) params.set("country", filters.country);
+    if (filters.kind) params.set("kind", filters.kind);
     if (filters.difficulty) params.set("difficulty", filters.difficulty);
     if (filters.minMiles) params.set("minMiles", filters.minMiles);
     if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
@@ -393,9 +399,27 @@ export function MapPageClient({
                 }))
               }
             >
-              <option value="">Canada & U.S.</option>
+              <option value="">All countries</option>
               <option value="US">United States</option>
               <option value="CA">Canada</option>
+              <option value="intl">International</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-cream">Type</span>
+            <select
+              className="rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-cream"
+              value={filters.kind}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  kind: event.target.value as MapFilters["kind"],
+                }))
+              }
+            >
+              <option value="">Routes & sections</option>
+              <option value="route">Through-hikes</option>
+              <option value="segment">Sections</option>
             </select>
           </label>
           <label className="grid gap-1 text-sm">

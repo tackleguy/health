@@ -8,12 +8,13 @@ import type { CatalogTrail } from "./types";
 
 test("a bounded map represents every matching hiking record, not one results page", async () => {
   const data = await searchCatalogMap();
-  assert.ok(data.total >= 89000 && data.total <= 90000);
+  const withWinter = await searchCatalogMap({ includeWinter: true });
+  assert.ok(withWinter.total >= 90000);
+  assert.ok(data.total >= 89000 && data.total <= withWinter.total);
   assert.ok(data.points.length <= MAX_MAP_POINTS);
   assert.equal(data.points.reduce((sum, point) => sum + point.count, 0), data.total);
-  const withWinter = await searchCatalogMap({ includeWinter: true });
-  assert.equal(withWinter.total, 90000);
   assert.ok(withWinter.total >= data.total);
+  assert.equal(withWinter.points.reduce((sum, point) => sum + point.count, 0), withWinter.total);
   const area = await searchCatalogMap({ country: "US", region: "Colorado", bbox: [-106, 39, -105, 41] });
   assert.ok(area.total > 0 && area.total < data.total);
   assert.equal(area.points.reduce((sum, point) => sum + point.count, 0), area.total);

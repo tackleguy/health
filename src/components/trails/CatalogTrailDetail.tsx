@@ -15,9 +15,11 @@ export function CatalogTrailDetail({
   lines: [number, number][][];
   manifest: CatalogManifest;
 }) {
+  const isRoute = t.kind === "route";
   const browse = new URLSearchParams({
-    country: t.country,
-    ...(t.region ? { region: t.region } : {}),
+    ...(t.country === "US" || t.country === "CA" ? { country: t.country } : { country: "intl" }),
+    ...(isRoute ? { kind: "route" } : {}),
+    ...(t.region && (t.country === "US" || t.country === "CA") ? { region: t.region } : {}),
   });
   const difficulty = resolveDifficulty({
     reported: t.difficulty,
@@ -28,28 +30,36 @@ export function CatalogTrailDetail({
   return (
     <article className="catalog-shell catalog-detail">
       <Link className="catalog-link" href={`/explore/trails?${browse}`}>
-        ← Browse {t.region ?? countryName(t.country)}
+        ← Browse {isRoute ? "through-hikes" : (t.region ?? countryName(t.country))}
       </Link>
       <header>
-        <h1>{t.name}</h1>
+        <h1>
+          {t.name}
+          {isRoute && <span className="catalog-badge">Through-hike</span>}
+        </h1>
         <p>
-          {[t.region, countryName(t.country)].filter(Boolean).join(", ")} ·{" "}
-          {sourceName(t.source)}
+          {[t.region, countryName(t.country)].filter(Boolean).join(", ")} · {sourceName(t.source)}
         </p>
       </header>
       <p className="catalog-section-note">
-        This record is a mapped trail section. It may be part of a longer route; check access,
-        trailheads and the complete route before planning your hike.
+        {isRoute
+          ? t.note ??
+            "This is a through-hike / long-route guide. Confirm distance, permits, and current conditions with the official trail association or land manager."
+          : "This record is a mapped trail section. It may be part of a longer route; check access, trailheads and the complete route before planning your hike."}
       </p>
       <dl className="catalog-facts">
         <div>
-          <dt>Section distance</dt>
+          <dt>{isRoute ? "Route distance" : "Section distance"}</dt>
           <dd>
             {displayMiles(t.miles)}
             <small>
-              {t.distanceBasis === "geometry"
-                ? "Estimated from map geometry"
-                : "Reported by the source"}
+              {isRoute
+                ? t.source === "route-aggregate"
+                  ? "Official corridor length"
+                  : "Curated guide length"
+                : t.distanceBasis === "geometry"
+                  ? "Estimated from map geometry"
+                  : "Reported by the source"}
             </small>
           </dd>
         </div>
@@ -60,37 +70,67 @@ export function CatalogTrailDetail({
             <small>{difficulty.label}</small>
           </dd>
         </div>
+        {isRoute && t.sectionCount != null ? (
+          <div>
+            <dt>Mapped sections</dt>
+            <dd>
+              {t.sectionCount.toLocaleString("en-US")}
+              <small>
+                {t.mappedMiles != null
+                  ? `~${t.mappedMiles.toLocaleString("en-US")} mi in catalog selection`
+                  : "In this catalog snapshot"}
+              </small>
+            </dd>
+          </div>
+        ) : (
+          <div>
+            <dt>Elevation gain</dt>
+            <dd>Not reported</dd>
+          </div>
+        )}
         <div>
-          <dt>Elevation gain</dt>
-          <dd>Not reported</dd>
-        </div>
-        <div>
-          <dt>Dogs</dt>
+          <dt>{isRoute ? "Season" : "Dogs"}</dt>
           <dd>
-            {t.dogs === true
-              ? "Source reports allowed"
-              : t.dogs === false
-                ? "Source reports not allowed"
-                : "Not reported"}
+            {isRoute
+              ? (t.season ?? "Not reported")
+              : t.dogs === true
+                ? "Source reports allowed"
+                : t.dogs === false
+                  ? "Source reports not allowed"
+                  : "Not reported"}
           </dd>
         </div>
       </dl>
+      {t.tags && t.tags.length > 0 && (
+        <ul className="catalog-tag-list">
+          {t.tags.map((tag) => (
+            <li key={tag}>{tag}</li>
+          ))}
+        </ul>
+      )}
       <div className="catalog-detail-map-heading">
-        <h2>Section map</h2>
-        <a
-          className="catalog-button secondary"
-          href={`/api/trail-catalog/${encodeURIComponent(t.id)}/gpx`}
-          download
-        >
-          Download section GPX
-        </a>
+        <h2>{isRoute ? "Approximate location" : "Section map"}</h2>
+        {!isRoute && (
+          <a
+            className="catalog-button secondary"
+            href={`/api/trail-catalog/${encodeURIComponent(t.id)}/gpx`}
+            download
+          >
+            Download section GPX
+          </a>
+        )}
       </div>
-      <CatalogMapView lines={lines} />
+      {isRoute ? (
+        <CatalogMapView trails={[t]} />
+      ) : (
+        <CatalogMapView lines={lines} />
+      )}
       <p className="catalog-muted">
-        Generalized source geometry for discovery. This map does not verify navigation, current
-        access or a trailhead.
+        {isRoute
+          ? "Pin marks an approximate trailhead or corridor midpoint — not a verified start. This is not a GPS track."
+          : "Generalized source geometry for discovery. This map does not verify navigation, current access or a trailhead."}
       </p>
-      <CatalogPhotos trailId={t.id} />
+      {!isRoute && <CatalogPhotos trailId={t.id} />}
       <div className="catalog-detail-grid">
         <section>
           <h2>Plan around the whole route.</h2>
@@ -100,9 +140,9 @@ export function CatalogTrailDetail({
           </p>
           <Link
             className="catalog-button"
-            href={`/plan?region=${encodeURIComponent(t.region ?? countryName(t.country))}`}
+            href={`/plan?region=${encodeURIComponent(t.region ?? countryName(t.country))}&prompt=${encodeURIComponent(t.name)}`}
           >
-            Prepare a trip in this region
+            Prepare a trip for {t.name}
           </Link>
           <p className="catalog-muted">
             Camping permission, water availability and current closures are not confirmed by this
@@ -135,9 +175,9 @@ export function CatalogTrailDetail({
           </dl>
           <p>
             <a href={t.sourceUrl} target="_blank" rel="noopener noreferrer">
-              View original source record
+              {isRoute ? "Official trail information" : "View original source record"}
             </a>
-            {t.officialUrl && (
+            {t.officialUrl && t.officialUrl !== t.sourceUrl && (
               <>
                 {" "}
                 ·{" "}
@@ -148,10 +188,11 @@ export function CatalogTrailDetail({
             )}
           </p>
           <p className="catalog-muted">
-            State or province is estimated from a point on the trail; sections may cross boundaries.
-            Source ID: {t.sourceId}.
+            {isRoute
+              ? `Guide ID: ${t.sourceId}.`
+              : `State or province is estimated from a point on the trail; sections may cross boundaries. Source ID: ${t.sourceId}.`}
           </p>
-          {t.country === "CA" && (
+          {t.country === "CA" && !isRoute && (
             <p className="catalog-muted">
               Contains information licensed under the{" "}
               <a

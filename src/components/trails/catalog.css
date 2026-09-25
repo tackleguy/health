@@ -84,6 +84,13 @@
 .catalog-shell { max-width:1500px; padding:32px 32px 64px 48px; }
 .catalog-shell h1 { font-size:clamp(28px,3vw,40px); font-weight:600; letter-spacing:-.025em; line-height:1.2; }
 .catalog-heading { display:block; margin-bottom:24px; }.catalog-heading p { margin-top:12px; font-size:16px; }
+.catalog-quick-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+.catalog-quick-links .catalog-button { min-height:40px; padding-inline:16px; font-size:13px; }
+.catalog-badge { display:inline-block; margin-left:10px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--accent); font-size:11px; font-weight:500; letter-spacing:.02em; vertical-align:middle; }
+.catalog-tag-list { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; padding:0; list-style:none; }
+.catalog-tag-list li { padding:4px 10px; border-radius:999px; background:var(--surface-muted); color:var(--sage); font-size:12px; }
+.catalog-checkbox { display:flex !important; align-items:center; gap:10px; flex-direction:row !important; }
+.catalog-checkbox input { width:auto; height:auto; margin:0; }
 .catalog-filters { padding:0; background:transparent; }
 .catalog-search-bar { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; }
 .catalog-search-bar .catalog-query { position:relative; min-width:0; }
