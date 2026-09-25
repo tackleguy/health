@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Review } from "@/lib/types";
+import type { Difficulty, Review } from "@/lib/types";
+import { DIFFICULTY_OPTIONS } from "@/lib/trail-difficulty";
 
 interface ReviewFormProps {
   trailId: string;
@@ -17,6 +18,9 @@ export function ReviewForm({
   onCancel,
 }: ReviewFormProps) {
   const [rating, setRating] = useState(existingReview?.rating ?? 5);
+  const [difficulty, setDifficulty] = useState<Difficulty>(
+    existingReview?.difficulty ?? "moderate",
+  );
   const [body, setBody] = useState(existingReview?.body ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,8 +32,8 @@ export function ReviewForm({
 
     const method = existingReview ? "PATCH" : "POST";
     const payload = existingReview
-      ? { id: existingReview.id, rating, body }
-      : { trail_id: trailId, rating, body };
+      ? { id: existingReview.id, rating, difficulty, body }
+      : { trail_id: trailId, rating, difficulty, body };
 
     const res = await fetch("/api/reviews", {
       method,
@@ -49,21 +53,20 @@ export function ReviewForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="font-semibold text-stone-900">
+      <h3 className="font-semibold text-cream">
         {existingReview ? "Edit your review" : "Write a review"}
       </h3>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-stone-700">
-          Rating
-        </label>
+        <label className="mb-2 block text-sm font-medium text-mist">Rating</label>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-2xl transition ${star <= rating ? "text-amber-400" : "text-stone-300"}`}
+              className={`text-2xl transition ${star <= rating ? "text-amber-400" : "text-mist/40"}`}
+              aria-label={`${star} star${star === 1 ? "" : "s"}`}
             >
               ★
             </button>
@@ -72,10 +75,29 @@ export function ReviewForm({
       </div>
 
       <div>
-        <label
-          htmlFor="review-body"
-          className="mb-2 block text-sm font-medium text-stone-700"
+        <label htmlFor="review-difficulty" className="mb-2 block text-sm font-medium text-mist">
+          Difficulty you experienced
+        </label>
+        <select
+          id="review-difficulty"
+          value={difficulty}
+          onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+          required
+          className="w-full rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2.5 text-sm text-cream"
         >
+          {DIFFICULTY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-mist">
+          After five difficulty ratings, the trail shows their community average.
+        </p>
+      </div>
+
+      <div>
+        <label htmlFor="review-body" className="mb-2 block text-sm font-medium text-mist">
           Your experience
         </label>
         <textarea
@@ -84,25 +106,17 @@ export function ReviewForm({
           onChange={(e) => setBody(e.target.value)}
           rows={4}
           placeholder="Share details about conditions, difficulty, and highlights..."
-          className="w-full rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+          className="w-full rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-sm text-cream outline-none focus-visible:outline-2 focus-visible:outline-accent"
         />
       </div>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
       <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn-primary !py-2 !text-sm">
           {loading ? "Saving..." : existingReview ? "Update review" : "Post review"}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
-        >
+        <button type="button" onClick={onCancel} className="btn-ghost !py-2 !text-sm">
           Cancel
         </button>
       </div>

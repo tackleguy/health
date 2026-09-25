@@ -17,6 +17,7 @@ import {
   haversineKm,
   recordUrl,
 } from "@/lib/map";
+import { resolveDifficulty } from "@/lib/trail-difficulty";
 
 type NearbySkiArea = SkiArea & { distance_km?: number };
 
@@ -76,8 +77,13 @@ function catalogMarkers(points: CatalogMapPoint[]): MapMarker[] {
 }
 
 function trailPopup(trail: CatalogTrail): MapPopupInfo {
+  const difficulty = resolveDifficulty({
+    reported: trail.difficulty,
+    miles: trail.miles,
+    name: trail.name,
+  });
   const rows = [
-    { label: "Difficulty", value: trail.difficulty?.trim() || "Not listed" },
+    { label: "Difficulty", value: `${difficulty.difficulty} · ${difficulty.label}` },
     { label: "Distance", value: displayMiles(trail.miles) },
     {
       label: "Location",
@@ -95,7 +101,7 @@ function trailPopup(trail: CatalogTrail): MapPopupInfo {
     latitude: trail.latitude,
     title: trail.name,
     rows,
-    primaryHref: recordUrl(activityForTrail(trail.difficulty ?? "moderate"), {
+    primaryHref: recordUrl(activityForTrail(difficulty.difficulty), {
       trailId: trail.id,
     }),
     primaryLabel: "Record",
