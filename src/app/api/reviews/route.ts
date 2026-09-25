@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/supabase/server";
+import { normalizeDifficulty } from "@/lib/trail-difficulty";
 
 export async function POST(request: Request) {
   const { supabase, user } = await getAuthUser();
@@ -12,10 +13,14 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { trail_id, rating, body: reviewBody } = body;
+  const { trail_id, rating, body: reviewBody, difficulty: rawDifficulty } = body;
+  const difficulty = normalizeDifficulty(rawDifficulty);
 
-  if (!trail_id || !rating) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  if (!trail_id || !rating || !difficulty) {
+    return NextResponse.json(
+      { error: "Trail, star rating, and difficulty are required" },
+      { status: 400 },
+    );
   }
 
   const { data, error } = await supabase
@@ -24,6 +29,7 @@ export async function POST(request: Request) {
       trail_id,
       user_id: user.id,
       rating,
+      difficulty,
       body: reviewBody ?? null,
     })
     .select("*, profile:profiles(*)")
@@ -47,11 +53,24 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json();
-  const { id, rating, body: reviewBody } = body;
+  const { id, rating, body: reviewBody, difficulty: rawDifficulty } = body;
+  const difficulty = normalizeDifficulty(rawDifficulty);
+
+  if (!id || !rating || !difficulty) {
+    return NextResponse.json(
+      { error: "Review id, star rating, and difficulty are required" },
+      { status: 400 },
+    );
+  }
 
   const { data, error } = await supabase
     .from("reviews")
-    .update({ rating, body: reviewBody ?? null, updated_at: new Date().toISOString() })
+    .update({
+      rating,
+      difficulty,
+      body: reviewBody ?? null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
     .eq("user_id", user.id)
     .select("*, profile:profiles(*)")

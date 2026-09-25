@@ -39,8 +39,8 @@ export function ReviewList({
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-stone-900">{author}</p>
-                <p className="text-xs text-stone-500">
+                <p className="font-medium text-cream">{author}</p>
+                <p className="text-xs text-mist">
                   {new Date(review.review_date).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -48,7 +48,14 @@ export function ReviewList({
                   })}
                 </p>
               </div>
-              <span className="text-amber-400">{stars(review.rating)}</span>
+              <div className="text-right">
+                <span className="text-amber-400">{stars(review.rating)}</span>
+                {review.difficulty && (
+                  <p className="mt-1 text-xs font-semibold capitalize text-mist">
+                    {review.difficulty}
+                  </p>
+                )}
+              </div>
             </div>
             {review.body && (
               <p className="mt-3 text-sm leading-relaxed text-stone-700">

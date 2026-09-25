@@ -1,6 +1,6 @@
 export type ActivityType = "run" | "hike" | "bike" | "ski";
 export type ActivityStatus = "recording" | "completed";
-export type Difficulty = "easy" | "moderate" | "hard";
+export type Difficulty = "easy" | "moderate" | "hard" | "expert";
 export type MapMode = "trail" | "ski";
 
 export interface Profile {
@@ -43,6 +43,8 @@ export interface Trail {
   image_url: string | null;
   avg_rating: number;
   review_count: number;
+  community_difficulty?: Difficulty | null;
+  difficulty_rating_count?: number;
   created_at: string;
   updated_at: string;
   geometry?: GeoLineString | null;
@@ -74,6 +76,8 @@ export interface Review {
   trail_id: string;
   user_id: string;
   rating: number;
+  /** Hiker-rated difficulty; averages into community_difficulty after 5 ratings. */
+  difficulty?: Difficulty | null;
   body: string | null;
   review_date: string;
   created_at: string;
