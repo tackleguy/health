@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SearchBar } from "@/components/search/SearchBar";
 import { NAV_SHORTCUTS } from "@/lib/nav-shortcuts";
@@ -115,7 +115,9 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
   const goArmed = useRef(false);
   const goTimer = useRef<number | null>(null);
   const onToggleRef = useRef(onToggle);
-  onToggleRef.current = onToggle;
+  useEffect(() => {
+    onToggleRef.current = onToggle;
+  }, [onToggle]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -144,8 +146,16 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
     }
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (isTypingTarget(event.target)) return;
+      if (event.defaultPrevented || event.repeat || event.isComposing || isTypingTarget(event.target)) return;
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "b") {
+        if (!window.matchMedia("(min-width: 768px)").matches) return;
+        event.preventDefault();
+        document.querySelector<HTMLButtonElement>(".fieldbook-nav-toggle")?.focus();
+        onToggleRef.current();
+        clearGo();
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       if (event.key === "Escape") {
         clearGo();
@@ -184,6 +194,20 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
     };
   }, [router]);
 
+  function handleNavigationKeys(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || isTypingTarget(event.target)) return;
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("a[href], button, summary"))
+      .filter(element => element.getClientRects().length > 0 && !element.closest("[hidden]") &&
+        (!element.closest("details:not([open])") || element.tagName === "SUMMARY"));
+    const index = controls.indexOf(event.target as HTMLElement);
+    if (index < 0 || !controls.length) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 :
+      (index + (event.key === "ArrowDown" ? 1 : -1) + controls.length) % controls.length;
+    controls[next].focus();
+  }
+
   async function handleSignOut() {
     const supabase = createClient();
     if (!supabase) return;
@@ -200,7 +224,7 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
         </Link>
         <MoreTools />
       </header>
-      <aside className="fieldbook-nav" aria-label="Main navigation" data-collapsed={collapsed || undefined}>
+      <aside className="fieldbook-nav" aria-label="Main navigation" data-collapsed={collapsed || undefined} onKeyDown={handleNavigationKeys}>
         <button
           type="button"
           className="fieldbook-nav-toggle"
@@ -208,7 +232,8 @@ export function NavBar({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
           aria-expanded={!collapsed}
           aria-controls="sidebar-content"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar · [" : "Collapse sidebar · ["}
+          aria-keyshortcuts="Control+b Meta+b [ ]"
+          title={`${collapsed ? "Expand" : "Collapse"} sidebar · Ctrl/⌘ B or [`}
         >
           <NavIcon name="chevron" style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
           <span className="fieldbook-nav-label">Collapse sidebar</span>

@@ -1,6 +1,9 @@
 /** Desktop navigation shortcuts — shown on hover and on Profile. */
 export const NAV_SHORTCUTS = [
-  { keys: "[", label: "Toggle sidebar" },
+  { keys: "Ctrl/⌘ B or [", label: "Toggle sidebar" },
+  { keys: "↑ / ↓", label: "Move between sidebar buttons" },
+  { keys: "Home / End", label: "First / last sidebar button" },
+  { keys: "Enter", label: "Open focused page" },
   { keys: "G then E", label: "Explore", href: "/explore/trails", chord: "e" },
   { keys: "G then T", label: "My trips", href: "/plan", chord: "t" },
   { keys: "G then G", label: "Gear", href: "/gear", chord: "g" },
