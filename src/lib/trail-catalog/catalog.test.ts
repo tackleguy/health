@@ -57,7 +57,7 @@ test("bundled snapshot contains 90,000 unique source records with complete map g
 test("server catalog paginates, isolates countries, and rejects invalid detail IDs",async()=>{
   const first = await searchCatalog({country:"CA",limit:5});
   const second = await searchCatalog({country:"CA",limit:5,page:2});
-  const withWinter = await searchCatalog({country:"CA",limit:5,includeWinter:true,activity:"all"});
+  const withWinter = await searchCatalog({country:"CA",limit:5,includeWinter:true});
   const routes = await searchCatalog({kind:"route",limit:48});
   const intl = await searchCatalog({country:"intl",kind:"route",limit:48});
   assert.equal(first.trails.length,5);

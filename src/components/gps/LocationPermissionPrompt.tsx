@@ -38,8 +38,8 @@ export function LocationPermissionPrompt({
       >
         <p className="text-sm font-medium text-red-900">Location access blocked</p>
         <p className="mt-1 text-xs text-red-700">
-          Enable location for this site (lock icon in the address bar), turn on
-          GPS, and set Precise / Exact location — then tap Try again.
+          Enable location for this site in your browser settings (lock icon in the
+          address bar), then tap Try again.
         </p>
         <button
           type="button"
@@ -62,7 +62,7 @@ export function LocationPermissionPrompt({
         className={`inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-sky-700 disabled:opacity-60 ${className}`}
       >
         <span>📍</span>
-        {loading ? "Waiting for GPS…" : "Enable GPS & Precise"}
+        {loading ? "Getting location…" : "Enable location"}
       </button>
     );
   }
@@ -74,10 +74,10 @@ export function LocationPermissionPrompt({
       <div className="flex items-start gap-3">
         <span className="text-2xl">📍</span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-stone-900">Turn on GPS and Precise location</p>
+          <p className="font-semibold text-stone-900">Enable location for GPS</p>
           <p className="mt-1 text-sm text-stone-600">
-            Allow location, then choose Precise (or Exact) — approximate location
-            is not accurate enough for trails, ski areas, or live tracking.
+            Allow location access to see nearby trails, ski areas, and record
+            activities with live altitude and speed.
           </p>
           {error && (
             <p className="mt-2 text-xs text-red-600">{error}</p>
@@ -88,7 +88,7 @@ export function LocationPermissionPrompt({
             disabled={loading}
             className="mt-3 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
           >
-            {loading ? "Waiting for GPS…" : "Allow GPS & Precise location"}
+            {loading ? "Requesting location…" : "Allow location tracking"}
           </button>
         </div>
       </div>

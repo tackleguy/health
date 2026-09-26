@@ -2,7 +2,6 @@ import type { CatalogBounds, CatalogFilters, CatalogTrail } from "./types";
 import { countryName } from "./types";
 import { withinBounds } from "./map";
 import { isWinterActivityTrail } from "./winter";
-import { matchesCatalogActivity, parseCatalogActivity } from "./activity";
 import { dedupeSectionsByName } from "./through-hikes";
 
 export const normalize = (value: string) =>
@@ -32,11 +31,9 @@ export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilter
   const terms = normalize((filters.q ?? "").slice(0, 180))
     .split(/\s+/)
     .filter(Boolean);
-  const activity = filters.activity ?? "hike";
-  const includeWinter = filters.includeWinter === true || activity === "ski";
+  const includeWinter = filters.includeWinter === true;
   return rows.filter((r, i) => {
     if (!includeWinter && isWinterActivityTrail(r)) return false;
-    if (activity !== "all" && !matchesCatalogActivity(r, activity)) return false;
     if (filters.kind && r.kind !== filters.kind) return false;
     if (filters.bbox && !withinBounds(r.longitude, r.latitude, filters.bbox)) return false;
     if (filters.country === "intl") {
@@ -143,7 +140,6 @@ export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
         : undefined;
   const kindRaw = params.get("kind");
   const kind = kindRaw === "route" || kindRaw === "segment" ? kindRaw : undefined;
-  const activity = parseCatalogActivity(params.get("activity")) ?? "hike";
   return {
     targetMiles: number("targetMiles", 0.1, 10000),
     bbox: parseCatalogBounds(params.get("bbox")),
@@ -156,8 +152,7 @@ export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
     maxMiles: number("maxMiles", 0, 10000),
     difficulty: params.get("difficulty")?.slice(0, 30),
     dogFriendly: params.get("dogFriendly") === "true",
-    includeWinter: params.get("includeWinter") === "true" || activity === "ski",
-    activity,
+    includeWinter: params.get("includeWinter") === "true",
     kind,
     uniqueNames: params.get("uniqueNames") === "true",
     lat: number("lat", -90, 90),

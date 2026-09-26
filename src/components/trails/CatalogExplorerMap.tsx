@@ -8,6 +8,8 @@ import "leaflet/dist/leaflet.css";
 import type { CatalogBounds, CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
 import { displayMiles, sourceName } from "@/lib/trail-catalog/types";
 import { normalizeLongitude } from "@/lib/trail-catalog/map";
+import { CatalogPhotos } from "./CatalogPhotos";
+
 const TILE_URL =
   process.env.NEXT_PUBLIC_CATALOG_TILE_URL ??
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -319,7 +321,7 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
       return;
     }
     setLocating(true);
-    setLocationStatus("Waiting for GPS… Allow Precise location if prompted.");
+    setLocationStatus("Finding your location…");
     navigator.geolocation.getCurrentPosition(
       position => {
         setLocating(false);
@@ -330,11 +332,11 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
         setLocating(false);
         setLocationStatus(
           geoError.code === 1
-            ? "Location permission was declined. Enable GPS and Precise location, or search a place instead."
-            : "GPS could not get a precise fix. Turn on Precise location and try again, or search a place.",
+            ? "Location permission was declined. You can search a place or move the map instead."
+            : "Your location could not be found. Try again or search a place.",
         );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
   }
   const listParams = new URLSearchParams(query);
@@ -418,6 +420,7 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
               Original source
             </a>
           </div>
+          <CatalogPhotos key={selected.id} trailId={selected.id} compact />
         </article>
       )}
     </section>

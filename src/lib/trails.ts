@@ -152,7 +152,6 @@ export async function getTrailPhotos(
     .select("*")
     .eq("trail_id", trailId)
     .eq("is_disabled", false)
-    .not("uploaded_by", "is", null)
     .order("sort_order")
     .order("created_at");
 

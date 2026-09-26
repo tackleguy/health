@@ -25,13 +25,13 @@ export async function queryGeoPermission(): Promise<GeoPermissionState> {
 export function geolocationErrorMessage(error: GeolocationPositionError): string {
   switch (error.code) {
     case error.PERMISSION_DENIED:
-      return "Location permission denied. Allow GPS and Precise (Exact) location in your browser or device settings.";
+      return "Location permission denied. Allow location in your browser settings to use GPS.";
     case error.POSITION_UNAVAILABLE:
-      return "Location unavailable. Turn on GPS and Precise location, then try outdoors with a clear sky view.";
+      return "Location unavailable. Try moving outdoors or enabling GPS on your device.";
     case error.TIMEOUT:
-      return "GPS timed out. Enable Precise location and try again where the signal is stronger.";
+      return "Location request timed out. Try again in an area with better signal.";
     default:
-      return "Could not get your location. Enable GPS and Precise location, then try again.";
+      return "Could not get your location.";
   }
 }
 

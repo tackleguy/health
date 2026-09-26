@@ -55,31 +55,6 @@ export const OPENTRAILMAP_CLICKABLE_LAYERS = [
 
 const styleCache = new Map<string, StyleSpecification>();
 
-/**
- * OSM US trails tileset currently exposes only trail + trail_poi
- * (see https://tiles.openstreetmap.us/vector/trails.json and osmus/tileservice
- * renderer/layers/trails.yml). Older OpenTrailMap styles still reference park /
- * barrier layers that MapLibre then warns about as missing source-layers.
- */
-export const OSM_US_TRAILS_SOURCE_LAYERS = new Set(["trail", "trail_poi"]);
-
-export function sanitizeOpenTrailMapStyle(
-  style: StyleSpecification,
-): StyleSpecification {
-  if (!Array.isArray(style.layers)) return style;
-
-  return {
-    ...style,
-    layers: style.layers.filter((layer) => {
-      if (!("source" in layer) || layer.source !== "trails") return true;
-      const sourceLayer =
-        "source-layer" in layer ? layer["source-layer"] : undefined;
-      if (typeof sourceLayer !== "string") return true;
-      return OSM_US_TRAILS_SOURCE_LAYERS.has(sourceLayer);
-    }),
-  };
-}
-
 export async function loadOpenTrailMapStyle(
   mode: MapMode,
 ): Promise<StyleSpecification> {
@@ -92,9 +67,7 @@ export async function loadOpenTrailMapStyle(
     throw new Error(`OpenTrailMap style failed (${res.status}): ${url}`);
   }
 
-  const style = sanitizeOpenTrailMapStyle(
-    (await res.json()) as StyleSpecification,
-  );
+  const style = (await res.json()) as StyleSpecification;
   // Absolute path so MapLibre resolves sprites against the app origin
   style.sprite = OPENTRAILMAP_SPRITE || "/opentrailmap/sprites/opentrailmap";
 

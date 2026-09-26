@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CatalogPhotos } from "./CatalogPhotos";
 import { CatalogMapView } from "./CatalogMapView";
 import type { CatalogManifest, CatalogTrail } from "@/lib/trail-catalog/types";
 import { countryName, displayMiles, sourceName } from "@/lib/trail-catalog/types";
@@ -129,6 +130,7 @@ export function CatalogTrailDetail({
           ? "Pin marks an approximate trailhead or corridor midpoint — not a verified start. This is not a GPS track."
           : "Generalized source geometry for discovery. This map does not verify navigation, current access or a trailhead."}
       </p>
+      {!isRoute && <CatalogPhotos trailId={t.id} />}
       <div className="catalog-detail-grid">
         <section>
           <h2>Plan around the whole route.</h2>

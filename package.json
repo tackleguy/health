@@ -16,7 +16,7 @@
     "ingest:nps": "tsx scripts/ingestion/run.ts nps",
     "source:trails": "tsx scripts/ingestion/source-catalog.ts",
     "bootstrap": "tsx scripts/bootstrap-and-ingest.ts",
-    "test": "tsx --test src/lib/ingestion/deduplicate.test.ts src/lib/ingestion/parsers/gpx.test.ts src/lib/assistant/*.test.ts src/lib/trail-catalog/*.test.ts src/lib/opentrailmap.test.ts"
+    "test": "tsx --test src/lib/ingestion/deduplicate.test.ts src/lib/ingestion/parsers/gpx.test.ts src/lib/assistant/*.test.ts src/lib/trail-catalog/*.test.ts"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.85",
