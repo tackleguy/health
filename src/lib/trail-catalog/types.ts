@@ -52,6 +52,8 @@ export interface CatalogMapResult {
   bounds: CatalogBounds | null;
   grouped: boolean;
 }
+export type { CatalogActivity } from "./activity";
+
 export interface CatalogFilters {
   bbox?: CatalogBounds;
   q?: string;
@@ -65,6 +67,8 @@ export interface CatalogFilters {
   dogFriendly?: boolean;
   /** When true, keep ski/snowshoe/snowmobile-named sections. Default excludes them. */
   includeWinter?: boolean;
+  /** Hiking / backpacking / biking / trail running / ski. Defaults to hiking. Use "all" to skip activity filtering. */
+  activity?: import("./activity").CatalogActivityFilter;
   /** segment = mapped sections; route = through-hikes / curated guides. */
   kind?: "segment" | "route";
   /** Collapse same-name sections to the longest one (routes always kept). */

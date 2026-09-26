@@ -25,6 +25,7 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
     );
   }
   const { trails, total, page, pages, limit, manifest } = result;
+  const activity = filters.activity ?? "hike";
   const filterSummary = [
     filters.bbox && "Map area",
     filters.country === "intl"
@@ -32,6 +33,7 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
       : filters.country && countryName(filters.country),
     filters.kind === "route" && "Through-hikes",
     filters.kind === "segment" && "Sections only",
+    activity === "ski" && "Ski trails",
     filters.uniqueNames && "Unique names",
     filters.region,
     filters.minMiles !== undefined && `${filters.minMiles}+ mi`,
@@ -70,6 +72,15 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
           <Link className="catalog-button secondary" href="/explore/trails?country=intl&kind=route">
             International
           </Link>
+          <Link
+            className="catalog-button secondary"
+            href="/explore/trails?activity=ski&includeWinter=true"
+          >
+            Ski trails
+          </Link>
+          <Link className="catalog-button secondary" href="/explore/ski">
+            Ski maps
+          </Link>
           <Link className="catalog-button secondary" href="/explore/trails?uniqueNames=true">
             Unique names
           </Link>
@@ -81,6 +92,10 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
       <form className="catalog-filters" action="/explore/trails">
         {!preview && <input type="hidden" name="limit" value={limit} />}
         {filters.bbox && <input type="hidden" name="bbox" value={filters.bbox.join(",")} />}
+        {activity !== "hike" && activity !== "all" && (
+          <input type="hidden" name="activity" value={activity} />
+        )}
+        {activity === "ski" && <input type="hidden" name="includeWinter" value="true" />}
         <div className="catalog-search-bar">
           <label className="catalog-query">
             <span className="sr-only">Search trails</span>
@@ -285,11 +300,24 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
             <div className="catalog-empty">
               <h2>Try a broader search.</h2>
               <p>
-                Search a trail name, browse through-hikes, or clear country and distance filters.
+                {activity === "ski"
+                  ? "Few catalog sections use ski in the name. Open Ski maps for nordic OSM trails, or clear filters."
+                  : "Search a trail name, browse through-hikes, or clear country and distance filters."}
               </p>
-              <Link href="/explore/trails" className="catalog-button secondary">
-                Show all trails
-              </Link>
+              {activity === "ski" ? (
+                <div className="catalog-quick-links">
+                  <Link href="/explore/ski" className="catalog-button secondary">
+                    Ski maps
+                  </Link>
+                  <Link href="/explore/trails" className="catalog-button secondary">
+                    Show hiking trails
+                  </Link>
+                </div>
+              ) : (
+                <Link href="/explore/trails" className="catalog-button secondary">
+                  Show all trails
+                </Link>
+              )}
             </div>
           )}
         </section>

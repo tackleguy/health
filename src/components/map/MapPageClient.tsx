@@ -8,9 +8,11 @@ import type { CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trai
 import { displayMiles, sourceName, countryName } from "@/lib/trail-catalog/types";
 import { MapView, type MapPopupInfo } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
+import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import {
   activityForTrail,
   formatDistanceAway,
@@ -142,6 +144,8 @@ export function MapPageClient({
   const [selectedRoute, setSelectedRoute] = useState<GeoLineString | null>(null);
   const [selectedSkiFeature, setSelectedSkiFeature] =
     useState<SkiFeatureSummary | null>(null);
+  const [selectedOpenTrail, setSelectedOpenTrail] =
+    useState<OpenTrailFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
     lat: number;
     lng: number;
@@ -280,6 +284,7 @@ export function MapPageClient({
     setSelectedTrail(null);
     setSelectedRoute(null);
     setSelectedSkiFeature(null);
+    setSelectedOpenTrail(null);
     setMapFocus(null);
   };
 
@@ -571,6 +576,13 @@ export function MapPageClient({
           setSelectedRoute(null);
         }}
         onBoundsChange={mode === "trail" ? loadCatalogForBounds : undefined}
+        onOpenTrailFeatureClick={(feature) => {
+          setSelectedOpenTrail(feature);
+          setSelectedSkiFeature(null);
+          setSelectedTrail(null);
+          setSelectedRoute(null);
+          setMapFocus({ lat: feature.lat, lng: feature.lng, zoom: 14 });
+        }}
         onMarkerClick={(marker) => {
           if (marker.type === "park") {
             window.location.href = marker.href;
@@ -589,6 +601,7 @@ export function MapPageClient({
               lat: marker.latitude,
               lng: marker.longitude,
             });
+            setSelectedOpenTrail(null);
             setSelectedTrail(null);
             setSelectedRoute(null);
             return;
@@ -603,6 +616,7 @@ export function MapPageClient({
             });
             setSelectedTrail(null);
             setSelectedRoute(null);
+            setSelectedOpenTrail(null);
             return;
           }
           if (point?.trail) {
@@ -625,6 +639,14 @@ export function MapPageClient({
         />
       )}
 
+      {selectedOpenTrail && (
+        <OpenTrailFeaturePanel
+          feature={selectedOpenTrail}
+          mode={mode === "ski" ? "ski" : "trail"}
+          onClose={() => setSelectedOpenTrail(null)}
+        />
+      )}
+
       {mode === "trail" && (
         <p className="text-xs text-mist">
           Right-drag or two-finger twist to rotate (works on satellite). Compass resets north.
@@ -632,6 +654,20 @@ export function MapPageClient({
           <Link href="/explore/trails" className="font-semibold text-accent">
             Browse the trail list
           </Link>
+        </p>
+      )}
+
+      {mode === "ski" && (
+        <p className="text-xs text-mist">
+          Zoom in to see nordic ski trails from OpenStreetMap. Tap a path for
+          details, or{" "}
+          <Link
+            href="/explore/trails?activity=ski&includeWinter=true"
+            className="font-semibold text-accent"
+          >
+            browse catalog ski sections
+          </Link>
+          .
         </p>
       )}
     </div>
