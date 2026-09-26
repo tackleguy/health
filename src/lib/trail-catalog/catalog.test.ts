@@ -22,7 +22,7 @@ test("search handles accents, combined geography and unknown measurements",()=>{
   const end = filterCatalog(rows,{page:99999,limit:2});assert.equal(end.page,2);assert.deepEqual(end.trails.map(t=>t.id),["three"]);
   assert.equal(filterCatalog(rows,{lat:0,lng:0,radiusKm:10}).total,0);
 });
-test("bundled snapshot contains 90,000 unique source records with complete map geometry",async()=>{
+test("bundled snapshot contains 500,000 unique source records with complete map geometry",async()=>{
   const root = path.join(process.cwd(),"data/trail-catalog");
   const pointer = JSON.parse(await readFile(path.join(root,"current.json"),"utf8"));
   const dir = path.join(root,pointer.directory);
@@ -30,7 +30,7 @@ test("bundled snapshot contains 90,000 unique source records with complete map g
   const raw = await readFile(path.join(dir,"index.json.gz"));
   assert.equal(createHash("sha256").update(raw).digest("hex"),manifest.indexSha256);
   const rows = JSON.parse(gunzipSync(raw).toString()) as CatalogTrail[];
-  assert.equal(rows.length,90000);assert.equal(manifest.total,rows.length);assert.equal(new Set(rows.map(r=>r.id)).size,rows.length);
+  assert.equal(rows.length,500000);assert.equal(manifest.total,rows.length);assert.equal(new Set(rows.map(r=>r.id)).size,rows.length);
   assert.equal(Object.values(manifest.countries).reduce((a,b)=>a+b,0),rows.length);
   assert.equal(manifest.sources.reduce((a,b)=>a+b.count,0),rows.length);
   assert.ok(manifest.countries.CA>1000);assert.ok(manifest.countries.US>1000);
@@ -57,7 +57,7 @@ test("bundled snapshot contains 90,000 unique source records with complete map g
 test("server catalog paginates, isolates countries, and rejects invalid detail IDs",async()=>{
   const first = await searchCatalog({country:"CA",limit:5});
   const second = await searchCatalog({country:"CA",limit:5,page:2});
-  const withWinter = await searchCatalog({country:"CA",limit:5,includeWinter:true});
+  const withWinter = await searchCatalog({country:"CA",limit:5,includeWinter:true,activity:"all"});
   const routes = await searchCatalog({kind:"route",limit:48});
   const intl = await searchCatalog({country:"intl",kind:"route",limit:48});
   assert.equal(first.trails.length,5);

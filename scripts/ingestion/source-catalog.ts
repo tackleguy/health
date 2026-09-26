@@ -12,11 +12,14 @@ import { isPriorityThroughHikeSection } from "../../src/lib/trail-catalog/throug
 const root = process.cwd();
 const output = path.join(root, "data/trail-catalog");
 const cache = path.join(root, ".cache/trail-catalog");
-const target = 90_000;
+const target = 500_000;
 const refresh = process.argv.includes("--refresh");
 const USGS = "https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/37";
 const CANADA = "https://services2.arcgis.com/wCOMu5IS7YdSyPNx/arcgis/rest/services/Trails_Sentiers_APCA_Temporary_Temporaire_APCA_OpenOuvert/FeatureServer/0";
 const ONTARIO = "https://ws.lioservices.lrc.gov.on.ca/arcgis2/rest/services/LIO_OPEN_DATA/LIO_Open04/MapServer/19";
+/** USGS query wide enough to select 500k after Canada is kept in full. */
+const USGS_WHERE =
+  "(name IS NOT NULL AND name <> '') OR hikerpedestrian = 'Y'";
 const hash = (v: string | Buffer) => createHash("sha256").update(v).digest("hex");
 type Point = [number, number];
 type Feature = { attributes: Record<string, string | number | null>; geometry?: { paths: Point[][] } };
@@ -91,9 +94,9 @@ async function main() {
   const ids = new Set<string>(), shapes = new Set<string>();
   const sources: CatalogManifest["sources"] = [];
   const sourcesToImport = [
-    { key: "parks-canada" as const, country: "CA" as const, endpoint: CANADA, where: "General_Activity=100", fields: "*", idField: "OBJECTID", name: "Parks Canada — Trails APCA", license: "Open Government Licence – Canada", url: "https://open.canada.ca/data/en/dataset/64a90e8d-5bc0-4027-8645-b5881b4068d4" },
-    { key: "ontario" as const, country: "CA" as const, endpoint: ONTARIO, where: "PERMITTED_USES LIKE '%Hiking or Walking%' AND TRAIL_NAME IS NOT NULL", fields: "OBJECTID,OGF_ID,TRAIL_NAME,TRAIL_ASSOCIATION,TRAIL_ASSOCIATION_WEBSITE,TRAIL_LENGTH_KM,EFFECTIVE_DATETIME", idField: "OBJECTID", name: "Ontario Trail Network — Trail Segment", license: "Open Government Licence – Ontario", url: "https://data.ontario.ca/en/dataset/ontario-trail-network" },
-    { key: "usgs" as const, country: "US" as const, endpoint: USGS, where: "name IS NOT NULL AND name <> '' AND lengthmiles >= 0.1 AND hikerpedestrian = 'Y' AND trailtype = 'Terra Trail'", fields: "objectid,permanentidentifier,name,lengthmiles,pets,sourceoriginator,sourceeditdate,trailsurface,seasonopen", idField: "objectid", name: "USGS National Transportation Dataset — Trails", license: "Public domain", url: "https://www.usgs.gov/national-digital-trails/how-access-or-view-usgs-trails-dataset" },
+    { key: "parks-canada" as const, country: "CA" as const, endpoint: CANADA, where: "1=1", fields: "*", idField: "OBJECTID", name: "Parks Canada — Trails APCA", license: "Open Government Licence – Canada", url: "https://open.canada.ca/data/en/dataset/64a90e8d-5bc0-4027-8645-b5881b4068d4" },
+    { key: "ontario" as const, country: "CA" as const, endpoint: ONTARIO, where: "TRAIL_NAME IS NOT NULL", fields: "OBJECTID,OGF_ID,TRAIL_NAME,TRAIL_ASSOCIATION,TRAIL_ASSOCIATION_WEBSITE,TRAIL_LENGTH_KM,EFFECTIVE_DATETIME", idField: "OBJECTID", name: "Ontario Trail Network — Trail Segment", license: "Open Government Licence – Ontario", url: "https://data.ontario.ca/en/dataset/ontario-trail-network" },
+    { key: "usgs" as const, country: "US" as const, endpoint: USGS, where: USGS_WHERE, fields: "objectid,permanentidentifier,name,lengthmiles,pets,sourceoriginator,sourceeditdate,trailsurface,seasonopen", idField: "objectid", name: "USGS National Transportation Dataset — Trails", license: "Public domain", url: "https://www.usgs.gov/national-digital-trails/how-access-or-view-usgs-trails-dataset" },
   ];
   for (const source of sourcesToImport) {
     const before = rows.length; let retrievedAt = "";
@@ -103,7 +106,9 @@ async function main() {
       retrievedAt = data.retrievedAt;
       for (const f of data.features!) {
         const a = f.attributes;
-        const name = str(source.key === "ontario" ? a.TRAIL_NAME : source.country === "CA" ? a.Name_Official_e ?? a.Nom_Officiel_f : a.name);
+        const named = str(source.key === "ontario" ? a.TRAIL_NAME : source.country === "CA" ? a.Name_Official_e ?? a.Nom_Officiel_f : a.name);
+        // USGS includes unnamed hiker-pedestrian sections so the catalog can reach 500k.
+        const name = named ?? (source.key === "usgs" ? "Unnamed trail" : null);
         if (!name) { excluded.missingName++; continue; }
         const lines = f.geometry?.paths;
         if (!lines?.length || lines.some(line => line.length < 2 || line.some(p => p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]) || Math.abs(p[0]) > 180 || Math.abs(p[1]) > 90))) { excluded.invalidGeometry++; continue; }
@@ -178,7 +183,7 @@ async function main() {
     if (r.region) { const key = `${r.country}:${r.region}`; const entry = regionCounts.get(key) ?? { name:r.region, country:r.country, count:0 }; entry.count++; regionCounts.set(key, entry); }
   }
   sources.forEach((source,i)=>{ source.count = selected.filter(r=>r.source === sourcesToImport[i].key).length; });
-  const manifest: CatalogManifest = { version:1, generatedAt:new Date().toISOString(), total:selected.length, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:["Counts are distinct source trail-section records, not 90,000 independent end-to-end hikes. Multiple sections can belong to one named trail.", "Generalized source geometry is for discovery, not navigation. Map pins are points on sections, not verified trailheads.", "U.S. distances are source-reported section miles. Parks Canada distances are computed from generalized geometry, not official route distances. Ontario distances are source-reported section lengths converted from km.", "State/province is inferred from a representative point and Natural Earth public-domain boundaries; cross-border sections can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. selection pins National Scenic / major long-trail sections, then prefers unique trail names before hash-diverse fillers so the catalog maximizes named coverage without dropping through-hike corridors."] };
+  const manifest: CatalogManifest = { version:1, generatedAt:new Date().toISOString(), total:selected.length, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:["Counts are distinct source trail-section records, not 500,000 independent end-to-end hikes. Multiple sections can belong to one named trail.", "Generalized source geometry is for discovery, not navigation. Map pins are points on sections, not verified trailheads.", "U.S. distances are source-reported section miles. Parks Canada distances are computed from generalized geometry, not official route distances. Ontario distances are source-reported section lengths converted from km.", "State/province is inferred from a representative point and Natural Earth public-domain boundaries; cross-border sections can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. selection pins National Scenic / major long-trail sections, then prefers unique trail names before hash-diverse fillers so the catalog maximizes named coverage without dropping through-hike corridors.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail."] };
   const stage = path.join(output, `snapshot-${Date.now()}`); await mkdir(stage);
   for (const [shard, entries] of Object.entries(geometries)) {
     for (const id of Object.keys(entries)) if (!selectedIds.has(id)) delete entries[id];

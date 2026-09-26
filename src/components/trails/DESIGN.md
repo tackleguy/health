@@ -178,6 +178,6 @@ A row presents a real record name, region, source, optional source difficulty, a
 
 ### Don't:
 - Don't restore dark catalog backgrounds, lime actions, or serif titles.
-- Don't present the 90,000 records as 90,000 complete independent hikes.
+- Don't present the 500,000 records as 500,000 complete independent hikes.
 - Don't invent route photos, ratings, elevations, or current conditions.
 - Don't turn every trail row into a raised card.
