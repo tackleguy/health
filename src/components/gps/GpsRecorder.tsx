@@ -93,17 +93,18 @@ export function GpsRecorder({
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <p className="text-4xl">📍</p>
-        <h1 className="mt-4 text-xl font-bold text-stone-900">Location access needed</h1>
+        <h1 className="mt-4 text-xl font-bold text-stone-900">GPS & Precise location needed</h1>
         <p className="mt-2 text-stone-600">{gps.error}</p>
         <p className="mt-2 text-sm text-stone-500">
-          Enable location in browser settings, then try again. GPS requires HTTPS or localhost.
+          Turn on GPS, allow Precise (Exact) location for this site, then try again.
+          Tracking requires HTTPS or localhost.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
             onClick={() => location.requestLocation().then(() => gps.start())}
             className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
           >
-            Allow location & try again
+            Allow GPS & Precise location
           </button>
           <button
             onClick={() => router.push("/record/manual")}
@@ -232,8 +233,17 @@ export function GpsRecorder({
         )}
 
         {gps.state === "acquiring" && (
-          <div className="flex flex-1 items-center justify-center py-4 text-sm text-amber-700">
-            Waiting for accurate GPS fix…
+          <div className="flex flex-1 flex-col items-center justify-center gap-1 px-2 py-3 text-center">
+            <p className="text-sm font-medium text-amber-200">
+              Waiting for GPS…
+              {gps.acquiringProgress !== null
+                ? ` ±${Math.round(gps.acquiringProgress)}m`
+                : ""}
+            </p>
+            <p className="text-xs text-amber-200/80">
+              Turn on GPS and Precise (Exact) location in your device settings.
+              Approximate location will keep waiting.
+            </p>
           </div>
         )}
 

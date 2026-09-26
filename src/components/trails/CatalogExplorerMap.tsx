@@ -319,7 +319,7 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
       return;
     }
     setLocating(true);
-    setLocationStatus("Finding your location…");
+    setLocationStatus("Waiting for GPS… Allow Precise location if prompted.");
     navigator.geolocation.getCurrentPosition(
       position => {
         setLocating(false);
@@ -330,11 +330,11 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
         setLocating(false);
         setLocationStatus(
           geoError.code === 1
-            ? "Location permission was declined. You can search a place or move the map instead."
-            : "Your location could not be found. Try again or search a place.",
+            ? "Location permission was declined. Enable GPS and Precise location, or search a place instead."
+            : "GPS could not get a precise fix. Turn on Precise location and try again, or search a place.",
         );
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   }
   const listParams = new URLSearchParams(query);

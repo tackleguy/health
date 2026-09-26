@@ -334,6 +334,11 @@ export function MapView({
 
         if (geolocate) {
           const geo = new maplibregl.GeolocateControl({
+            positionOptions: {
+              enableHighAccuracy: true,
+              maximumAge: 0,
+              timeout: 15000,
+            },
             trackUserLocation: true,
             showUserLocation: true,
             showAccuracyCircle: true,
