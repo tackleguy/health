@@ -5,9 +5,11 @@ import { useSearchParams } from "next/navigation";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import type { MapMarker } from "@/lib/types";
 import { MapView } from "@/components/map/MapView";
+import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 
 export function SkiMapClient() {
   const searchParams = useSearchParams();
@@ -15,6 +17,8 @@ export function SkiMapClient() {
   const [results, setResults] = useState<SkiArea[]>([]);
   const [selectedFeature, setSelectedFeature] =
     useState<SkiFeatureSummary | null>(null);
+  const [selectedOpenTrail, setSelectedOpenTrail] =
+    useState<OpenTrailFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
     lat: number;
     lng: number;
@@ -164,6 +168,11 @@ export function SkiMapClient() {
           onGeolocate={(lat, lng) =>
             setMapFocus({ lat, lng, zoom: 11 })
           }
+          onOpenTrailFeatureClick={(feature) => {
+            setSelectedOpenTrail(feature);
+            setSelectedFeature(null);
+            setMapFocus({ lat: feature.lat, lng: feature.lng, zoom: 14 });
+          }}
           onMarkerClick={(marker) => {
             const area = results.find((r) => r.id === marker.id);
             if (area) flyToArea(area);
@@ -175,6 +184,16 @@ export function SkiMapClient() {
             <SkiFeaturePanel
               feature={selectedFeature}
               onClose={() => setSelectedFeature(null)}
+            />
+          </div>
+        )}
+
+        {selectedOpenTrail && (
+          <div className="absolute bottom-4 left-4 right-4 z-20 md:left-auto md:w-96">
+            <OpenTrailFeaturePanel
+              feature={selectedOpenTrail}
+              mode="ski"
+              onClose={() => setSelectedOpenTrail(null)}
             />
           </div>
         )}

@@ -8,15 +8,22 @@ import type { CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trai
 import { displayMiles, sourceName, countryName } from "@/lib/trail-catalog/types";
 import { MapView, type MapPopupInfo } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
+import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
+import {
+  CATALOG_ACTIVITIES,
+  CATALOG_ACTIVITY_LABELS,
+  type CatalogActivity,
+} from "@/lib/trail-catalog/activity";
 import {
   activityForTrail,
   formatDistanceAway,
   haversineKm,
   recordUrl,
 } from "@/lib/map";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import { resolveDifficulty } from "@/lib/trail-difficulty";
 
 type NearbySkiArea = SkiArea & { distance_km?: number };
@@ -29,6 +36,7 @@ interface MapFilters {
   maxMiles: string;
   showParks: boolean;
   includeWinter: boolean;
+  activity: CatalogActivity | "";
 }
 
 const EMPTY_FILTERS: MapFilters = {
@@ -39,11 +47,13 @@ const EMPTY_FILTERS: MapFilters = {
   maxMiles: "",
   showParks: false,
   includeWinter: false,
+  activity: "hike",
 };
 
 interface MapPageClientProps {
   markers: MapMarker[];
   catalogMap: CatalogMapResult | null;
+  initialMode?: MapMode;
 }
 
 function catalogMarkers(points: CatalogMapPoint[]): MapMarker[] {
@@ -120,7 +130,8 @@ function filterQuery(filters: MapFilters): string {
   if (filters.difficulty) params.set("difficulty", filters.difficulty);
   if (filters.minMiles) params.set("minMiles", filters.minMiles);
   if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
-  if (filters.includeWinter) params.set("includeWinter", "true");
+  if (filters.includeWinter || filters.activity === "ski") params.set("includeWinter", "true");
+  if (filters.activity) params.set("activity", filters.activity);
   const qs = params.toString();
   return qs ? `&${qs}` : "";
 }
@@ -128,8 +139,9 @@ function filterQuery(filters: MapFilters): string {
 export function MapPageClient({
   markers: initialMarkers,
   catalogMap: initialCatalog,
+  initialMode = "trail",
 }: MapPageClientProps) {
-  const [mode, setMode] = useState<MapMode>("trail");
+  const [mode, setMode] = useState<MapMode>(initialMode);
   const [filters, setFilters] = useState<MapFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [explicitLocation, setUserLoc] = useState<{
@@ -139,9 +151,11 @@ export function MapPageClient({
   const [catalog, setCatalog] = useState<CatalogMapResult | null>(initialCatalog);
   const [nearbySkiAreas, setNearbySkiAreas] = useState<NearbySkiArea[]>([]);
   const [selectedTrail, setSelectedTrail] = useState<CatalogTrail | null>(null);
-  const [selectedRoute, setSelectedRoute] = useState<GeoLineString | null>(null);
+  const [selectedRoutes, setSelectedRoutes] = useState<GeoLineString[]>([]);
   const [selectedSkiFeature, setSelectedSkiFeature] =
     useState<SkiFeatureSummary | null>(null);
+  const [selectedOpenTrail, setSelectedOpenTrail] =
+    useState<OpenTrailFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
     lat: number;
     lng: number;
@@ -278,8 +292,9 @@ export function MapPageClient({
   const handleModeChange = (next: MapMode) => {
     setMode(next);
     setSelectedTrail(null);
-    setSelectedRoute(null);
+    setSelectedRoutes([]);
     setSelectedSkiFeature(null);
+    setSelectedOpenTrail(null);
     setMapFocus(null);
   };
 
@@ -306,8 +321,8 @@ export function MapPageClient({
   }, [mode, nearbySkiAreas, initialMarkers, catalog, filters.showParks]);
 
   const routes = useMemo(
-    () => (mode === "trail" && selectedRoute ? [selectedRoute] : []),
-    [mode, selectedRoute],
+    () => (mode === "trail" ? selectedRoutes : []),
+    [mode, selectedRoutes],
   );
 
   const popup = useMemo(
@@ -330,7 +345,8 @@ export function MapPageClient({
     const controller = new AbortController();
     geometryAbort.current = controller;
     setSelectedTrail(trail);
-    setSelectedRoute(null);
+    setSelectedRoutes([]);
+    setSelectedOpenTrail(null);
     setMapFocus({ lat: trail.latitude, lng: trail.longitude, zoom: 13 });
 
     void fetch(`/api/trail-catalog/${encodeURIComponent(trail.id)}`, {
@@ -341,12 +357,14 @@ export function MapPageClient({
         return response.json() as Promise<{ lines: [number, number][][] }>;
       })
       .then((data) => {
-        const line = data.lines?.[0];
-        if (!line?.length) return;
-        setSelectedRoute({
-          type: "LineString",
-          coordinates: line.map(([lng, lat]) => [lng, lat]),
-        });
+        const lines = (data.lines ?? []).filter((line) => line.length >= 2);
+        if (!lines.length) return;
+        setSelectedRoutes(
+          lines.map((line) => ({
+            type: "LineString" as const,
+            coordinates: line.map(([lng, lat]) => [lng, lat] as [number, number]),
+          })),
+        );
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -362,9 +380,10 @@ export function MapPageClient({
           </h1>
           <p className="mt-1 text-sm text-mist">
             {mode === "ski"
-              ? (nearbyLabel ?? "Ski areas — drag to rotate satellite · 3D available")
+              ? (nearbyLabel ??
+                "Nordic ski paths on the map — zoom in, or tap a resort pin")
               : (trailLabel ??
-                "Hiking sections — tap a pin for difficulty and stats")}
+                "Detailed OSM trail paths — zoom in, or tap a catalog pin")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -563,14 +582,21 @@ export function MapPageClient({
         className="h-[calc(100vh-240px)] min-h-[420px]"
         geolocate
         fitToMarkers={mode === "trail" && !userLoc && !catalog}
-        fitToRoutes={Boolean(selectedRoute)}
+        fitToRoutes={selectedRoutes.length > 0}
         focus={resolvedFocus}
         onGeolocate={onGeolocate}
         onPopupClose={() => {
           setSelectedTrail(null);
-          setSelectedRoute(null);
+          setSelectedRoutes([]);
         }}
         onBoundsChange={mode === "trail" ? loadCatalogForBounds : undefined}
+        onOpenTrailFeatureClick={(feature) => {
+          setSelectedOpenTrail(feature);
+          setSelectedTrail(null);
+          setSelectedRoutes([]);
+          setSelectedSkiFeature(null);
+          setMapFocus({ lat: feature.lat, lng: feature.lng, zoom: 14 });
+        }}
         onMarkerClick={(marker) => {
           if (marker.type === "park") {
             window.location.href = marker.href;
@@ -590,7 +616,8 @@ export function MapPageClient({
               lng: marker.longitude,
             });
             setSelectedTrail(null);
-            setSelectedRoute(null);
+            setSelectedRoutes([]);
+            setSelectedOpenTrail(null);
             return;
           }
 
@@ -602,7 +629,8 @@ export function MapPageClient({
               zoom: 9,
             });
             setSelectedTrail(null);
-            setSelectedRoute(null);
+            setSelectedRoutes([]);
+            setSelectedOpenTrail(null);
             return;
           }
           if (point?.trail) {
@@ -625,10 +653,19 @@ export function MapPageClient({
         />
       )}
 
+      {selectedOpenTrail && (
+        <OpenTrailFeaturePanel
+          feature={selectedOpenTrail}
+          mode={mode}
+          onClose={() => setSelectedOpenTrail(null)}
+        />
+      )}
+
       {mode === "trail" && (
         <p className="text-xs text-mist">
-          Right-drag or two-finger twist to rotate (works on satellite). Compass resets north.
-          Ski and snowmobile-named sections stay hidden unless you enable them in Filters.{" "}
+          Zoom in for detailed OpenStreetMap trail paths. Tap a path or catalog pin for
+          details. Right-drag or two-finger twist to rotate. Compass resets north. Ski and
+          snowmobile-named sections stay hidden unless you enable them in Filters.{" "}
           <Link href="/explore/trails" className="font-semibold text-accent">
             Browse the trail list
           </Link>

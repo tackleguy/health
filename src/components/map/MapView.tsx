@@ -5,7 +5,12 @@ import * as maplibregl from "@/lib/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapMarker, MapMode, GeoLineString } from "@/lib/types";
 import type { SkiFeatureSummary } from "@/lib/ski";
-import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
+import {
+  isOpenTrailMapClickableLayer,
+  loadMapStyle,
+  openTrailFeatureFromProperties,
+  type OpenTrailFeatureSummary,
+} from "@/lib/opentrailmap";
 import clsx from "clsx";
 
 export type MapBasemap = "map" | "satellite" | "hybrid";
@@ -30,60 +35,50 @@ const ESRI_LABELS =
   "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 const ESRI_ROADS =
   "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
-const OSM_RASTER = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TERRARIUM_DEM =
   "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{y}/{x}.png";
 
-function buildStyle(basemap: MapBasemap): maplibregl.StyleSpecification {
-  const sources: maplibregl.StyleSpecification["sources"] = {
-    terrain: {
-      type: "raster-dem",
-      tiles: [TERRARIUM_DEM],
-      encoding: "terrarium",
-      tileSize: 256,
-      maxzoom: 15,
-      attribution: "© Mapzen / AWS Terrain Tiles",
-    },
-  };
-  const layers: maplibregl.LayerSpecification[] = [];
+const TERRAIN_SOURCE: maplibregl.RasterDEMSourceSpecification = {
+  type: "raster-dem",
+  tiles: [TERRARIUM_DEM],
+  encoding: "terrarium",
+  tileSize: 256,
+  maxzoom: 15,
+  attribution: "© Mapzen / AWS Terrain Tiles",
+};
 
-  if (basemap === "map") {
-    sources.osm = {
-      type: "raster",
-      tiles: [OSM_RASTER],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: "© OpenStreetMap contributors",
-    };
-    layers.push({ id: "osm", type: "raster", source: "osm" });
-  } else {
-    sources.satellite = {
+function buildRasterStyle(basemap: Exclude<MapBasemap, "map">): maplibregl.StyleSpecification {
+  const sources: maplibregl.StyleSpecification["sources"] = {
+    terrain: TERRAIN_SOURCE,
+    satellite: {
       type: "raster",
       tiles: [ESRI_SAT],
       tileSize: 256,
       maxzoom: 19,
       attribution: "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics",
-    };
-    layers.push({ id: "satellite", type: "raster", source: "satellite" });
+    },
+  };
+  const layers: maplibregl.LayerSpecification[] = [
+    { id: "satellite", type: "raster", source: "satellite" },
+  ];
 
-    if (basemap === "hybrid") {
-      sources.roads = {
-        type: "raster",
-        tiles: [ESRI_ROADS],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: "© Esri",
-      };
-      sources.labels = {
-        type: "raster",
-        tiles: [ESRI_LABELS],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: "© Esri",
-      };
-      layers.push({ id: "roads", type: "raster", source: "roads" });
-      layers.push({ id: "labels", type: "raster", source: "labels" });
-    }
+  if (basemap === "hybrid") {
+    sources.roads = {
+      type: "raster",
+      tiles: [ESRI_ROADS],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "© Esri",
+    };
+    sources.labels = {
+      type: "raster",
+      tiles: [ESRI_LABELS],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "© Esri",
+    };
+    layers.push({ id: "roads", type: "raster", source: "roads" });
+    layers.push({ id: "labels", type: "raster", source: "labels" });
   }
 
   layers.push({
@@ -99,6 +94,20 @@ function buildStyle(basemap: MapBasemap): maplibregl.StyleSpecification {
   });
 
   return { version: 8, sources, layers };
+}
+
+/** Clone OTM style and inject Terrarium DEM so 3D terrain works without mutating the cache. */
+function withTerrainSource(
+  style: maplibregl.StyleSpecification,
+): maplibregl.StyleSpecification {
+  if (style.sources?.terrain) return style;
+  return {
+    ...style,
+    sources: {
+      ...style.sources,
+      terrain: TERRAIN_SOURCE,
+    },
+  };
 }
 
 function popupHtml(info: MapPopupInfo): string {
@@ -176,20 +185,33 @@ export function MapView({
   onGeolocate,
   onBoundsChange,
   onPopupClose,
+  onSkiFeatureClick,
+  onOpenTrailFeatureClick,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const layerHandlersRef = useRef<
+    Array<{
+      layerId: string;
+      onClick: (e: maplibregl.MapLayerMouseEvent) => void;
+      onEnter: () => void;
+      onLeave: () => void;
+    }>
+  >([]);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onGeolocateRef = useRef(onGeolocate);
   const onBoundsChangeRef = useRef(onBoundsChange);
   const onPopupCloseRef = useRef(onPopupClose);
+  const onOpenTrailFeatureClickRef = useRef(onOpenTrailFeatureClick);
+  const onSkiFeatureClickRef = useRef(onSkiFeatureClick);
   const [mapError, setMapError] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<MapBasemap>("map");
   const [is3d, setIs3d] = useState(false);
   const [bearing, setBearing] = useState(0);
   const [ready, setReady] = useState(false);
+  const [styleKind, setStyleKind] = useState<"opentrailmap" | "raster">("opentrailmap");
 
   const mapCenter = center ?? DEFAULT_CENTER;
   const mapZoom = zoom ?? DEFAULT_ZOOM;
@@ -206,6 +228,12 @@ export function MapView({
   useEffect(() => {
     onPopupCloseRef.current = onPopupClose;
   }, [onPopupClose]);
+  useEffect(() => {
+    onOpenTrailFeatureClickRef.current = onOpenTrailFeatureClick;
+  }, [onOpenTrailFeatureClick]);
+  useEffect(() => {
+    onSkiFeatureClickRef.current = onSkiFeatureClick;
+  }, [onSkiFeatureClick]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -213,90 +241,184 @@ export function MapView({
     setMapError(null);
     setReady(false);
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: buildStyle(basemap),
-      center: mapCenter,
-      zoom: mapZoom,
-      pitch: 0,
-      bearing: 0,
-      attributionControl: false,
-      maxPitch: 85,
-      dragRotate: true,
-      touchPitch: true,
-      pitchWithRotate: true,
-      touchZoomRotate: true,
-    });
+    const clearLayerHandlers = (map: maplibregl.Map) => {
+      for (const { layerId, onClick, onEnter, onLeave } of layerHandlersRef.current) {
+        map.off("click", layerId, onClick);
+        map.off("mouseenter", layerId, onEnter);
+        map.off("mouseleave", layerId, onLeave);
+      }
+      layerHandlersRef.current = [];
+    };
 
-    map.addControl(
-      new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }),
-      "top-right",
-    );
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    const attachTrailHandlers = (map: maplibregl.Map) => {
+      clearLayerHandlers(map);
 
-    if (geolocate) {
-      const geo = new maplibregl.GeolocateControl({
-        trackUserLocation: true,
-        showUserLocation: true,
-        showAccuracyCircle: true,
-      });
-      map.addControl(geo, "top-right");
-      geo.on("geolocate", (e) => {
-        onGeolocateRef.current?.(e.coords.latitude, e.coords.longitude);
-      });
+      const layers = map.getStyle()?.layers ?? [];
+      const clickableLayers = layers
+        .filter((layer) => isOpenTrailMapClickableLayer(layer.id))
+        .map((layer) => layer.id)
+        .reverse();
+
+      for (const layerId of clickableLayers) {
+        const onClick = (e: maplibregl.MapLayerMouseEvent) => {
+          const props = e.features?.[0]?.properties as
+            | Record<string, unknown>
+            | undefined;
+          const lngLat = e.lngLat;
+          if (!props || !lngLat) return;
+
+          const feature = openTrailFeatureFromProperties(
+            props,
+            lngLat.lat,
+            lngLat.lng,
+          );
+          if (feature) {
+            onOpenTrailFeatureClickRef.current?.(feature);
+          }
+        };
+
+        const onEnter = () => {
+          map.getCanvas().style.cursor = "pointer";
+        };
+        const onLeave = () => {
+          map.getCanvas().style.cursor = "";
+        };
+
+        map.on("click", layerId, onClick);
+        map.on("mouseenter", layerId, onEnter);
+        map.on("mouseleave", layerId, onLeave);
+        layerHandlersRef.current.push({ layerId, onClick, onEnter, onLeave });
+      }
+    };
+
+    async function initMap() {
+      try {
+        let style: maplibregl.StyleSpecification | string;
+        let nextKind: "opentrailmap" | "raster" = "raster";
+
+        if (basemap === "map") {
+          const loaded = await loadMapStyle(mode);
+          if (cancelled || !containerRef.current) return;
+          style =
+            typeof loaded.style === "string"
+              ? loaded.style
+              : withTerrainSource(loaded.style);
+          nextKind = loaded.source === "opentrailmap" ? "opentrailmap" : "raster";
+        } else {
+          style = buildRasterStyle(basemap);
+        }
+
+        if (cancelled || !containerRef.current) return;
+        setStyleKind(nextKind);
+
+        const map = new maplibregl.Map({
+          container: containerRef.current,
+          style,
+          center: mapCenter,
+          zoom: mapZoom,
+          pitch: 0,
+          bearing: 0,
+          attributionControl: false,
+          maxPitch: 85,
+          dragRotate: true,
+          touchPitch: true,
+          pitchWithRotate: true,
+          touchZoomRotate: true,
+        });
+
+        map.addControl(
+          new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }),
+          "top-right",
+        );
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+
+        if (geolocate) {
+          const geo = new maplibregl.GeolocateControl({
+            trackUserLocation: true,
+            showUserLocation: true,
+            showAccuracyCircle: true,
+          });
+          map.addControl(geo, "top-right");
+          geo.on("geolocate", (e) => {
+            onGeolocateRef.current?.(e.coords.latitude, e.coords.longitude);
+          });
+        }
+
+        map.on("style.load", () => {
+          if (cancelled) return;
+          if (nextKind === "opentrailmap") attachTrailHandlers(map);
+        });
+
+        map.on("load", () => {
+          if (cancelled) return;
+          mapRef.current = map;
+          setReady(true);
+          const b = map.getBounds();
+          onBoundsChangeRef.current?.({
+            west: b.getWest(),
+            south: b.getSouth(),
+            east: b.getEast(),
+            north: b.getNorth(),
+          });
+        });
+        map.on("error", (e) => {
+          const msg = e.error?.message ?? "";
+          if (msg && !msg.includes("Failed to fetch")) setMapError(msg);
+        });
+        map.on("rotate", () => setBearing(map.getBearing()));
+        map.on("pitch", () => setBearing(map.getBearing()));
+
+        let boundsTimer: ReturnType<typeof setTimeout> | undefined;
+        const emitBounds = () => {
+          const b = map.getBounds();
+          onBoundsChangeRef.current?.({
+            west: b.getWest(),
+            south: b.getSouth(),
+            east: b.getEast(),
+            north: b.getNorth(),
+          });
+        };
+        map.on("moveend", () => {
+          clearTimeout(boundsTimer);
+          boundsTimer = setTimeout(emitBounds, 280);
+        });
+
+        const ro = new ResizeObserver(() => map.resize());
+        ro.observe(containerRef.current);
+
+        return () => {
+          cancelled = true;
+          clearTimeout(boundsTimer);
+          ro.disconnect();
+          clearLayerHandlers(map);
+          popupRef.current?.remove();
+          popupRef.current = null;
+          markersRef.current.forEach((m) => m.remove());
+          markersRef.current = [];
+          map.remove();
+          mapRef.current = null;
+          setReady(false);
+        };
+      } catch (err) {
+        if (!cancelled) {
+          setMapError(
+            err instanceof Error ? err.message : "Failed to load map style",
+          );
+        }
+      }
     }
 
-    map.on("load", () => {
-      if (cancelled) return;
-      mapRef.current = map;
-      setReady(true);
-      const b = map.getBounds();
-      onBoundsChangeRef.current?.({
-        west: b.getWest(),
-        south: b.getSouth(),
-        east: b.getEast(),
-        north: b.getNorth(),
-      });
+    let cleanup: (() => void) | undefined;
+    void initMap().then((fn) => {
+      cleanup = fn;
     });
-    map.on("error", (e) => {
-      const msg = e.error?.message ?? "";
-      if (msg && !msg.includes("Failed to fetch")) setMapError(msg);
-    });
-    map.on("rotate", () => setBearing(map.getBearing()));
-    map.on("pitch", () => setBearing(map.getBearing()));
-
-    let boundsTimer: ReturnType<typeof setTimeout> | undefined;
-    const emitBounds = () => {
-      const b = map.getBounds();
-      onBoundsChangeRef.current?.({
-        west: b.getWest(),
-        south: b.getSouth(),
-        east: b.getEast(),
-        north: b.getNorth(),
-      });
-    };
-    map.on("moveend", () => {
-      clearTimeout(boundsTimer);
-      boundsTimer = setTimeout(emitBounds, 280);
-    });
-
-    const ro = new ResizeObserver(() => map.resize());
-    ro.observe(containerRef.current);
 
     return () => {
       cancelled = true;
-      clearTimeout(boundsTimer);
-      ro.disconnect();
-      popupRef.current?.remove();
-      popupRef.current = null;
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      map.remove();
-      mapRef.current = null;
-      setReady(false);
+      cleanup?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basemap, geolocate]);
+  }, [basemap, geolocate, mode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -304,17 +426,20 @@ export function MapView({
 
     const apply = () => {
       if (is3d) {
-        if (map.getLayer("hillshade")) {
+        // Raster styles use a dedicated hillshade layer; OTM already draws its own.
+        if (styleKind === "raster" && map.getLayer("hillshade")) {
           map.setLayoutProperty("hillshade", "visibility", "visible");
         }
         try {
-          map.setTerrain({ source: "terrain", exaggeration: 1.35 });
+          if (map.getSource("terrain")) {
+            map.setTerrain({ source: "terrain", exaggeration: 1.35 });
+          }
         } catch {
           /* terrain may still be loading */
         }
         map.easeTo({ pitch: 58, bearing: map.getBearing() || -18, duration: 700 });
       } else {
-        if (map.getLayer("hillshade")) {
+        if (styleKind === "raster" && map.getLayer("hillshade")) {
           map.setLayoutProperty("hillshade", "visibility", "none");
         }
         map.setTerrain(null);
@@ -324,7 +449,7 @@ export function MapView({
 
     if (map.isStyleLoaded()) apply();
     else map.once("idle", apply);
-  }, [is3d, ready, basemap]);
+  }, [is3d, ready, basemap, styleKind]);
 
   useEffect(() => {
     const map = mapRef.current;

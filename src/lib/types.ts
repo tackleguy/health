@@ -114,6 +114,7 @@ export interface TrailPhoto {
   attribution: string;
   source_name: string;
   source_url: string | null;
+  uploaded_by: string | null;
   is_hero: boolean;
   is_disabled: boolean;
   sort_order: number;

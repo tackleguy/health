@@ -8,8 +8,6 @@ import "leaflet/dist/leaflet.css";
 import type { CatalogBounds, CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
 import { displayMiles, sourceName } from "@/lib/trail-catalog/types";
 import { normalizeLongitude } from "@/lib/trail-catalog/map";
-import { CatalogPhotos } from "./CatalogPhotos";
-
 const TILE_URL =
   process.env.NEXT_PUBLIC_CATALOG_TILE_URL ??
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -420,7 +418,6 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
               Original source
             </a>
           </div>
-          <CatalogPhotos key={selected.id} trailId={selected.id} compact />
         </article>
       )}
     </section>

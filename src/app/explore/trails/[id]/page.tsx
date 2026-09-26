@@ -182,7 +182,7 @@ export default async function ExploreTrailDetailPage({
         </div>
 
         <div className="mb-10">
-          <TrailPhotoGallery photos={photos} />
+          <TrailPhotoGallery trailId={trail.id} photos={photos} />
         </div>
 
         <TrailPoisSection

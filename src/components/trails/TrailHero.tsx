@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Trail, TrailPhoto } from "@/lib/types";
-import { PhotoAttribution } from "./TrailPhotoGallery";
 
 interface TrailHeroProps {
   trail: Trail;
@@ -9,7 +8,7 @@ interface TrailHeroProps {
 }
 
 export function TrailHero({ trail, heroPhoto }: TrailHeroProps) {
-  const imageUrl = heroPhoto?.url ?? trail.image_url;
+  const imageUrl = heroPhoto?.url ?? null;
 
   return (
     <div className="relative h-72 overflow-hidden bg-stone-800 sm:h-96">
@@ -21,6 +20,7 @@ export function TrailHero({ trail, heroPhoto }: TrailHeroProps) {
           className="object-cover"
           priority
           sizes="100vw"
+          unoptimized
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-stone-800 to-stone-900" />
@@ -43,11 +43,6 @@ export function TrailHero({ trail, heroPhoto }: TrailHeroProps) {
             <p className="mt-2 text-xs text-stone-300">
               Data confidence: {trail.confidence_score.replace("_", " ")}
             </p>
-          )}
-          {heroPhoto && (
-            <div className="mt-3 max-w-xl rounded-lg bg-black/40 p-2 backdrop-blur">
-              <PhotoAttribution photo={heroPhoto} className="!text-stone-200" />
-            </div>
           )}
         </div>
       </div>
