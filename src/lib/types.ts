@@ -48,6 +48,8 @@ export interface Trail {
   created_at: string;
   updated_at: string;
   geometry?: GeoLineString | null;
+  /** Every mapped section of a trail merged from several source sections. */
+  segments?: GeoLineString[] | null;
   start_latitude?: number | null;
   start_longitude?: number | null;
   end_latitude?: number | null;

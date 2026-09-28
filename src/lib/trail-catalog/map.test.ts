@@ -9,8 +9,8 @@ import type { CatalogTrail } from "./types";
 test("a bounded map represents every matching hiking record, not one results page", async () => {
   const data = await searchCatalogMap();
   const withWinter = await searchCatalogMap({ includeWinter: true, activity: "all" });
-  assert.ok(withWinter.total >= 500000);
-  assert.ok(data.total >= 400000 && data.total <= withWinter.total);
+  assert.ok(withWinter.total >= 100000);
+  assert.ok(data.total >= 80000 && data.total <= withWinter.total);
   assert.ok(data.points.length <= MAX_MAP_POINTS);
   assert.equal(data.points.reduce((sum, point) => sum + point.count, 0), data.total);
   assert.ok(withWinter.total >= data.total);
@@ -33,6 +33,6 @@ test("valid braced USGS identifiers open their real geometry and export escaped 
   const gpx = catalogGpx({ ...detail.trail, name: 'A & B <trail> "name"' }, detail.lines);
   assert.match(gpx, /A &amp; B &lt;trail&gt; &quot;name&quot;/);
   assert.match(gpx, /<trkpt lat="/);
-  assert.match(gpx, /Generalized trail-section geometry/);
+  assert.match(gpx, /Generalized trail geometry/);
   assert.equal(await getCatalogTrail("usgs-../../package.json"), null);
 });

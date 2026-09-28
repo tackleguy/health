@@ -50,9 +50,6 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
     next.set("page", String(n));
     return `/explore/trails?${next}`;
   }
-  const sectionCount = Object.entries(manifest.countries)
-    .filter(([code]) => code === "US" || code === "CA")
-    .reduce((sum, [, count]) => sum + count, 0);
   const intlCount = Object.entries(manifest.countries)
     .filter(([code]) => code !== "US" && code !== "CA")
     .reduce((sum, [, count]) => sum + count, 0);
@@ -62,7 +59,7 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
       <header className="catalog-heading">
         <h1>Find your next trail.</h1>
         <p>
-          {manifest.total.toLocaleString("en-US")} catalog records — mapped sections across the United
+          {manifest.total.toLocaleString("en-US")} trails — whole mapped trails across the United
           States and Canada, plus curated through-hikes worldwide.
         </p>
         <div className="catalog-quick-links">
@@ -141,9 +138,9 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
               <label>
                 Type
                 <select name="kind" defaultValue={params.get("kind") ?? ""}>
-                  <option value="">Routes & sections</option>
+                  <option value="">Routes & trails</option>
                   <option value="route">Through-hikes only</option>
-                  <option value="segment">Mapped sections only</option>
+                  <option value="segment">Mapped trails only</option>
                 </select>
               </label>
               <label>
@@ -193,8 +190,8 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
             </div>
             <div className="catalog-filter-footer">
               <p className="catalog-muted">
-                Through-hikes are end-to-end routes. Mapped sections can belong to the same named trail —
-                use unique names to collapse repeats.
+                Through-hikes are end-to-end routes. Separate trails can share a common name (for example
+                “Loop Trail”) — use unique names to collapse repeats.
               </p>
               <button className="catalog-button" type="submit">
                 Apply filters
@@ -242,7 +239,7 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
                         <p>
                           {t.region ?? countryName(t.country)} · {sourceName(t.source)}
                           {t.difficulty ? ` · ${t.difficulty}` : ""}
-                          {t.sectionCount ? ` · ${t.sectionCount.toLocaleString("en-US")} sections` : ""}
+                          {t.sectionCount && t.sectionCount > 1 ? ` · ${t.sectionCount.toLocaleString("en-US")} sections joined` : ""}
                         </p>
                       </div>
                       <span className="catalog-distance">
@@ -251,8 +248,8 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
                           {t.kind === "route"
                             ? "route"
                             : t.distanceBasis === "geometry"
-                              ? "estimated section"
-                              : "section"}
+                              ? "measured"
+                              : "trail"}
                         </small>
                       </span>
                       <NavIcon name="chevron" />
@@ -340,10 +337,10 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
         </aside>
       </CatalogMap>
       <section className="catalog-source-summary">
-        <h2>Trail sections, with their sources.</h2>
+        <h2>Whole trails, with their sources.</h2>
         <p>
-          Several sections can belong to one hike. Through-hike cards summarize long corridors;
-          distances and access still need a separate check with the land manager.
+          Connected source sections that share a name are joined into one trail, and its length counts
+          overlapping sections once. Distances and access still need a check with the land manager.
         </p>
         <details className="catalog-sources">
           <summary>USGS · Parks Canada · Ontario · curated guides — View sources & coverage</summary>
@@ -355,11 +352,11 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
               : ""}
             . Snapshot created {manifest.generatedAt.slice(0, 10)}.
           </p>
-          <p>
-            Mapped catalog rows are distinct trail-section records (~
-            {sectionCount.toLocaleString("en-US")} after overlay accounting), not that many independent
-            full hikes.
-          </p>
+          {manifest.sectionTotal != null && (
+            <p>
+              Built from {manifest.sectionTotal.toLocaleString("en-US")} mapped source sections.
+            </p>
+          )}
           <ul>
             {manifest.sources.map((s) => (
               <li key={s.name}>
@@ -372,8 +369,8 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
           </ul>
           <p>
             Canadian coverage comes from Parks Canada locations and the Ontario Trail Network. U.S.
-            coverage is a selection of USGS records marked for hiking, with National Scenic Trail
-            sections pinned. International through-hikes are curated guides (not GPS tracks). State
+            coverage is every named USGS trail plus unnamed trails marked for hiking. National Scenic
+            and long trails are joined end to end. International through-hikes are curated guides (not GPS tracks). State
             and province labels use approximate{" "}
             <a
               href="https://www.naturalearthdata.com/about/terms-of-use/"

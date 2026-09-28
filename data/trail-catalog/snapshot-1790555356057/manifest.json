@@ -1,0 +1,325 @@
+{
+  "version": 2,
+  "generatedAt": "2026-09-28T00:29:16.052Z",
+  "total": 143174,
+  "sectionTotal": 495521,
+  "countries": {
+    "US": 135876,
+    "CA": 7298
+  },
+  "sources": [
+    {
+      "name": "Parks Canada — Trails APCA",
+      "url": "https://open.canada.ca/data/en/dataset/64a90e8d-5bc0-4027-8645-b5881b4068d4",
+      "license": "Open Government Licence – Canada",
+      "count": 1410,
+      "query": "1=1",
+      "retrievedAt": "2026-09-26T08:26:14.700Z"
+    },
+    {
+      "name": "Ontario Trail Network — Trail Segment",
+      "url": "https://data.ontario.ca/en/dataset/ontario-trail-network",
+      "license": "Open Government Licence – Ontario",
+      "count": 6783,
+      "query": "TRAIL_NAME IS NOT NULL",
+      "retrievedAt": "2026-09-26T08:26:22.985Z"
+    },
+    {
+      "name": "USGS National Transportation Dataset — Trails",
+      "url": "https://www.usgs.gov/national-digital-trails/how-access-or-view-usgs-trails-dataset",
+      "license": "Public domain",
+      "count": 487328,
+      "query": "(name IS NOT NULL AND name <> '') OR hikerpedestrian = 'Y'",
+      "retrievedAt": "2026-09-26T09:09:56.596Z"
+    }
+  ],
+  "regions": [
+    {
+      "name": "Alabama",
+      "country": "US",
+      "count": 585
+    },
+    {
+      "name": "Alaska",
+      "country": "US",
+      "count": 1558
+    },
+    {
+      "name": "Alberta",
+      "country": "CA",
+      "count": 348
+    },
+    {
+      "name": "Arizona",
+      "country": "US",
+      "count": 2590
+    },
+    {
+      "name": "Arkansas",
+      "country": "US",
+      "count": 837
+    },
+    {
+      "name": "British Columbia",
+      "country": "CA",
+      "count": 164
+    },
+    {
+      "name": "California",
+      "country": "US",
+      "count": 11530
+    },
+    {
+      "name": "Colorado",
+      "country": "US",
+      "count": 11371
+    },
+    {
+      "name": "Connecticut",
+      "country": "US",
+      "count": 1531
+    },
+    {
+      "name": "Delaware",
+      "country": "US",
+      "count": 1241
+    },
+    {
+      "name": "District of Columbia",
+      "country": "US",
+      "count": 269
+    },
+    {
+      "name": "Florida",
+      "country": "US",
+      "count": 2103
+    },
+    {
+      "name": "Georgia",
+      "country": "US",
+      "count": 497
+    },
+    {
+      "name": "Hawaii",
+      "country": "US",
+      "count": 220
+    },
+    {
+      "name": "Idaho",
+      "country": "US",
+      "count": 5885
+    },
+    {
+      "name": "Illinois",
+      "country": "US",
+      "count": 363
+    },
+    {
+      "name": "Indiana",
+      "country": "US",
+      "count": 2202
+    },
+    {
+      "name": "Iowa",
+      "country": "US",
+      "count": 1479
+    },
+    {
+      "name": "Kansas",
+      "country": "US",
+      "count": 42
+    },
+    {
+      "name": "Kentucky",
+      "country": "US",
+      "count": 1495
+    },
+    {
+      "name": "Louisiana",
+      "country": "US",
+      "count": 221
+    },
+    {
+      "name": "Maine",
+      "country": "US",
+      "count": 212
+    },
+    {
+      "name": "Maryland",
+      "country": "US",
+      "count": 1053
+    },
+    {
+      "name": "Massachusetts",
+      "country": "US",
+      "count": 1216
+    },
+    {
+      "name": "Michigan",
+      "country": "US",
+      "count": 6223
+    },
+    {
+      "name": "Minnesota",
+      "country": "US",
+      "count": 3360
+    },
+    {
+      "name": "Mississippi",
+      "country": "US",
+      "count": 288
+    },
+    {
+      "name": "Missouri",
+      "country": "US",
+      "count": 782
+    },
+    {
+      "name": "Montana",
+      "country": "US",
+      "count": 6494
+    },
+    {
+      "name": "Nebraska",
+      "country": "US",
+      "count": 465
+    },
+    {
+      "name": "Nevada",
+      "country": "US",
+      "count": 2914
+    },
+    {
+      "name": "New Hampshire",
+      "country": "US",
+      "count": 10182
+    },
+    {
+      "name": "New Jersey",
+      "country": "US",
+      "count": 3018
+    },
+    {
+      "name": "New Mexico",
+      "country": "US",
+      "count": 1405
+    },
+    {
+      "name": "New York",
+      "country": "US",
+      "count": 6583
+    },
+    {
+      "name": "North Carolina",
+      "country": "US",
+      "count": 1352
+    },
+    {
+      "name": "North Dakota",
+      "country": "US",
+      "count": 290
+    },
+    {
+      "name": "Ohio",
+      "country": "US",
+      "count": 1439
+    },
+    {
+      "name": "Oklahoma",
+      "country": "US",
+      "count": 150
+    },
+    {
+      "name": "Ontario",
+      "country": "CA",
+      "count": 6762
+    },
+    {
+      "name": "Oregon",
+      "country": "US",
+      "count": 7326
+    },
+    {
+      "name": "Pennsylvania",
+      "country": "US",
+      "count": 2412
+    },
+    {
+      "name": "Rhode Island",
+      "country": "US",
+      "count": 36
+    },
+    {
+      "name": "South Carolina",
+      "country": "US",
+      "count": 270
+    },
+    {
+      "name": "South Dakota",
+      "country": "US",
+      "count": 774
+    },
+    {
+      "name": "Tennessee",
+      "country": "US",
+      "count": 1939
+    },
+    {
+      "name": "Texas",
+      "country": "US",
+      "count": 1491
+    },
+    {
+      "name": "Utah",
+      "country": "US",
+      "count": 6578
+    },
+    {
+      "name": "Vermont",
+      "country": "US",
+      "count": 4078
+    },
+    {
+      "name": "Virginia",
+      "country": "US",
+      "count": 5759
+    },
+    {
+      "name": "Washington",
+      "country": "US",
+      "count": 3560
+    },
+    {
+      "name": "West Virginia",
+      "country": "US",
+      "count": 2429
+    },
+    {
+      "name": "Wisconsin",
+      "country": "US",
+      "count": 668
+    },
+    {
+      "name": "Wyoming",
+      "country": "US",
+      "count": 2258
+    }
+  ],
+  "indexSha256": "fc37570e27b536cd6c98138f1a2607b79ccf8fced14373b3172ab70e14aba5ab",
+  "excluded": {
+    "missingName": 0,
+    "invalidGeometry": 1,
+    "duplicateId": 156,
+    "duplicateGeometry": 7416,
+    "tooShort": 21963
+  },
+  "notes": [
+    "Each record is a whole named trail: 495,521 source sections were merged where sections with the same name connect (within 200 m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.",
+    "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.",
+    "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.",
+    "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.",
+    "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.",
+    "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.",
+    "Standalone trails shorter than 0.05 mi are mapping fragments and are excluded."
+  ]
+}

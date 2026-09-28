@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   getReviews,
@@ -26,12 +26,21 @@ import type { GeoLineString } from "@/lib/types";
 import { getCatalogTrail } from "@/lib/trail-catalog/server";
 import { CatalogTrailDetail } from "@/components/trails/CatalogTrailDetail";
 
+/** Dynamic params arrive percent-encoded, e.g. USGS ids with braces. */
+function decodeId(raw: string) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
+  const id = decodeId((await params).id);
   if (/^(usgs|parks-canada|ontario|route)-/.test(id)) {
     const record = await getCatalogTrail(id);
     const isRoute = record?.trail.kind === "route";
@@ -39,7 +48,7 @@ export async function generateMetadata({
       title: record ? `${record.trail.name} — HikeSync` : "Trail not found",
       description: isRoute
         ? "Through-hike guide from the HikeSync trail catalog."
-        : "Source-linked trail section from the HikeSync catalog.",
+        : "Source-linked trail from the HikeSync catalog, with map and weather forecast.",
     };
   }
   const trail = await getTrail(id);
@@ -66,10 +75,11 @@ export default async function ExploreTrailDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const id = decodeId((await params).id);
   if (/^(usgs|parks-canada|ontario|route)-/.test(id)) {
     const record = await getCatalogTrail(id);
     if (!record) notFound();
+    if (record.trail.id !== id) permanentRedirect(`/explore/trails/${encodeURIComponent(record.trail.id)}`);
     return <CatalogTrailDetail {...record} />;
   }
   const trail = await getTrail(id);
@@ -101,7 +111,11 @@ export default async function ExploreTrailDetailPage({
   });
 
   const heroPhoto = photos.find((p) => p.is_hero) ?? photos[0] ?? null;
-  const routes: GeoLineString[] = trail.geometry ? [trail.geometry] : [];
+  const routes: GeoLineString[] = trail.segments?.length
+    ? trail.segments
+    : trail.geometry
+      ? [trail.geometry]
+      : [];
 
   const markers = [
     ...trailheads.map((head) => ({

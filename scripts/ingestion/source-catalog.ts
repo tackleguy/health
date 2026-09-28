@@ -7,17 +7,20 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import type { CatalogManifest, CatalogTrail } from "../../src/lib/trail-catalog/types";
-import { isPriorityThroughHikeSection } from "../../src/lib/trail-catalog/through-hikes";
+import { JOIN_METERS, mergeCatalogSections } from "../../src/lib/trail-catalog/merge";
 
 const root = process.cwd();
 const output = path.join(root, "data/trail-catalog");
 const cache = path.join(root, ".cache/trail-catalog");
-const target = 500_000;
+/** Guards against publishing a snapshot from a truncated source response. */
+const minimumSections = 450_000;
+/** Standalone trails shorter than this (~80 m) are mapping fragments, not hikes. */
+const minimumTrailMiles = 0.05;
 const refresh = process.argv.includes("--refresh");
 const USGS = "https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/37";
 const CANADA = "https://services2.arcgis.com/wCOMu5IS7YdSyPNx/arcgis/rest/services/Trails_Sentiers_APCA_Temporary_Temporaire_APCA_OpenOuvert/FeatureServer/0";
 const ONTARIO = "https://ws.lioservices.lrc.gov.on.ca/arcgis2/rest/services/LIO_OPEN_DATA/LIO_Open04/MapServer/19";
-/** USGS query wide enough to select 500k after Canada is kept in full. */
+/** Named USGS trail sections plus unnamed sections tagged for hikers. */
 const USGS_WHERE =
   "(name IS NOT NULL AND name <> '') OR hikerpedestrian = 'Y'";
 const hash = (v: string | Buffer) => createHash("sha256").update(v).digest("hex");
@@ -26,7 +29,8 @@ type Feature = { attributes: Record<string, string | number | null>; geometry?: 
 type ResponseData = { features?: Feature[]; exceededTransferLimit?: boolean; error?: { message: string }; retrievedAt: string };
 type Region = { properties: { name: string; admin: string }; geometry: { type: string; coordinates: number[][][] | number[][][][] } };
 const boundaries: { name: string; country: string; rings: number[][][]; bounds: number[] }[] = [];
-const excluded: Record<string, number> = { missingName: 0, invalidGeometry: 0, duplicateId: 0, duplicateGeometry: 0 };
+const excluded: Record<string, number> = { missingName: 0, invalidGeometry: 0, duplicateId: 0, duplicateGeometry: 0, tooShort: 0 };
+const shardOf = (id: string) => (parseInt(hash(id).slice(0, 2), 16)%64).toString().padStart(2, "0");
 
 function inside(point: Point, ring: number[][]) {
   let result = false;
@@ -38,14 +42,6 @@ function inside(point: Point, ring: number[][]) {
 }
 function regionAt(point: Point, country: string) {
   return boundaries.find(b => b.country === country && point[0] >= b.bounds[0] && point[1] >= b.bounds[1] && point[0] <= b.bounds[2] && point[1] <= b.bounds[3] && inside(point, b.rings[0]) && !b.rings.slice(1).some(r => inside(point, r)))?.name ?? null;
-}
-function milesBetween(a: Point, b: Point) {
-  const rad = Math.PI/180;
-  const h = Math.sin((b[1]-a[1])*rad/2)**2 + Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin((b[0]-a[0])*rad/2)**2;
-  return 3958.7613*2*Math.asin(Math.sqrt(Math.min(1, h)));
-}
-function geometryMiles(lines: Point[][]) {
-  return lines.reduce((sum, line) => sum+line.slice(1).reduce((s, p, i) => s+milesBetween(line[i], p), 0), 0);
 }
 const str = (v: unknown) => typeof v === "string" && v.trim() ? v.trim() : null;
 function safeUrl(v: unknown) { try { const url = new URL(String(v)); return url.protocol === "https:" ? url.href : null; } catch { return null; } }
@@ -90,7 +86,7 @@ async function main() {
       boundaries.push({ name: f.properties.name, country: f.properties.admin === "Canada" ? "CA" : "US", rings, bounds: [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])), Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))] });
     }
   }
-  const rows: CatalogTrail[] = [], geometries: Record<string, Record<string, Point[][]>> = {};
+  const rows: CatalogTrail[] = [], geometries = new Map<string, Point[][]>();
   const ids = new Set<string>(), shapes = new Set<string>();
   const sources: CatalogManifest["sources"] = [];
   const sourcesToImport = [
@@ -107,7 +103,6 @@ async function main() {
       for (const f of data.features!) {
         const a = f.attributes;
         const named = str(source.key === "ontario" ? a.TRAIL_NAME : source.country === "CA" ? a.Name_Official_e ?? a.Nom_Officiel_f : a.name);
-        // USGS includes unnamed hiker-pedestrian sections so the catalog can reach 500k.
         const name = named ?? (source.key === "usgs" ? "Unnamed trail" : null);
         if (!name) { excluded.missingName++; continue; }
         const lines = f.geometry?.paths;
@@ -120,80 +115,62 @@ async function main() {
         if (shapes.has(signature)) { excluded.duplicateGeometry++; continue; }
         ids.add(id); shapes.add(signature);
         const point = lines[0][Math.floor(lines[0].length/2)];
-        const geometryShard = (parseInt(hash(id).slice(0, 2), 16)%64).toString().padStart(2, "0");
+        const geometryShard = shardOf(id);
         const reportedMiles = source.key === "ontario" && typeof a.TRAIL_LENGTH_KM === "number" ? a.TRAIL_LENGTH_KM/1.609344 : a.lengthmiles;
         const suppliedMiles = typeof reportedMiles === "number" && reportedMiles > 0 ? reportedMiles : null;
         const sourceTimestamp = source.key === "ontario" ? a.EFFECTIVE_DATETIME : a.sourceeditdate;
         const metersDate = typeof sourceTimestamp === "number" ? sourceTimestamp : null;
-        rows.push({ id, name, country: source.country, region: regionAt(point, source.country), kind: "segment", miles: suppliedMiles ?? Math.round(geometryMiles(lines)*1000)/1000, distanceBasis: suppliedMiles !== null ? "source" : "geometry", latitude: point[1], longitude: point[0], difficulty: source.country === "CA" ? ({ 1: "Easy", 2: "Moderate", 3: "Difficult", 4: "Most difficult" }[Number(a["Summer_Classification_Été"]) as 1|2|3|4] ?? null) : null, dogs: a.pets === "Y" ? true : a.pets === "N" ? false : null, source: source.key, sourceId, sourceUrl: `${source.endpoint}/query?${new URLSearchParams({ where: `${source.idField}=${a[source.idField]}`, outFields: "*", f: "pjson" })}`, officialUrl: safeUrl(a.URL_e ?? a.URL_f), sourceDate: metersDate !== null ? new Date(metersDate).toISOString() : null, manager: source.country === "CA" ? "Parks Canada" : str(a.sourceoriginator), surface: source.country === "US" ? str(a.trailsurface) : ({1:"Natural",2:"Gravel",3:"Boardwalk",4:"Asphalt",5:"Wood chip",6:"Water",7:"Concrete",8:"Stairs"}[Number(a.Surface) as 1] ?? null), season: str(a.seasonopen), geometryShard });
+        rows.push({ id, name, country: source.country, region: regionAt(point, source.country), kind: "segment", miles: suppliedMiles, distanceBasis: suppliedMiles !== null ? "source" : "geometry", latitude: point[1], longitude: point[0], difficulty: source.country === "CA" ? ({ 1: "Easy", 2: "Moderate", 3: "Difficult", 4: "Most difficult" }[Number(a["Summer_Classification_Été"]) as 1|2|3|4] ?? null) : null, dogs: a.pets === "Y" ? true : a.pets === "N" ? false : null, source: source.key, sourceId, sourceUrl: `${source.endpoint}/query?${new URLSearchParams({ where: `${source.idField}=${a[source.idField]}`, outFields: "*", f: "pjson" })}`, officialUrl: safeUrl(a.URL_e ?? a.URL_f), sourceDate: metersDate !== null ? new Date(metersDate).toISOString() : null, manager: source.country === "CA" ? "Parks Canada" : str(a.sourceoriginator), surface: source.country === "US" ? str(a.trailsurface) : ({1:"Natural",2:"Gravel",3:"Boardwalk",4:"Asphalt",5:"Wood chip",6:"Water",7:"Concrete",8:"Stairs"}[Number(a.Surface) as 1] ?? null), season: str(a.seasonopen), geometryShard });
         if (source.key === "ontario") {
           const row = rows[rows.length-1];
           row.region = "Ontario";
           row.manager = str(a.TRAIL_ASSOCIATION) ?? "Ontario Trail Network";
           row.officialUrl = safeUrl(a.TRAIL_ASSOCIATION_WEBSITE);
         }
-        (geometries[geometryShard] ??= {})[id] = lines;
+        geometries.set(id, lines);
       }
       console.log(`${source.key}: ${offset+data.features!.length} fetched; ${rows.length.toLocaleString()} accepted total`);
       if (!data.exceededTransferLimit || data.features!.length === 0) break;
-      // Fetch the full eligible population so selection isn't biased to early object IDs.
     }
     sources.push({ name: source.name, url: source.url, license: source.license, count: rows.length-before, query: source.where, retrievedAt });
   }
-  if (rows.length < target) throw new Error(`Only ${rows.length} valid distinct records. Catalog has not been replaced; need ${target}.`);
-  // Prefer: all of Canada, pinned National Scenic / long-trail sections, then unique U.S. names, then hash-diverse fillers.
-  const canada = rows.filter((r) => r.country === "CA");
-  const us = rows.filter((r) => r.country === "US");
-  const pinned = us
-    .filter((r) => isPriorityThroughHikeSection(r.name))
-    .sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
-  const unpinned = us.filter((r) => !isPriorityThroughHikeSection(r.name));
-  const uniqueByName = new Map<string, CatalogTrail>();
-  for (const row of [...unpinned].sort(
-    (a, b) => (b.miles ?? 0) - (a.miles ?? 0) || hash(a.id).localeCompare(hash(b.id)),
-  )) {
-    const key = row.name.trim().toLowerCase();
-    if (!uniqueByName.has(key)) uniqueByName.set(key, row);
+  if (rows.length < minimumSections) throw new Error(`Only ${rows.length} valid distinct sections. Catalog has not been replaced; expected at least ${minimumSections}.`);
+  const merged = mergeCatalogSections(rows.map(row => ({ row, lines: geometries.get(row.id)! })), { regionAt });
+  const trails: typeof merged = [];
+  for (const trail of merged) {
+    if ((trail.row.miles ?? 0) < minimumTrailMiles) { excluded.tooShort += trail.sectionIds.length; continue; }
+    trail.row.geometryShard = shardOf(trail.row.id);
+    trails.push(trail);
   }
-  const uniqueFirst = [...uniqueByName.values()].sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
-  const uniqueIds = new Set(uniqueFirst.map((r) => r.id));
-  const fillers = unpinned
-    .filter((r) => !uniqueIds.has(r.id))
-    .sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
-  const usSlots = Math.max(0, target - canada.length);
-  const selectedUs: CatalogTrail[] = [];
-  const selectedUsIds = new Set<string>();
-  const take = (pool: CatalogTrail[]) => {
-    for (const row of pool) {
-      if (selectedUs.length >= usSlots) break;
-      if (selectedUsIds.has(row.id)) continue;
-      selectedUs.push(row);
-      selectedUsIds.add(row.id);
-    }
-  };
-  take(pinned);
-  take(uniqueFirst);
-  take(fillers);
-  const selected = [...canada, ...selectedUs].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-  const selectedIds = new Set(selected.map((r) => r.id));
+  trails.sort((a, b) => a.row.name.localeCompare(b.row.name) || a.row.id.localeCompare(b.row.id));
+  const selected = trails.map(t => t.row);
+  const sectionTotal = trails.reduce((sum, t) => sum+t.sectionIds.length, 0);
+  console.log(`${rows.length.toLocaleString()} sections merged into ${merged.length.toLocaleString()} trails; ${selected.length.toLocaleString()} kept`);
   const index = gzipSync(JSON.stringify(selected), { level: 9 });
   const countries: Record<string, number> = {}, regionCounts = new Map<string, { name: string; country: string; count: number }>();
   for (const r of selected) {
     countries[r.country] = (countries[r.country] ?? 0)+1;
     if (r.region) { const key = `${r.country}:${r.region}`; const entry = regionCounts.get(key) ?? { name:r.region, country:r.country, count:0 }; entry.count++; regionCounts.set(key, entry); }
   }
-  sources.forEach((source,i)=>{ source.count = selected.filter(r=>r.source === sourcesToImport[i].key).length; });
-  const manifest: CatalogManifest = { version:1, generatedAt:new Date().toISOString(), total:selected.length, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:["Counts are distinct source trail-section records, not 500,000 independent end-to-end hikes. Multiple sections can belong to one named trail.", "Generalized source geometry is for discovery, not navigation. Map pins are points on sections, not verified trailheads.", "U.S. distances are source-reported section miles. Parks Canada distances are computed from generalized geometry, not official route distances. Ontario distances are source-reported section lengths converted from km.", "State/province is inferred from a representative point and Natural Earth public-domain boundaries; cross-border sections can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. selection pins National Scenic / major long-trail sections, then prefers unique trail names before hash-diverse fillers so the catalog maximizes named coverage without dropping through-hike corridors.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail."] };
+  const sourceOf = new Map(rows.map(r => [r.id, r.source]));
+  sources.forEach((source,i)=>{ source.count = trails.reduce((sum, t) => sum+t.sectionIds.filter(id => sourceOf.get(id) === sourcesToImport[i].key).length, 0); });
+  const manifest: CatalogManifest = { version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`] };
   const stage = path.join(output, `snapshot-${Date.now()}`); await mkdir(stage);
-  for (const [shard, entries] of Object.entries(geometries)) {
-    for (const id of Object.keys(entries)) if (!selectedIds.has(id)) delete entries[id];
-    await writeFile(path.join(stage, `geometry-${shard}.json.gz`), gzipSync(JSON.stringify(entries), { level:9 }));
+  const shards: Record<string, Record<string, Point[][]>> = {}, aliases: Record<string, Record<string, string>> = {};
+  for (const trail of trails) {
+    (shards[trail.row.geometryShard] ??= {})[trail.row.id] = trail.lines;
+    for (const id of trail.sectionIds) if (id !== trail.row.id) (aliases[shardOf(id)] ??= {})[id] = trail.row.id;
+  }
+  for (let i = 0; i < 64; i++) {
+    const shard = String(i).padStart(2, "0");
+    await writeFile(path.join(stage, `geometry-${shard}.json.gz`), gzipSync(JSON.stringify(shards[shard] ?? {}), { level:9 }));
+    await writeFile(path.join(stage, `aliases-${shard}.json.gz`), gzipSync(JSON.stringify(aliases[shard] ?? {}), { level:9 }));
   }
   await writeFile(path.join(stage, "index.json.gz"), index);
   await writeFile(path.join(stage, "manifest.json"), JSON.stringify(manifest,null,2)+"\n");
   // Pointer swap keeps readers on a complete snapshot. Old snapshots may be removed after deployment.
   await writeFile(path.join(output, "current.json.tmp"), JSON.stringify({ directory:path.basename(stage) })+"\n");
   await rename(path.join(output, "current.json.tmp"), path.join(output,"current.json"));
-  console.log(JSON.stringify({ total:manifest.total, countries, excluded, snapshot:path.basename(stage) },null,2));
+  console.log(JSON.stringify({ total:manifest.total, sectionTotal, countries, excluded, snapshot:path.basename(stage) },null,2));
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

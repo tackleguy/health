@@ -20,9 +20,12 @@ export interface CatalogTrail {
   surface: string | null;
   season: string | null;
   geometryShard: string;
-  /** Through-hike route metadata (optional). */
+  /** Source sections merged into this trail (or aggregated into a through-hike route). */
   sectionCount?: number;
+  /** Through-hike route metadata (optional). */
   mappedMiles?: number;
+  /** Catalog trails whose geometry makes up a through-hike route. */
+  memberIds?: string[];
   note?: string;
   tags?: string[];
 }
@@ -30,6 +33,8 @@ export interface CatalogManifest {
   version: number;
   generatedAt: string;
   total: number;
+  /** Source sections merged into the `total` trails. */
+  sectionTotal?: number;
   countries: Record<string, number>;
   sources: { name: string; url: string; license: string; count: number; query: string; retrievedAt: string }[];
   regions: { name: string; country: string; count: number }[];

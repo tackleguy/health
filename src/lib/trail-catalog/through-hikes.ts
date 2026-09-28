@@ -35,7 +35,7 @@ export const THROUGH_HIKE_PATTERNS: {
     country: "US",
     region: "New Mexico to Montana",
     officialMiles: 3100,
-    match: /\bcontinental\s+divide(\s+national)?\s+scenic\s+trail\b|\bcontinental\s+divide\s+trail\b/i,
+    match: /\bcontinental\s+divide(\s+national)?\s+scenic\s+trail\b|\bcontinental\s+divide\s+trail\b|^continental\s+divide$/i,
     sourceUrl: "https://continentaldividetrail.org/",
   },
   {
@@ -92,11 +92,55 @@ export const THROUGH_HIKE_PATTERNS: {
     match: /\btrans[\s-]?canada\s+trail\b|\bthe\s+great\s+trail\b/i,
     sourceUrl: "https://thegreattrail.ca/",
   },
+  {
+    id: "route-sht",
+    name: "Superior Hiking Trail",
+    country: "US",
+    region: "Minnesota",
+    officialMiles: 310,
+    match: /^superior\s+hiking\s+trail$/i,
+    sourceUrl: "https://superiorhiking.org/",
+  },
+  {
+    id: "route-ct",
+    name: "Colorado Trail",
+    country: "US",
+    region: "Colorado",
+    officialMiles: 486,
+    match: /^(the\s+)?colorado\s+trail$/i,
+    sourceUrl: "https://coloradotrail.org/",
+  },
+  {
+    id: "route-trt",
+    name: "Tahoe Rim Trail",
+    country: "US",
+    region: "California · Nevada",
+    officialMiles: 165,
+    match: /^tahoe\s+rim\s+trail$/i,
+    sourceUrl: "https://tahoerimtrail.org/",
+  },
 ];
+
+/** Lowercase ASCII name with punctuation collapsed, so source spelling variants compare equal. */
+export function normalizeTrailName(name: string) {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+def$/, "")
+    .trim();
+}
+
+/** The through-hike a section or trail name belongs to, if any. */
+export function matchThroughHike(name: string) {
+  const normalized = normalizeTrailName(name);
+  return THROUGH_HIKE_PATTERNS.find((pattern) => pattern.match.test(normalized)) ?? null;
+}
 
 /** Prefer keeping these sections when sampling the USGS universe. */
 export function isPriorityThroughHikeSection(name: string): boolean {
-  return THROUGH_HIKE_PATTERNS.some((pattern) => pattern.match.test(name));
+  return matchThroughHike(name) !== null;
 }
 
 type GuideMeta = {
@@ -370,19 +414,23 @@ export function curatedThroughHikes(): CatalogTrail[] {
 }
 
 /**
- * Aggregate mapped sections into through-hike route cards.
- * Official miles are the known end-to-end length; mapped miles are the sum of catalog sections.
+ * Aggregate mapped trails into through-hike route cards.
+ * Official miles are the known end-to-end length; mapped miles are the sum of the catalog trails.
  */
 export function aggregateThroughHikes(sections: CatalogTrail[]): CatalogTrail[] {
+  const byPattern = new Map<string, CatalogTrail[]>();
+  for (const row of sections) {
+    if (row.kind === "route") continue;
+    const pattern = matchThroughHike(row.name);
+    if (pattern && pattern.country === row.country) byPattern.set(pattern.id, [...(byPattern.get(pattern.id) ?? []), row]);
+  }
   const routes: CatalogTrail[] = [];
   for (const pattern of THROUGH_HIKE_PATTERNS) {
-    const matches = sections.filter((row) => pattern.match.test(row.name));
-    if (matches.length === 0) continue;
+    const matches = byPattern.get(pattern.id);
+    if (!matches) continue;
     const mappedMiles = matches.reduce((sum, row) => sum + (row.miles ?? 0), 0);
-    const lat =
-      matches.reduce((sum, row) => sum + row.latitude, 0) / matches.length;
-    const lng =
-      matches.reduce((sum, row) => sum + row.longitude, 0) / matches.length;
+    const sectionCount = matches.reduce((sum, row) => sum + (row.sectionCount ?? 1), 0);
+    const longest = matches.reduce((best, row) => ((row.miles ?? 0) > (best.miles ?? 0) ? row : best), matches[0]);
     routes.push({
       id: pattern.id,
       name: pattern.name,
@@ -391,8 +439,8 @@ export function aggregateThroughHikes(sections: CatalogTrail[]): CatalogTrail[] 
       kind: "route",
       miles: pattern.officialMiles,
       distanceBasis: "source",
-      latitude: lat,
-      longitude: lng,
+      latitude: longest.latitude,
+      longitude: longest.longitude,
       difficulty: null,
       dogs: null,
       source: "route-aggregate",
@@ -404,9 +452,10 @@ export function aggregateThroughHikes(sections: CatalogTrail[]): CatalogTrail[] 
       surface: null,
       season: null,
       geometryShard: "route",
-      sectionCount: matches.length,
+      sectionCount,
       mappedMiles: Math.round(mappedMiles * 10) / 10,
-      note: `${matches.length.toLocaleString("en-US")} mapped sections (~${mappedMiles.toFixed(0)} mi) in the catalog selection. Official corridor is about ${pattern.officialMiles.toLocaleString("en-US")} mi — section coverage is incomplete.`,
+      memberIds: matches.map((row) => row.id),
+      note: `${sectionCount.toLocaleString("en-US")} mapped sections (~${mappedMiles.toFixed(0)} mi) are joined on this map. The official trail is about ${pattern.officialMiles.toLocaleString("en-US")} mi — mapped coverage can be incomplete.`,
     });
   }
   return routes;

@@ -1,110 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import type { GpsPoint } from "@/lib/types";
+import dynamic from "next/dynamic";
+import type { ComponentProps } from "react";
+import type { LiveTrackMap as LeafletLiveTrackMap } from "./LiveTrackMapLeaflet";
 
-interface LiveTrackMapProps {
-  points: GpsPoint[];
-  heading?: number | null;
-  className?: string;
-}
+// Leaflet reads `window` when imported, so the map only renders in the browser.
+const LeafletMap = dynamic(() => import("./LiveTrackMapLeaflet").then((m) => m.LiveTrackMap), { ssr: false });
 
-export function LiveTrackMap({
-  points,
-  className = "",
-}: LiveTrackMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const lineRef = useRef<L.Polyline | null>(null);
-  const userMarkerRef = useRef<L.CircleMarker | null>(null);
-  const startMarkerRef = useRef<L.CircleMarker | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-
-    const map = L.map(containerRef.current, {
-      center: [39.8283, -98.5795],
-      zoom: 14,
-    });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map);
-    mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      lineRef.current = null;
-      userMarkerRef.current = null;
-      startMarkerRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || points.length === 0) return;
-
-    const latlngs = points.map((p) => [p.lat, p.lng] as L.LatLngExpression);
-    const last = points[points.length - 1];
-    const first = points[0];
-
-    if (lineRef.current) {
-      lineRef.current.setLatLngs(latlngs);
-    } else {
-      lineRef.current = L.polyline(latlngs, {
-        color: "#059669",
-        weight: 4,
-        opacity: 0.9,
-      }).addTo(map);
-    }
-
-    if (!startMarkerRef.current) {
-      startMarkerRef.current = L.circleMarker([first.lat, first.lng], {
-        radius: 6,
-        color: "#059669",
-        weight: 2,
-        fillColor: "#ffffff",
-        fillOpacity: 1,
-      }).addTo(map);
-    } else {
-      startMarkerRef.current.setLatLng([first.lat, first.lng]);
-    }
-
-    if (!userMarkerRef.current) {
-      userMarkerRef.current = L.circleMarker([last.lat, last.lng], {
-        radius: 8,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: "#059669",
-        fillOpacity: 1,
-      }).addTo(map);
-    } else {
-      userMarkerRef.current.setLatLng([last.lat, last.lng]);
-    }
-
-    map.setView([last.lat, last.lng], Math.max(map.getZoom(), 15));
-    map.invalidateSize();
-  }, [points]);
-
+export function LiveTrackMap(props: ComponentProps<typeof LeafletLiveTrackMap>) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-xl bg-stone-800 ${className}`}
-    >
-      <div ref={containerRef} className="h-full w-full" />
-      {points.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-stone-900/40 text-sm text-white">
-          Map loads when GPS starts
-        </div>
-      )}
-      {points.length > 0 && (
-        <div className="pointer-events-none absolute bottom-2 left-2 rounded-lg bg-black/50 px-2 py-1 text-[10px] font-medium text-white backdrop-blur">
-          {points.length} pts · live track
-        </div>
-      )}
+    <div className={`rounded-xl bg-stone-800 ${props.className ?? ""}`}>
+      <LeafletMap {...props} className="h-full w-full" />
     </div>
   );
 }

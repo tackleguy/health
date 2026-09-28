@@ -23,7 +23,7 @@ FORM: Approved desktop Fieldbook composition adapted to the working catalog. Act
 
 ## Trust and boundaries
 
-The bundled snapshot has 90,000 unique source trail-section records, not 90,000 independent hikes. Canadian coverage comes from imported Parks Canada and Ontario sources; U.S. records are a selection of USGS hiking sections. Source attribution, licenses, snapshot date, coverage, and download remain in the source disclosure. Estimated geometry distances are labeled. No fabricated photos, ratings, elevations, current conditions, or complete-route claims are introduced.
+The bundled snapshot has 143,174 whole trails merged from 495,521 source trail sections; connected same-name sections are one trail and lengths count overlaps once. Canadian coverage comes from imported Parks Canada and Ontario sources; U.S. records are named USGS trails plus unnamed hiking trails. Source attribution, licenses, snapshot date, coverage, and download remain in the source disclosure. Estimated geometry distances are labeled. No fabricated photos, ratings, elevations, current conditions, or complete-route claims are introduced.
 
 The reversible map disclosure uses actual returned record geometry. Detail links and filters retain the existing catalog services. A local checkout has no configured cloud credentials; no cloud user data or planning-memory keys changed for this visual implementation.
 

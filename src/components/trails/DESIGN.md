@@ -172,12 +172,12 @@ A row presents a real record name, region, source, optional source difficulty, a
 
 ### Do:
 - Do retain the compact four-record first view and filter-preserving continuation.
-- Do keep source attribution and the trail-section explanation visible.
+- Do keep source attribution and the merged-trail explanation (sections joined, overlaps counted once) visible.
 - Do label estimated section distance and use actual source geometry.
 - Do preserve paired mobile location filters and aligned distances.
 
 ### Don't:
 - Don't restore dark catalog backgrounds, lime actions, or serif titles.
-- Don't present the 500,000 records as 500,000 complete independent hikes.
+- Don't present merged mapped trails as verified complete routes; coverage gaps are possible.
 - Don't invent route photos, ratings, elevations, or current conditions.
 - Don't turn every trail row into a raised card.

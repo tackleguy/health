@@ -1,6 +1,6 @@
 # TrailPack public trail catalog
 
-This directory ships a local, server-readable snapshot. The browser receives paginated results, never the complete 500,000-record index. No account, database connection, or API key is required.
+This directory ships a local, server-readable snapshot. The browser receives paginated results, never the complete index of 143,174 trails. No account, database connection, or API key is required.
 
 **The count describes trail sections, not distinct end-to-end hikes.** Multiple sections may have the same trail name, and differently named source features may overlap. These records must not be converted automatically into full-trip recommendations or treated as verified trailheads.
 
@@ -17,7 +17,7 @@ Source agencies do not endorse TrailPack. Source data can predate retrieval. Acc
 
 ## Reproduce or refresh
 
-Run `npm run source:trails` from the repository root. The importer fetches pages sequentially, retries temporary failures, caches raw responses in ignored `.cache/trail-catalog/`, rejects invalid geometry, and deduplicates source IDs and exact matching name/geometry within each country. A partial import never replaces the current snapshot. All eligible records are fetched; all accepted Canadian records are kept and a deterministic selection of U.S. records brings the total to exactly 500,000. This is a selection, not a claim of comprehensive coverage.
+Run `npm run source:trails` from the repository root. The importer fetches pages sequentially, retries temporary failures, caches raw responses in ignored `.cache/trail-catalog/`, rejects invalid geometry, and deduplicates source IDs and exact matching name/geometry within each country. A partial import never replaces the current snapshot. All eligible sections are fetched and then merged into whole trails (`src/lib/trail-catalog/merge.ts`): sections with the same country and normalized name whose lines come within 200 m are one trail, and named through-hikes (Appalachian, Pacific Crest, Continental Divide, …) are one trail even across mapping gaps. Unnamed sections never merge. Trail length is the sum of section lengths with overlapping stretches counted once; USGS-reported miles are kept only when they agree with the mapped line (0.67–1.5×), otherwise, and for all Canadian sections, length is measured from geometry. Standalone trails under 0.05 mi are dropped as mapping fragments. `aliases-XX.json.gz` maps every merged section id to its trail id so old section links redirect. This is not a claim of comprehensive coverage.
 
 Run `npm run source:trails -- --refresh` to fetch new responses. Once complete, restart the app (or deploy a new build) to load the new immutable snapshot. Older snapshot directories may then be removed. A provider changing records during pagination can affect the snapshot; counts, checksums and duplicate exclusions document what was actually accepted.
 

@@ -15,6 +15,7 @@ import {
   fetchExistingTrailRefs,
   finishImportLog,
   insertImportedTrail,
+  mergeImportedTrailSections,
   storeMergeCandidates,
   storeSourceRecord,
   upsertDataSource,
@@ -116,6 +117,8 @@ export async function runIngestionPipeline(
         await storeMergeCandidates(supabase, trailId, candidates);
       }
     }
+
+    if (result.stored > 0) await mergeImportedTrailSections(supabase);
 
     if (logId) {
       await finishImportLog(supabase, logId, result, "completed");
