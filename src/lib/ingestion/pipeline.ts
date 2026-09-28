@@ -14,6 +14,7 @@ import {
   ensureImportPark,
   fetchExistingTrailRefs,
   finishImportLog,
+  importedLengthMiles,
   insertImportedTrail,
   mergeImportedTrailSections,
   storeMergeCandidates,
@@ -107,7 +108,7 @@ export async function runIngestionPipeline(
       existing.push({
         id: trailId,
         name: normalized.name,
-        length_miles: normalized.lengthMiles ?? 0,
+        length_miles: importedLengthMiles(normalized),
         latitude: normalized.startLatitude,
         longitude: normalized.startLongitude,
       });

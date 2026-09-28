@@ -110,7 +110,7 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
       const controller = new AbortController();
       selectionAbort.current = controller;
       setSelected(trail);
-      setGeometryStatus("Loading the section’s route line…");
+      setGeometryStatus("Loading the trail’s route line…");
       clearSectionGeometry();
       void (async () => {
         try {
@@ -351,7 +351,7 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
           {loading
             ? "Updating map…"
             : data
-              ? `${data.total.toLocaleString("en-US")} ${data.total === 1 ? "section" : "sections"} ${area ? "in this map area" : "matching your search"}`
+              ? `${data.total.toLocaleString("en-US")} ${data.total === 1 ? "trail" : "trails"} ${area ? "in this map area" : "matching your search"}`
               : "Map search unavailable"}
         </p>
         <div>
@@ -371,7 +371,7 @@ export function CatalogExplorerMap({ initialData, query }: { initialData: Catalo
         </div>
       </div>
       <p className="catalog-map-help" id="catalog-map-help">
-        Zoom in to reveal trail sections. Select a pin for its route line and details. Pins mark sections, not verified trailheads.
+        Zoom in to reveal trails. Select a pin for its route line and details. Pins mark a point on the trail, not a verified trailhead.
       </p>
       <div ref={container} className="catalog-map-canvas catalog-discovery-canvas" aria-describedby="catalog-map-help" />
       {mapUnavailable && (

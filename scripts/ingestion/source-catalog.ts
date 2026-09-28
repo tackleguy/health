@@ -8,6 +8,8 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import type { CatalogManifest, CatalogTrail } from "../../src/lib/trail-catalog/types";
 import { JOIN_METERS, mergeCatalogSections } from "../../src/lib/trail-catalog/merge";
+import { auditCatalog } from "../../src/lib/trail-catalog/audit";
+import { QUALITY_RULES, isPlaceholderName } from "../../src/lib/trail-catalog/quality";
 
 const root = process.cwd();
 const output = path.join(root, "data/trail-catalog");
@@ -15,7 +17,7 @@ const cache = path.join(root, ".cache/trail-catalog");
 /** Guards against publishing a snapshot from a truncated source response. */
 const minimumSections = 450_000;
 /** Standalone trails shorter than this (~80 m) are mapping fragments, not hikes. */
-const minimumTrailMiles = 0.05;
+const minimumTrailMiles = QUALITY_RULES.minimumTrailMiles;
 const refresh = process.argv.includes("--refresh");
 const USGS = "https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/37";
 const CANADA = "https://services2.arcgis.com/wCOMu5IS7YdSyPNx/arcgis/rest/services/Trails_Sentiers_APCA_Temporary_Temporaire_APCA_OpenOuvert/FeatureServer/0";
@@ -103,7 +105,9 @@ async function main() {
       for (const f of data.features!) {
         const a = f.attributes;
         const named = str(source.key === "ontario" ? a.TRAIL_NAME : source.country === "CA" ? a.Name_Official_e ?? a.Nom_Officiel_f : a.name);
-        const name = named ?? (source.key === "usgs" ? "Unnamed trail" : null);
+        // Placeholder names ("-", "<unnamed>", "Unknown") are not trail names; they are labeled and never merged.
+        const placeholder = named !== null && isPlaceholderName(named);
+        const name = named && !placeholder ? named : (source.key === "usgs" || placeholder ? "Unnamed trail" : null);
         if (!name) { excluded.missingName++; continue; }
         const lines = f.geometry?.paths;
         if (!lines?.length || lines.some(line => line.length < 2 || line.some(p => p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]) || Math.abs(p[0]) > 180 || Math.abs(p[1]) > 90))) { excluded.invalidGeometry++; continue; }
@@ -127,6 +131,7 @@ async function main() {
           row.manager = str(a.TRAIL_ASSOCIATION) ?? "Ontario Trail Network";
           row.officialUrl = safeUrl(a.TRAIL_ASSOCIATION_WEBSITE);
         }
+        if (placeholder) rows[rows.length-1].originalName = named!;
         geometries.set(id, lines);
       }
       console.log(`${source.key}: ${offset+data.features!.length} fetched; ${rows.length.toLocaleString()} accepted total`);
@@ -143,6 +148,11 @@ async function main() {
     trails.push(trail);
   }
   trails.sort((a, b) => a.row.name.localeCompare(b.row.name) || a.row.id.localeCompare(b.row.id));
+  // Every published trail passes through the quality rules; the report ships with the snapshot.
+  const audit = auditCatalog(trails.map(t => ({ row: t.row, lines: t.lines, reportedMiles: t.reportedMiles, sectionReportedMiles: t.sectionReportedMiles })));
+  audit.excludedTooShort = excluded.tooShort;
+  audit.duplicatesRemoved = excluded.duplicateId + excluded.duplicateGeometry;
+  console.log(`Quality: ${JSON.stringify(audit.byStatus)}`);
   const selected = trails.map(t => t.row);
   const sectionTotal = trails.reduce((sum, t) => sum+t.sectionIds.length, 0);
   console.log(`${rows.length.toLocaleString()} sections merged into ${merged.length.toLocaleString()} trails; ${selected.length.toLocaleString()} kept`);
@@ -154,7 +164,7 @@ async function main() {
   }
   const sourceOf = new Map(rows.map(r => [r.id, r.source]));
   sources.forEach((source,i)=>{ source.count = trails.reduce((sum, t) => sum+t.sectionIds.filter(id => sourceOf.get(id) === sourcesToImport[i].key).length, 0); });
-  const manifest: CatalogManifest = { version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`] };
+  const manifest: CatalogManifest = { version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`, `Every trail is checked by config/trail-quality.json rules: ${audit.byStatus.ok.toLocaleString("en-US")} passed, ${audit.byStatus.short.toLocaleString("en-US")} are short trails, ${audit.byStatus.review.toLocaleString("en-US")} need review and ${audit.byStatus.fragment.toLocaleString("en-US")} are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources.`] };
   const stage = path.join(output, `snapshot-${Date.now()}`); await mkdir(stage);
   const shards: Record<string, Record<string, Point[][]>> = {}, aliases: Record<string, Record<string, string>> = {};
   for (const trail of trails) {
@@ -167,6 +177,7 @@ async function main() {
     await writeFile(path.join(stage, `aliases-${shard}.json.gz`), gzipSync(JSON.stringify(aliases[shard] ?? {}), { level:9 }));
   }
   await writeFile(path.join(stage, "index.json.gz"), index);
+  await writeFile(path.join(stage, "audit.json.gz"), gzipSync(JSON.stringify(audit), { level:9 }));
   await writeFile(path.join(stage, "manifest.json"), JSON.stringify(manifest,null,2)+"\n");
   // Pointer swap keeps readers on a complete snapshot. Old snapshots may be removed after deployment.
   await writeFile(path.join(output, "current.json.tmp"), JSON.stringify({ directory:path.basename(stage) })+"\n");

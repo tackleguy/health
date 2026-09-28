@@ -2,6 +2,7 @@ import Link from "next/link";
 import { searchCatalog, searchCatalogMap } from "@/lib/trail-catalog/server";
 import { parseCatalogFilters } from "@/lib/trail-catalog/search";
 import { countryName, displayMiles, sourceName } from "@/lib/trail-catalog/types";
+import { QUALITY_STATUS_LABELS } from "@/lib/trail-catalog/quality";
 import { CatalogMap } from "./CatalogMap";
 import { NavIcon } from "@/components/nav/NavIcon";
 import "./catalog.css";
@@ -35,6 +36,7 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
     filters.kind === "segment" && "Sections only",
     activity === "ski" && "Ski trails",
     filters.uniqueNames && "Unique names",
+    filters.includeFragments && "Partial segments",
     filters.region,
     filters.minMiles !== undefined && `${filters.minMiles}+ mi`,
     filters.maxMiles !== undefined && `Up to ${filters.maxMiles} mi`,
@@ -187,11 +189,21 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
                 />
                 One card per trail name
               </label>
+              <label className="catalog-checkbox">
+                <input
+                  type="checkbox"
+                  name="includeFragments"
+                  value="true"
+                  defaultChecked={params.get("includeFragments") === "true"}
+                />
+                Include partial, unnamed and connector segments
+              </label>
             </div>
             <div className="catalog-filter-footer">
               <p className="catalog-muted">
                 Through-hikes are end-to-end routes. Separate trails can share a common name (for example
-                “Loop Trail”) — use unique names to collapse repeats.
+                “Loop Trail”) — use unique names to collapse repeats. Pieces of longer trails, unnamed
+                stubs, connectors and closed trails are hidden unless you include partial segments.
               </p>
               <button className="catalog-button" type="submit">
                 Apply filters
@@ -235,6 +247,9 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
                         <h2>
                           {t.name}
                           {t.kind === "route" && <span className="catalog-badge">Through-hike</span>}
+                          {t.quality && t.quality !== "ok" && (
+                            <span className={`catalog-badge quality-${t.quality}`}>{QUALITY_STATUS_LABELS[t.quality]}</span>
+                          )}
                         </h2>
                         <p>
                           {t.region ?? countryName(t.country)} · {sourceName(t.source)}

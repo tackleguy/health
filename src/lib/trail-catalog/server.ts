@@ -118,7 +118,20 @@ export async function getCatalogTrail(id: string) {
   }
   const geometry = (await readShard(data.directory, "geometry", trail.geometryShard)) as Record<string, [number, number][][]>;
   if (!geometry[trail.id]) throw new Error("Missing catalog geometry");
-  return { trail, lines: geometry[trail.id], manifest: data.manifest };
+  const parentRow = trail.parentId ? data.byId.get(trail.parentId) : undefined;
+  const parent = parentRow ? { id: parentRow.id, name: parentRow.name, miles: parentRow.miles } : null;
+  return { trail, lines: geometry[trail.id], manifest: data.manifest, parent };
+}
+
+/** The snapshot's quality audit report, if this snapshot was built with one. */
+export async function catalogAudit() {
+  const data = await load();
+  try {
+    return JSON.parse((await unzip(await readFile(path.join(data.directory, "audit.json.gz")))).toString()) as import("./audit").AuditReport;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
 }
 
 export async function catalogDownload() {

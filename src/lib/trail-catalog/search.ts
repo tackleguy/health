@@ -37,6 +37,8 @@ export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilter
   return rows.filter((r, i) => {
     if (!includeWinter && isWinterActivityTrail(r)) return false;
     if (activity !== "all" && !matchesCatalogActivity(r, activity)) return false;
+    // Pieces of longer trails, unnamed stubs, connectors and closed trails are not presented as hikes unless asked for.
+    if (!filters.includeFragments && (r.quality === "fragment" || r.flags?.includes("closed"))) return false;
     if (filters.kind && r.kind !== filters.kind) return false;
     if (filters.bbox && !withinBounds(r.longitude, r.latitude, filters.bbox)) return false;
     if (filters.country === "intl") {
@@ -160,6 +162,7 @@ export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
     activity,
     kind,
     uniqueNames: params.get("uniqueNames") === "true",
+    includeFragments: params.get("includeFragments") === "true",
     lat: number("lat", -90, 90),
     lng: number("lng", -180, 180),
     radiusKm: number("radiusKm", 0.1, 1000),

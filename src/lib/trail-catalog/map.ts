@@ -47,7 +47,18 @@ export function buildCatalogMap(trails: CatalogTrail[]): CatalogMapResult {
   const points: CatalogMapPoint[] = [...cells].map(([id, group]) => {
     if (group.length === 1) return { id: group[0].id, latitude: group[0].latitude, longitude: group[0].longitude, count: 1, trail: group[0] };
     const extent = catalogBounds(group)!;
-    return { id: `group-${id}`, count: group.length, longitude: normalizeLongitude((extent[0] + extent[2]) / 2), latitude: (extent[1] + extent[3]) / 2, bounds: extent };
+    // Place the marker on the member nearest the group's mean, so it sits on a real trail
+    // (a bounding-box center can land in the ocean between Hawaii and the mainland).
+    let x = 0, y = 0;
+    for (const trail of group) { x += trail.longitude < extent[0] ? trail.longitude + 360 : trail.longitude; y += trail.latitude; }
+    x /= group.length; y /= group.length;
+    let anchor = group[0], best = Infinity;
+    for (const trail of group) {
+      const lng = trail.longitude < extent[0] ? trail.longitude + 360 : trail.longitude;
+      const d = (lng - x) ** 2 + (trail.latitude - y) ** 2;
+      if (d < best) { best = d; anchor = trail; }
+    }
+    return { id: `group-${id}`, count: group.length, longitude: normalizeLongitude(anchor.longitude), latitude: anchor.latitude, bounds: extent };
   });
   return { points, total: trails.length, bounds, grouped: true };
 }

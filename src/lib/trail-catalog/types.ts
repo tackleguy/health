@@ -28,6 +28,16 @@ export interface CatalogTrail {
   memberIds?: string[];
   note?: string;
   tags?: string[];
+  /** Automated quality status (src/lib/trail-catalog/quality.ts). Missing on routes and older snapshots. */
+  quality?: import("./quality").QualityStatus;
+  flags?: import("./quality").QualityFlag[];
+  routeType?: import("./quality").RouteType;
+  /** Longer same-name trail this record appears to be a disconnected piece of. */
+  parentId?: string;
+  /** Source-reported length, kept when it disagrees with the mapped line. */
+  reportedMiles?: number;
+  /** Source name when it was a placeholder ("-", "<unnamed>") and is shown as Unnamed trail. */
+  originalName?: string;
 }
 export interface CatalogManifest {
   version: number;
@@ -78,6 +88,8 @@ export interface CatalogFilters {
   kind?: "segment" | "route";
   /** Collapse same-name sections to the longest one (routes always kept). */
   uniqueNames?: boolean;
+  /** Include fragments (pieces of longer trails, unnamed stubs, connectors). Default excludes them. */
+  includeFragments?: boolean;
   lat?: number;
   lng?: number;
   radiusKm?: number;
@@ -118,6 +130,8 @@ const SOURCE_NAMES: Record<CatalogTrail["source"], string> = {
 
 export const sourceName = (source: CatalogTrail["source"]) => SOURCE_NAMES[source] ?? source;
 
+/** Short trails show meters instead of a misleading "<0.1 mi". */
 export function displayMiles(miles: number | null) {
-  return miles === null ? "Distance unknown" : `${miles < 0.1 ? "<0.1" : miles.toFixed(1)} mi`;
+  if (miles === null) return "Distance unknown";
+  return miles < 0.1 ? `${Math.round((miles * 1609.344) / 5) * 5} m` : `${miles.toFixed(1)} mi`;
 }

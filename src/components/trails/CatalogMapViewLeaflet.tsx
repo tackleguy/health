@@ -84,7 +84,7 @@ export function CatalogMapView({
     }
 
     if (bounds.isValid()) {
-      map.fitBounds(bounds.pad(0.12), { maxZoom: 14 });
+      map.fitBounds(bounds.pad(0.12), { maxZoom: 17 });
     }
 
     const observer = new ResizeObserver(() => map.invalidateSize());

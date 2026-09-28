@@ -182,3 +182,8 @@
 @media(forced-colors:active) { .catalog-cluster,.catalog-trail-pin { border:2px solid ButtonText; background:ButtonFace; color:ButtonText; }.catalog-trail-pin::after { background:ButtonText; } }
 
 .catalog-filters :is(input,select) { border-color:var(--control-border); }
+.catalog-quality-note { margin: 18px 0 0; padding: 14px 16px; border: 1px solid var(--border-strong); border-left: 4px solid #b7791f; border-radius: 8px; background: color-mix(in srgb, #b7791f 8%, transparent); line-height: 1.5; }
+.catalog-distance-alt { color: var(--sage); font-size: .9rem; }
+.catalog-flag-list { margin: 6px 0 0; padding-left: 18px; color: var(--sage); font-size: .85rem; list-style: disc; }
+.catalog-badge.quality-review,.catalog-badge.quality-fragment { color: #8a5a12; border-color: color-mix(in srgb, #b7791f 45%, transparent); }
+.catalog-badge.quality-short { color: var(--sage); }

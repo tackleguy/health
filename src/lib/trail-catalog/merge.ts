@@ -1,10 +1,19 @@
 import type { CatalogTrail } from "./types";
 import { matchThroughHike, normalizeTrailName } from "./through-hikes";
+import { isPlaceholderName } from "./quality";
 
 export type Point = [number, number];
 export type Lines = Point[][];
 export type CatalogSection = { row: CatalogTrail; lines: Lines };
-export type MergedTrail = { row: CatalogTrail; lines: Lines; sectionIds: string[] };
+export type MergedTrail = {
+  row: CatalogTrail;
+  lines: Lines;
+  sectionIds: string[];
+  /** Whole-trail length the source repeats on each section (Ontario), in miles. */
+  reportedMiles?: number | null;
+  /** Source-reported length of a single USGS section, in miles. */
+  sectionReportedMiles?: number | null;
+};
 
 /** Sections of the same named trail whose lines come within this distance are one trail. */
 export const JOIN_METERS = 200;
@@ -30,7 +39,7 @@ export { normalizeTrailName };
 /** Sections sharing a key are candidates for one trail; generic names never merge. Through-hike keys start with "route-". */
 export function mergeKey(row: CatalogTrail) {
   const name = normalizeTrailName(row.name);
-  if (!name || GENERIC_NAMES.has(name)) return null;
+  if (!name || GENERIC_NAMES.has(name) || isPlaceholderName(row.name)) return null;
   const pattern = matchThroughHike(name);
   return pattern && pattern.country === row.country ? `${row.country}:${pattern.id}` : `${row.country}:${name}`;
 }
@@ -196,12 +205,15 @@ function mostCommon<T>(values: (T | null)[]): T | null {
  * stretches already covered by a longer section, so duplicated or overlapping sections count once.
  */
 function combine(group: CatalogSection[], regionAt?: (point: Point, country: string) => string | null): MergedTrail {
+  const ontario = group.filter((s) => s.row.source === "ontario" && s.row.distanceBasis === "source" && s.row.miles !== null).map((s) => s.row.miles!);
+  const reportedMiles = ontario.length ? Math.max(...ontario) : null;
   const measured = group
     .map((section) => ({ section, ...sectionLength(section.row, section.lines) }))
     .sort((a, b) => b.miles - a.miles || a.section.row.id.localeCompare(b.section.row.id));
   if (measured.length === 1) {
     const [{ section, miles, basis }] = measured;
-    return { row: { ...section.row, miles: round(miles), distanceBasis: basis, sectionCount: 1 }, lines: section.lines, sectionIds: [section.row.id] };
+    const sectionReportedMiles = section.row.source === "usgs" && section.row.distanceBasis === "source" ? section.row.miles : null;
+    return { row: { ...section.row, miles: round(miles), distanceBasis: basis, sectionCount: 1 }, lines: section.lines, sectionIds: [section.row.id], reportedMiles, sectionReportedMiles };
   }
   const grid = new SegmentGrid(OVERLAP_METERS);
   let miles = 0, allSource = true;
@@ -251,6 +263,7 @@ function combine(group: CatalogSection[], regionAt?: (point: Point, country: str
     },
     lines,
     sectionIds: rows.map((r) => r.id),
+    reportedMiles,
   };
 }
 

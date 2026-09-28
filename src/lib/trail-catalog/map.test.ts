@@ -36,3 +36,13 @@ test("valid braced USGS identifiers open their real geometry and export escaped 
   assert.match(gpx, /Generalized trail geometry/);
   assert.equal(await getCatalogTrail("usgs-../../package.json"), null);
 });
+test("grouped markers sit on a member trail, never an empty box center", () => {
+  const rows = Array.from({ length: MAX_MAP_POINTS + 40 }, (_, i) => ({
+    id: `t${i}`, longitude: i % 2 ? -157.8 : -118 - (i % 7) * 0.01, latitude: i % 2 ? 21.3 : 34 + (i % 5) * 0.01,
+  })) as CatalogTrail[];
+  const map = buildCatalogMap(rows);
+  assert.ok(map.grouped);
+  for (const point of map.points) {
+    assert.ok(rows.some((r) => Math.abs(r.longitude - point.longitude) < 1e-9 && r.latitude === point.latitude), `${point.id} is on a trail`);
+  }
+});

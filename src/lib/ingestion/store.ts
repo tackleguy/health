@@ -119,7 +119,8 @@ export function importedLengthMiles(trail: NormalizedTrail) {
     reported != null && reported > 0 && mapped > 0 && reported / mapped >= 0.67 && reported / mapped <= 1.5
       ? reported
       : mapped;
-  return Math.max(0.01, Math.round(miles * 100) / 100);
+  // Never round a real trail up to a placeholder length; a 0 here means the geometry is empty and validation flags it.
+  return Math.round(miles * 1000) / 1000;
 }
 
 /** Joins connected same-name imported sections into single trails and fixes their lengths. */

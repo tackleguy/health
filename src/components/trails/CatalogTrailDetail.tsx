@@ -3,7 +3,8 @@ import { CatalogPhotos } from "./CatalogPhotos";
 import { CatalogMapView } from "./CatalogMapView";
 import { TrailWeatherForecast } from "./TrailWeatherForecast";
 import type { CatalogManifest, CatalogTrail } from "@/lib/trail-catalog/types";
-import { countryName, displayMiles, sourceName } from "@/lib/trail-catalog/types";
+import { countryName, sourceName } from "@/lib/trail-catalog/types";
+import { QUALITY_FLAGS, QUALITY_STATUS_LABELS, ROUTE_TYPE_LABELS, formatDistance } from "@/lib/trail-catalog/quality";
 import { resolveDifficulty } from "@/lib/trail-difficulty";
 import "./catalog.css";
 
@@ -11,11 +12,16 @@ export function CatalogTrailDetail({
   trail: t,
   lines,
   manifest,
+  parent = null,
 }: {
   trail: CatalogTrail;
   lines: [number, number][][];
   manifest: CatalogManifest;
+  parent?: { id: string; name: string; miles: number | null } | null;
 }) {
+  const distance = formatDistance(t.miles);
+  const flags = t.flags ?? [];
+  const warning = !t.quality || t.quality === "ok" || t.quality === "short" ? null : qualityWarning(t, parent);
   const isRoute = t.kind === "route";
   const sections = t.sectionCount ?? 1;
   const hasLines = lines.length > 0;
@@ -45,6 +51,19 @@ export function CatalogTrailDetail({
           {[t.region, countryName(t.country)].filter(Boolean).join(", ")} · {sourceName(t.source)}
         </p>
       </header>
+      {warning && (
+        <div className="catalog-quality-note" role="note">
+          <strong>{QUALITY_STATUS_LABELS[t.quality!]}.</strong> {warning}
+          {parent && (
+            <>
+              {" "}
+              <Link className="catalog-link" href={`/explore/trails/${encodeURIComponent(parent.id)}`}>
+                View {parent.name} ({formatDistance(parent.miles).primary})
+              </Link>
+            </>
+          )}
+        </div>
+      )}
       <p className="catalog-section-note">
         {isRoute
           ? t.note ??
@@ -57,7 +76,8 @@ export function CatalogTrailDetail({
         <div>
           <dt>{isRoute ? "Route distance" : "Trail distance"}</dt>
           <dd>
-            {displayMiles(t.miles)}
+            {distance.primary}
+            {distance.secondary && <span className="catalog-distance-alt"> · {distance.secondary}</span>}
             <small>
               {isRoute
                 ? t.source === "route-aggregate"
@@ -66,8 +86,9 @@ export function CatalogTrailDetail({
                 : sections > 1
                   ? `Sum of ${sections.toLocaleString("en-US")} mapped sections, overlaps counted once`
                   : t.distanceBasis === "geometry"
-                    ? "Measured from map geometry"
-                    : "Reported by the source"}
+                    ? "Measured along the mapped line"
+                    : "Reported by the source; matches the mapped line"}
+              {t.routeType === "point-to-point" && !isRoute ? ". One way; double it for an out-and-back." : ""}
             </small>
           </dd>
         </div>
@@ -92,8 +113,11 @@ export function CatalogTrailDetail({
           </div>
         ) : (
           <div>
-            <dt>Elevation gain</dt>
-            <dd>Not reported</dd>
+            <dt>Route type</dt>
+            <dd>
+              {t.routeType ? ROUTE_TYPE_LABELS[t.routeType] : isRoute ? "Long-distance route" : "Not determined"}
+              <small>From the mapped line’s shape</small>
+            </dd>
           </div>
         )}
         <div>
@@ -174,6 +198,12 @@ export function CatalogTrailDetail({
               <dt>Surface</dt>
               <dd>{t.surface ?? "Not reported"}</dd>
             </div>
+            {t.originalName && (
+              <div>
+                <dt>Name in source</dt>
+                <dd>{t.originalName}</dd>
+              </div>
+            )}
             <div>
               <dt>Season</dt>
               <dd>{t.season ?? "Not reported"}</dd>
@@ -183,9 +213,28 @@ export function CatalogTrailDetail({
               <dd>{t.sourceDate?.slice(0, 10) ?? "Not reported"}</dd>
             </div>
             <div>
+              <dt>Elevation gain</dt>
+              <dd>Not in source data</dd>
+            </div>
+            <div>
               <dt>Catalog snapshot</dt>
               <dd>{manifest.generatedAt.slice(0, 10)}</dd>
             </div>
+            {t.quality && (
+              <div>
+                <dt>Data checks</dt>
+                <dd>
+                  {QUALITY_STATUS_LABELS[t.quality]} ({manifest.generatedAt.slice(0, 10)})
+                  {flags.length > 0 && (
+                    <ul className="catalog-flag-list">
+                      {flags.map((flag) => (
+                        <li key={flag}>{QUALITY_FLAGS[flag]}</li>
+                      ))}
+                    </ul>
+                  )}
+                </dd>
+              </div>
+            )}
           </dl>
           <p>
             <a href={t.sourceUrl} target="_blank" rel="noopener noreferrer">
@@ -227,4 +276,25 @@ export function CatalogTrailDetail({
       </div>
     </article>
   );
+}
+
+function qualityWarning(t: CatalogTrail, parent: { name: string } | null) {
+  const flags = t.flags ?? [];
+  if (flags.includes("fragment-of-longer-trail")) {
+    return `This is a separately mapped piece of ${parent?.name ?? "a longer trail with the same name"}. The source has a gap between them, so they are not joined here and this distance is not the full hike.`;
+  }
+  if (flags.includes("closed")) return "The source name marks this trail as closed or abandoned. Check with the land manager before going.";
+  if (flags.includes("incomplete-geometry")) {
+    return `The source reports ${formatDistance(t.reportedMiles ?? null).primary} for this trail, but only ${formatDistance(t.miles).primary} is mapped. Sections are missing from the map.`;
+  }
+  if (flags.includes("unnamed") || flags.includes("placeholder-name")) return "This unnamed mapped path is probably a connector or part of a larger network, not a destination hike.";
+  if (flags.includes("connector")) return "This is a connector, spur or access path, not a full hike on its own.";
+  if (flags.includes("network-name")) return "The source gives this name to many separate paths in the area. This record is one short piece of that network.";
+  if (flags.includes("distance-mismatch")) {
+    return `The source reports ${formatDistance(t.reportedMiles ?? null).primary}, but the mapped line measures ${formatDistance(t.miles).primary}. The mapped length is shown.`;
+  }
+  if (flags.includes("disconnected")) return "The mapped line has gaps between its pieces. The gaps are not filled in, and the distance counts only the mapped parts.";
+  if (flags.includes("gps-jump") || flags.includes("straight-line")) return "Part of this line is a long straight jump in the source geometry, so it may not follow the real path.";
+  if (flags.includes("invalid-geometry")) return "This record has no usable map geometry.";
+  return "Automated checks found a problem with this record.";
 }
