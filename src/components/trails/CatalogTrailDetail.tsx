@@ -23,7 +23,7 @@ export function CatalogTrailDetail({
 }) {
   const distance = formatDistance(t.miles);
   const flags = t.flags ?? [];
-  const warning = t.flags?.includes("sidewalk") || (t.quality && t.quality !== "ok" && t.quality !== "short") ? qualityWarning(t, parent) : null;
+  const warning = t.flags?.includes("sidewalk") || t.flags?.includes("motorized") || (t.quality && t.quality !== "ok" && t.quality !== "short") ? qualityWarning(t, parent) : null;
   const isRoute = t.kind === "route";
   const sections = t.sectionCount ?? 1;
   const hasLines = lines.length > 0;
@@ -70,7 +70,7 @@ export function CatalogTrailDetail({
       )}
       {warning && (
         <div className="catalog-quality-note" role="note">
-          <strong>{t.flags?.includes("sidewalk") ? "Sidewalk or road path" : QUALITY_STATUS_LABELS[t.quality!]}.</strong> {warning}
+          <strong>{t.flags?.includes("motorized") ? "Motorized route" : t.flags?.includes("sidewalk") ? "Sidewalk or road path" : QUALITY_STATUS_LABELS[t.quality!]}.</strong> {warning}
           {parent && (
             <>
               {" "}
@@ -324,6 +324,7 @@ function qualityWarning(t: CatalogTrail, parent: { name: string } | null) {
   if (flags.includes("fragment-of-longer-trail")) {
     return `This is a separately mapped piece of ${parent?.name ?? "a longer trail with the same name"}. The source has a gap between them, so they are not joined here and this distance is not the full hike.`;
   }
+  if (flags.includes("motorized")) return "The source names this as an ATV, OHV, motorcycle or 4x4 route, so it is left out of hiking results. Hikers may share it with vehicles.";
   if (flags.includes("sidewalk")) return "This looks like a sidewalk, road sidepath or on-street bike lane rather than a trail, so it is left out of hiking results.";
   if (flags.includes("closed")) return "The source name marks this trail as closed or abandoned. Check with the land manager before going.";
   if (flags.includes("incomplete-geometry")) {

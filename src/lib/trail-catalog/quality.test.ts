@@ -316,3 +316,14 @@ test("resort-listed trails: stated lengths, no invented route, no duplicates of 
   assert.equal(filterCatalog([row], {}).total, 1, "a summer resort trail stays in hiking results despite 'Ski' in the resort name");
   assert.equal(filterCatalog([row], { activity: "bike" }).total, 1, "multi-use resort trails are listed for biking too");
 });
+
+import { isMotorizedName } from "./quality";
+test("ATV, OHV, motorcycle and 4x4 routes leave hiking results; 'No OHV' trails stay", () => {
+  for (const name of ["Turkey Point ATV Trail", "Foreman Lake Motorcycle Trail", "PIPELINE 4X4 CHALLENGE TRAIL", "HULL CREEK OHV - ATV", "Jeep Trail"]) assert.equal(isMotorizedName(name), true, name);
+  for (const name of ["CHERRY LAKE NO OHV-ATV", "Non-motorized Loop", "Ridge Trail", "Mount Atvist Trail"]) assert.equal(isMotorizedName(name), false, name);
+  const atv = trail("usgs-atv", path(3000), { name: "Turkey Point ATV Trail" });
+  auditCatalog([atv]);
+  assert.ok(atv.row.flags!.includes("motorized"));
+  assert.equal(filterCatalog([atv.row], {}).total, 0);
+  assert.equal(filterCatalog([atv.row], { activity: "all" }).total, 1);
+});

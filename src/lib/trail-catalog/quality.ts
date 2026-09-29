@@ -34,6 +34,7 @@ export const QUALITY_FLAGS = {
   "invalid-geometry": "Missing or invalid coordinates",
   closed: "Source name marks the trail closed, abandoned or decommissioned",
   sidewalk: "Sidewalk, road sidepath or on-street bike lane rather than a trail",
+  motorized: "ATV, OHV, motorcycle or 4x4 route",
   "missing-region": "State or province could not be determined",
 } as const;
 export type QualityFlag = keyof typeof QUALITY_FLAGS;
@@ -154,6 +155,14 @@ export function isSidewalkName(name: string, miles: number | null = null, manage
   return GENERIC_PATH.test(n) && (miles === null || miles < 0.5);
 }
 
+/** ATV, OHV, motorcycle and 4x4 routes: motorized routes, not hiking trails. */
+const MOTORIZED = /\b(atvs?|utvs?|ohvs?|orvs?|ohrvs?|motorcycles?|motorbikes?|dirt ?bikes?|4x4|4wd|four wheel drive|jeep|off ?road|off ?highway|motorized|mc trail)\b/;
+const NOT_MOTORIZED = /\b(no|non)\s?(ohv|atv|motorized)\b|\bnonmotorized\b/;
+export function isMotorizedName(name: string) {
+  const n = normalizeTrailName(name);
+  return MOTORIZED.test(n) && !NOT_MOTORIZED.test(n);
+}
+
 const CLOSED = /\b(closed|abandoned|decommissioned|obliterated|retired|historic route|former)\b/;
 export const isClosedName = (name: string) => CLOSED.test(normalizeTrailName(name));
 export const isConnectorName = (name: string) => CONNECTOR.test(normalizeTrailName(name));
@@ -202,6 +211,7 @@ export function assessTrail(
   if (context.parentId) flags.push("fragment-of-longer-trail");
   if (isClosedName(trail.name)) flags.push("closed");
   if (isSidewalkName(trail.name, miles, trail.manager ?? null)) flags.push("sidewalk");
+  if (isMotorizedName(trail.name)) flags.push("motorized");
 
   const length = miles ?? mappedMiles;
   const short = length < rules.shortTrailMiles;

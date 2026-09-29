@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-29T06:45:01.172Z",
+  "generatedAt": "2026-09-29T14:22:17.509Z",
   "total": 146428,
   "sectionTotal": 492665,
   "countries": {
@@ -329,7 +329,7 @@
       "count": 2257
     }
   ],
-  "indexSha256": "40db240a2e2d660ee29a4318fc6a61206805588fa862e480ced9ffe07e129094",
+  "indexSha256": "e71f796500bd4531147ab5c578fab6acd9db90a98aa0fe9eca00d9cd93a667bc",
   "excluded": {
     "missingName": 0,
     "invalidGeometry": 2,

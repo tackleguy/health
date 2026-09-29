@@ -41,6 +41,8 @@ export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilter
     if (!filters.includeFragments && (r.quality === "fragment" || r.flags?.includes("closed"))) return false;
     // Sidewalks and road sidepaths are not hikes; they stay listed for biking.
     if (!filters.includeFragments && activity !== "bike" && activity !== "all" && r.flags?.includes("sidewalk")) return false;
+    // Motorized routes are not hikes, runs or bike rides; they show only with every activity or partial segments.
+    if (!filters.includeFragments && activity !== "all" && r.flags?.includes("motorized")) return false;
     if (filters.kind && r.kind !== filters.kind) return false;
     if (filters.bbox && !withinBounds(r.longitude, r.latitude, filters.bbox)) return false;
     if (filters.country === "intl") {
