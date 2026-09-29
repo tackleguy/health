@@ -11,7 +11,7 @@ export interface CatalogTrail {
   longitude: number;
   difficulty: string | null;
   dogs: boolean | null;
-  source: "usgs" | "parks-canada" | "ontario" | "guide" | "route-aggregate";
+  source: "usgs" | "parks-canada" | "ontario" | "nps" | "resort" | "guide" | "route-aggregate";
   sourceId: string;
   sourceUrl: string;
   officialUrl: string | null;
@@ -40,6 +40,8 @@ export interface CatalogTrail {
   winterUse?: import("./ski-runs").WinterUse;
   /** Nearest OpenStreetMap trailhead to either end of the trail, when one is mapped within 800 m. */
   trailhead?: import("./access").AccessPoint;
+  /** Elevation range sampled along the line (Copernicus DEM via Open-Meteo), in feet; set for NPS additions. */
+  elevationFt?: { min: number; max: number };
   /** Ski area the matching piste belongs to (OpenSkiMap). */
   skiArea?: string;
   /** Source name when it was a placeholder ("-", "<unnamed>") and is shown as Unnamed trail. */
@@ -130,6 +132,8 @@ const SOURCE_NAMES: Record<CatalogTrail["source"], string> = {
   usgs: "USGS",
   "parks-canada": "Parks Canada",
   ontario: "Ontario Trail Network",
+  nps: "National Park Service",
+  resort: "Resort summer trail map",
   guide: "Curated guide",
   "route-aggregate": "Mapped corridor",
 };

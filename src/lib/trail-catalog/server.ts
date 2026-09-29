@@ -6,11 +6,12 @@ import { createHash } from "node:crypto";
 import type { CatalogFilters, CatalogManifest, CatalogTrail } from "./types";
 import { filterCatalog, matchingCatalogRows, searchableText } from "./search";
 import { buildThroughHikeOverlay } from "./through-hikes";
+import { buildResortOverlay, type ResortTrailSource } from "./resorts";
 import { buildCatalogMap } from "./map";
 
 const unzip = promisify(gunzip);
 const root = path.join(process.cwd(), "data/trail-catalog");
-const CATALOG_ID = /^(usgs|parks-canada|ontario|route)-/;
+const CATALOG_ID = /^(usgs|parks-canada|ontario|nps|resort|route)-/;
 let catalog: Promise<{
   rows: CatalogTrail[];
   texts: string[];
@@ -46,8 +47,16 @@ function load() {
     const overlay = buildThroughHikeOverlay(sections);
     // Trails that make up a through-hike are listed once, as the route card.
     const members = new Set(overlay.flatMap((route) => route.memberIds ?? []));
-    const rows = [...overlay, ...sections.filter((row) => !members.has(row.id))];
-    const byId = new Map([...sections, ...overlay].map((r) => [r.id, r]));
+    // Resort-listed summer trails (names and lengths from resort sites, no route line).
+    let resortSources: ResortTrailSource[] = [];
+    try {
+      resortSources = JSON.parse(await readFile(path.join(root, "resort-trails.json"), "utf8")).resorts;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    const resorts = buildResortOverlay(resortSources, sections);
+    const rows = [...overlay, ...sections.filter((row) => !members.has(row.id)), ...resorts];
+    const byId = new Map([...sections, ...overlay, ...resorts].map((r) => [r.id, r]));
     const manifest: CatalogManifest = {
       ...baseManifest,
       total: rows.length,
@@ -55,6 +64,7 @@ function load() {
       notes: [
         ...baseManifest.notes,
         `${overlay.length} through-hike routes (curated international/classic guides plus mapped National Scenic and long trails, shown with official length) are overlaid at read time.`,
+        ...(resorts.length ? [`${resorts.length} summer trails listed on ski resorts’ official sites are included by name and stated length; they have no mapped route line.`] : []),
       ],
     };
     return {
@@ -116,6 +126,7 @@ export async function getCatalogTrail(id: string) {
     }
     return { trail, lines, manifest: data.manifest };
   }
+  if (trail.source === "resort") return { trail, lines: [] as [number, number][][], manifest: data.manifest, parent: null };
   const geometry = (await readShard(data.directory, "geometry", trail.geometryShard)) as Record<string, [number, number][][]>;
   if (!geometry[trail.id]) throw new Error("Missing catalog geometry");
   const parentRow = trail.parentId ? data.byId.get(trail.parentId) : undefined;

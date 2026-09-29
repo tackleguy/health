@@ -35,7 +35,7 @@ const SNOWMOBILE = /\b(snow[\s-]?mobile|snowmobile|snowmobiling)\b/i;
 const BIKE_PRIMARY =
   /\b(mountain[\s-]?bike|\bmtb\b|bike[\s-]?only|cycling|bicycle)\b/i;
 
-type ActivityFields = Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles"> & Partial<Pick<CatalogTrail, "winterUse" | "flags">>;
+type ActivityFields = Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles"> & Partial<Pick<CatalogTrail, "winterUse" | "flags" | "source">>;
 
 function haystack(trail: Pick<CatalogTrail, "name" | "manager" | "tags" | "surface">) {
   return [trail.name, trail.manager ?? "", trail.surface ?? "", ...(trail.tags ?? [])].join(" ");

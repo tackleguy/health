@@ -85,6 +85,8 @@ export function CatalogTrailDetail({
         {isRoute
           ? t.note ??
             "This is a through-hike / long-route guide. Confirm distance, permits, and current conditions with the official trail association or land manager."
+          : t.source === "resort" && t.note
+            ? t.note
           : sections > 1
             ? `This trail joins ${sections.toLocaleString("en-US")} connected source sections that share its name. It may link to other trails; check access, trailheads and the complete route before planning your hike.`
             : "This record is a mapped trail. It may link to other trails; check access, trailheads and the complete route before planning your hike."}
@@ -102,6 +104,8 @@ export function CatalogTrailDetail({
                   : "Curated guide length"
                 : sections > 1
                   ? `Sum of ${sections.toLocaleString("en-US")} mapped sections, overlaps counted once`
+                  : t.source === "resort"
+                    ? "Stated by the resort"
                   : t.distanceBasis === "geometry"
                     ? "Measured along the mapped line"
                     : "Reported by the source; matches the mapped line"}
@@ -178,7 +182,9 @@ export function CatalogTrailDetail({
       )}
       <p className="catalog-muted">
         {!hasLines
-          ? "Pin marks an approximate trailhead or corridor midpoint — not a verified start. This is not a GPS track."
+          ? t.source === "resort"
+            ? "Pin marks the resort base area. The resort doesn’t publish this trail’s route, so check its summer trail map before you go."
+            : "Pin marks an approximate trailhead or corridor midpoint — not a verified start. This is not a GPS track."
           : isRoute
             ? "Mapped sections joined for discovery; gaps are stretches no source has mapped. This is not a GPS track."
             : "Generalized source geometry for discovery. Trailheads come from OpenStreetMap and are not verified; confirm access, parking and road conditions before you go."}
@@ -244,8 +250,12 @@ export function CatalogTrailDetail({
               <dd>{t.sourceDate?.slice(0, 10) ?? "Not reported"}</dd>
             </div>
             <div>
-              <dt>Elevation gain</dt>
-              <dd>Not in source data</dd>
+              <dt>{t.elevationFt ? "Elevation range" : "Elevation gain"}</dt>
+              <dd>
+                {t.elevationFt
+                  ? `${t.elevationFt.min.toLocaleString("en-US")}–${t.elevationFt.max.toLocaleString("en-US")} ft (sampled; not total gain)`
+                  : "Not in source data"}
+              </dd>
             </div>
             <div>
               <dt>Catalog snapshot</dt>
@@ -269,7 +279,7 @@ export function CatalogTrailDetail({
           </dl>
           <p>
             <a href={t.sourceUrl} target="_blank" rel="noopener noreferrer">
-              {isRoute ? "Official trail information" : "View original source record"}
+              {isRoute ? "Official trail information" : t.source === "resort" ? "Resort’s summer trail information" : "View original source record"}
             </a>
             {t.officialUrl && t.officialUrl !== t.sourceUrl && (
               <>

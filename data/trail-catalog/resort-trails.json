@@ -1,0 +1,1621 @@
+{
+ "generatedAt": "2026-09-29T06:53:55.390Z",
+ "note": "Summer trails listed on ski resorts' official websites: name, stated length and difficulty only. Resorts do not publish coordinates, so no route lines exist for these.",
+ "resorts": [
+  {
+   "resort": "Vail",
+   "state": "Colorado",
+   "baseLatitude": 39.639,
+   "baseLongitude": -106.374,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Vail_Ski_Resort",
+   "sourceUrl": "https://www.vail.com/-/media/vail/files/summer-files/hiking-map_3-panel-structure_48x30.ashx",
+   "season": "undated Vail Mountain summer hiking map (year not printed in extracted text)",
+   "note": "First 12 trails (onResort true) from the Vail Mountain hiking map PDF; difficulty is shown by icons only so left null. Last 10 (onResort false) are valley/national-forest trails from the official Vail Hiking Guide PDF https://www.vail.com/-/aemasset/image/upload/Vail/Files/summer-files/Vail-Hiking-Guide.pdf (undated); drop them if only on-mountain trails are wanted.",
+   "trails": [
+    {
+     "name": "Village Trail",
+     "miles": 4.6,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Village Trail 4.6 miles (7.4 km)"
+    },
+    {
+     "name": "Gitalong Road",
+     "miles": 5,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Gitalong Road 5 miles (8 km)"
+    },
+    {
+     "name": "Meadow's Loop",
+     "miles": 2.2,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Meadow's Loop 2.2 miles (5.6 km)"
+    },
+    {
+     "name": "Kinnickinnick",
+     "miles": 1.1,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Kinnickinnick 1.1 miles (2.6 km)"
+    },
+    {
+     "name": "Strawberry Lane",
+     "miles": 1,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Strawberry Lane 1 mile (2.5 km)"
+    },
+    {
+     "name": "Ridge Route",
+     "miles": 1.4,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Ridge Route 1.4 miles (2.3 km)"
+    },
+    {
+     "name": "Ptarmigan Loop",
+     "miles": 1.2,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Ptarmigan Loop 1.2 miles (1.9 km)"
+    },
+    {
+     "name": "Sunlight",
+     "miles": 1.5,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Sunlight 1.5 miles (2.4 km)"
+    },
+    {
+     "name": "Grand Escape",
+     "miles": 1.5,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Grand Escape 1.5 miles (2.4km)"
+    },
+    {
+     "name": "Berry Picker",
+     "miles": 3.2,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Berry Picker 3.2 miles (5.1 km)"
+    },
+    {
+     "name": "Eagle's Loop",
+     "miles": 1,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Eagle’s Loop 1 mile (1.6 km)"
+    },
+    {
+     "name": "Fireweed",
+     "miles": 1,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Fireweed 1 mile (1.6 km)"
+    }
+   ]
+  },
+  {
+   "resort": "Breckenridge",
+   "state": "Colorado",
+   "baseLatitude": 39.48,
+   "baseLongitude": -106.0669,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Breckenridge_Ski_Resort",
+   "sourceUrl": "https://www.breckenridge.com/-/aemasset/sitecore/breckenridge/maps/20250514_BR_bike-trail_map_001.pdf%20(2025%20summer%20trails%20map;%20Horseshoe%20Bowl%20text)%20and%20https://www.breckenridge.com/blog/breck-hikes.aspx",
+   "season": "2025 summer",
+   "note": "Only one on-resort hiking trail is published with a length (Horseshoe Bowl Hiking Loop). The rest (onResort false) come from the resort blog and are National Forest hikes near town; difficulty words there ('Bold' etc.) are not easy/moderate/difficult so left null. The Interpretive Hiking Loop was only described as 'less than 1 mile' in a search snippet, so it is excluded. Bike trails excluded. Horseshoe quote is from the trails map PDF; other quotes from the blog page.",
+   "trails": [
+    {
+     "name": "Horseshoe Bowl Hiking Loop",
+     "miles": 1,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Horseshoe Bowl Hiking Loop (1 mile) This approximately one mile alpine loop trail is a moderate hike"
+    }
+   ]
+  },
+  {
+   "resort": "Keystone",
+   "state": "Colorado",
+   "baseLatitude": 39.605,
+   "baseLongitude": -105.95417,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Keystone_Resort",
+   "sourceUrl": "https://www.keystoneresort.com/travel-guide/summer-hiking-trails-keystone.aspx",
+   "season": "2023 (page posted June 16, 2023; most recent official list found)",
+   "note": "Only Dercum Summit is on the resort; the rest are nearby trails listed on the resort travel guide. Schoolmarm Trail has no stated length on this page (a search snippet said 3.5 miles, not verified on the page) so excluded. Official 2025 summer trail map PDF (20250513_KY_summer-trail_map_001.pdf) is bike-park focused with no hiking lengths. Difficulty mapped: strenuous/challenging -> difficult; 'moderate-to-challenging' and unstated -> null.",
+   "trails": [
+    {
+     "name": "Dercum Summit Hiking Trail",
+     "miles": 2.3,
+     "lengthBasis": "loop",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Dercum Summit Hiking Trail: 2.3-mile loop"
+    }
+   ]
+  },
+  {
+   "resort": "Beaver Creek",
+   "state": "Colorado",
+   "baseLatitude": 39.63139,
+   "baseLongitude": -106.52167,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Beaver_Creek_Resort",
+   "sourceUrl": "https://www.beavercreek.com/explore-the-resort/about-the-resort/about-beaver-creek-in-summer.aspx",
+   "season": "n/a",
+   "note": "No official per-trail list with lengths could be retrieved. Official pages only give an aggregate ('62.5 miles of hiking trails'); the trail-map and hiking pages sit behind a Vail Resorts waiting room/JS or returned 404 (/the-mountain/hiking-summer.aspx), and the summer trail map PDF could not be located. Per-trail figures seen only on third-party sites were not used.",
+   "trails": []
+  },
+  {
+   "resort": "Copper Mountain",
+   "state": "Colorado",
+   "baseLatitude": 39.50167,
+   "baseLongitude": -106.15639,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Copper_Mountain_(Colorado)",
+   "sourceUrl": "https://www.coppercolorado.com/events-activities/summer-activities/hiking/",
+   "season": "n/a",
+   "note": "coppercolorado.com hiking, summer trail map and summer hike park pages are client-rendered/closed for the season and expose no trail names with lengths; no PDF found. visitcoppermountain.com (not the resort's main domain) not used. A search snippet mentioned Hallelujah Loop at 3/4 mile but that was not confirmed on the page.",
+   "trails": []
+  },
+  {
+   "resort": "Winter Park",
+   "state": "Colorado",
+   "baseLatitude": 39.88694,
+   "baseLongitude": -105.7625,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Winter_Park_Resort",
+   "sourceUrl": "https://www.winterparkresort.com/-/media/winter-park/summer24/maps/fy24-hiking-map-webcompressed2.pdf?rev=d841c88593dc4f45befbff5bf5ad6ff4",
+   "season": "2024 summer (Hiking Guide Summer 2024)",
+   "note": "All lengths labelled ONE WAY on the map. Difficulty as printed. Fraser River Trail is a paved path. Bike-only trails excluded.",
+   "trails": [
+    {
+     "name": "Fraser River Trail",
+     "miles": 3,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "FRASER RIVER TRAIL ONE WAY 3.0 M EASY"
+    },
+    {
+     "name": "Lower to Upper Roof",
+     "miles": 1.5,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "LOWER TO UPPER ROOF MODERATE ONE WAY 1.5 M"
+    },
+    {
+     "name": "Jim Creek Accessible Loop",
+     "miles": 1.4,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "JIM CREEK ACCESSIBLE LOOP ONE WAY 1.4M EASY"
+    },
+    {
+     "name": "Jim Creek",
+     "miles": 3.2,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "JIM CREEK MODERATE ONE WAY 3.2 M"
+    },
+    {
+     "name": "Fantasy Meadow",
+     "miles": 0.4,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "FANTASY MEADOW ONE WAY 0.4M EASY"
+    },
+    {
+     "name": "Ute Trail",
+     "miles": 2.1,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "UTE TRAIL DIFFICULT ONE WAY 2.1 M"
+    },
+    {
+     "name": "Serenity",
+     "miles": 1.07,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "SERENITY ONE WAY 1.07M EASY"
+    },
+    {
+     "name": "Serenity & Cherokee Loop",
+     "miles": 0.7,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "SERENITY & CHEROKEE LOOP DIFFICULT ONE WAY 0.7 M"
+    },
+    {
+     "name": "Tunnel Hill Road",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "TUNNEL HILL ROAD ONE WAY 2.0M EASY"
+    }
+   ]
+  },
+  {
+   "resort": "Snowmass (Aspen Snowmass)",
+   "state": "Colorado",
+   "baseLatitude": 39.1956,
+   "baseLongitude": -106.9513,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Snowmass_(ski_area)",
+   "sourceUrl": "https://www.aspensnowmass.com/discover/experiences/guides/hiking-guide",
+   "season": "current/most recent summer (page undated; read 2026-09)",
+   "note": "Official Aspen Snowmass hiking guide lists trails on Snowmass, Aspen Mountain and nearby valley/wilderness areas (not all on resort land). Difficulty only where stated; the guide's other trails have none. Quotes are reconstructed from the extracted table rather than verbatim page text. The Grottos length ('1 mi') has no stated one-way/round-trip. The separate summer hiking page (/visit/activities/summer/hiking) lists no lengths.",
+   "trails": [
+    {
+     "name": "Snowmass Village Nature Trail",
+     "miles": 0.7,
+     "lengthBasis": "round-trip",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Snowmass Village Nature Trail - 0.7 mi round-trip"
+    },
+    {
+     "name": "Rabbit Run",
+     "miles": 0.7,
+     "lengthBasis": "round-trip",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Rabbit Run - 0.7 mi round-trip"
+    },
+    {
+     "name": "Elk Camp Nature Trail",
+     "miles": 1,
+     "lengthBasis": "round-trip",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Elk Camp Nature Trail - 1 mi round-trip"
+    },
+    {
+     "name": "Rim Trail",
+     "miles": 7.6,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Rim Trail - 7.6 mi one-way"
+    },
+    {
+     "name": "Tom Blake & Government Trail Loop",
+     "miles": 9.4,
+     "lengthBasis": "round-trip",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Tom Blake & Government Trail Loop - 9.4 mi round-trip"
+    }
+   ]
+  },
+  {
+   "resort": "Aspen Mountain (Aspen Snowmass)",
+   "state": "Colorado",
+   "baseLatitude": 39.18639,
+   "baseLongitude": -106.81861,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Aspen_Mountain_(ski_area)",
+   "sourceUrl": "https://www.aspensnowmass.com/discover/experiences/guides/hiking-guide",
+   "season": "current/most recent summer (page undated; read 2026-09)",
+   "note": "Official Aspen Snowmass hiking guide lists trails on Snowmass, Aspen Mountain and nearby valley/wilderness areas (not all on resort land). Difficulty only where stated; the guide's other trails have none. Quotes are reconstructed from the extracted table rather than verbatim page text. The Grottos length ('1 mi') has no stated one-way/round-trip. The separate summer hiking page (/visit/activities/summer/hiking) lists no lengths.",
+   "trails": [
+    {
+     "name": "Sierra Club Loop",
+     "miles": 1.75,
+     "lengthBasis": "round-trip",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Sierra Club Loop - 1.75 mi round-trip"
+    },
+    {
+     "name": "Aspen Mountain Nature Trail",
+     "miles": 1,
+     "lengthBasis": "round-trip",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Aspen Mountain Nature Trail - 1 mi round-trip"
+    },
+    {
+     "name": "Richmond Ridge Trail",
+     "miles": 2.2,
+     "lengthBasis": "one-way",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Richmond Ridge Trail - 2.2 mi one-way"
+    },
+    {
+     "name": "Ajax Trail",
+     "miles": 1.5,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Ajax Trail - 1.5 mi one-way"
+    }
+   ]
+  },
+  {
+   "resort": "Telluride",
+   "state": "Colorado",
+   "baseLatitude": 37.9364,
+   "baseLongitude": -107.8203,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Telluride_Ski_Resort (infobox 37 56 11 N, 107 49 13 W)",
+   "sourceUrl": "https://tellurideskiresort.com/take-a-hike-free-guided-hikes-with-guest-services/",
+   "season": "recent summer (page mentions June 12 start)",
+   "note": "Only one hiking trail with a length is published in text: Ridge Trail to San Sophia Station. The official summer trail map PDF (tellurideskiresort.com/wp-content/uploads/2024_TSR_Summer-Trail-Map.pdf) could not be text-extracted, so its trails are unverified. Length is 'approximately 2 miles uphill' (treated as one-way).",
+   "trails": []
+  },
+  {
+   "resort": "Crested Butte",
+   "state": "Colorado",
+   "baseLatitude": 38.8997,
+   "baseLongitude": -106.965,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Crested_Butte_Mountain_Resort (infobox 38 53 59 N, 106 57 54 W)",
+   "sourceUrl": "https://www.skicb.com/travel-guide/crested-butte-wildflowers.aspx",
+   "season": "recent summer (undated)",
+   "note": "Also used https://www.skicb.com/blog/four-things-to-know-before-hiking-the-peak.aspx for the Peak hike. Wildflower-page trails are area hikes near Crested Butte published on the resort site. Other pages (waterfall hikes: Judd Falls ~2 mi RT, Brush Creek 4.4 mi RT) were only seen in search snippets and are omitted. Difficulty mapped: strenuous->difficult. Quotes are from the extracted summary, not always verbatim.",
+   "trails": [
+    {
+     "name": "Lower Loop Trail",
+     "miles": 6,
+     "lengthBasis": "loop",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Lower Loop Trail - 6 miles, easy"
+    },
+    {
+     "name": "Lupine Trail",
+     "miles": 7,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Lupine Trail - 7 miles"
+    },
+    {
+     "name": "Rustler Gulch Trail",
+     "miles": 7,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Rustler Gulch Trail - 7 miles"
+    },
+    {
+     "name": "Snodgrass Trail",
+     "miles": 3.6,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "easy-to-moderate hike, 3.6 miles",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Gothic Mountain to 403 Viewpoint",
+     "miles": 3.85,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "moderate 3.85-mile hike to 403 Viewpoint"
+    },
+    {
+     "name": "Gothic Mountain to Gothic Summit",
+     "miles": 7.5,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "strenuous 7.5-mile hike to the Gothic Summit"
+    },
+    {
+     "name": "Crested Butte Peak Trail",
+     "miles": 1.5,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "approximately 1.5 miles to the summit of Crested Butte Mountain"
+    }
+   ]
+  },
+  {
+   "resort": "Steamboat",
+   "state": "Colorado",
+   "baseLatitude": 40.459,
+   "baseLongitude": -106.803,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Steamboat_Ski_Resort",
+   "sourceUrl": "https://www.steamboat.com/things-to-do/activities/hiking",
+   "season": "2025 summer",
+   "note": "Only search-result snippets gave lengths; the official page could not be read, so nothing was listed.",
+   "trails": []
+  },
+  {
+   "resort": "Purgatory (Durango)",
+   "state": "Colorado",
+   "baseLatitude": 37.6297,
+   "baseLongitude": -107.8144,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Purgatory_Resort (infobox 37 37 47 N, 107 48 52 W)",
+   "sourceUrl": "https://www.purgatory.ski/activities/hiking/",
+   "season": "current",
+   "note": "Resort states 'We do not offer any hiking trails from the base area of Purgatory' and lists no trails with lengths.",
+   "trails": []
+  },
+  {
+   "resort": "Arapahoe Basin",
+   "state": "Colorado",
+   "baseLatitude": 39.6417,
+   "baseLongitude": -105.8717,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Arapahoe_Basin (39.64166667, -105.87166667)",
+   "sourceUrl": "https://www.arapahoebasin.com/hiking/",
+   "season": "recent summer",
+   "note": "Lenawee Trail listed without length (skipped). Summer Road length is combined Upper+Lower. Quotes from extracted summary. Use for Summer Road inferred from 'both directions' wording.",
+   "trails": [
+    {
+     "name": "Half Moon Vista Trail",
+     "miles": 0.5,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Half Moon Vista Trail 0.5 miles, easy to moderate"
+    },
+    {
+     "name": "Argentine North Fork Trail (ANFT)",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike+bike",
+     "quote": "Hikers and bikers, 2 miles",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Summer Road (Upper & Lower)",
+     "miles": 2.6,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike+bike",
+     "quote": "combined distance of 2.6 miles, moderate to difficult",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Pali Road",
+     "miles": 0.6,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike+bike",
+     "quote": "steep 0.6-mile service road"
+    }
+   ]
+  },
+  {
+   "resort": "Park City Mountain",
+   "state": "Utah",
+   "baseLatitude": 40.6508,
+   "baseLongitude": -111.5075,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
+   "sourceUrl": "https://www.parkcitymountain.com/travel-guide/park-city-hikes.aspx",
+   "season": "current (fetched 2026)",
+   "note": "Resort's own 'at resort' trails only; off-resort trails on same page (Wasatch Crest, Mid Mountain, Donut Falls etc.) excluded. Mojave Trail ('1-mile downhill') omitted as use unclear; '3 Candles to Shadow Lake' has no length. Shadow Lake length came from search-result snippet of the resort page, not re-verified by fetch. Hiking page itself was behind Vail waiting-room redirect.",
+   "trails": [
+    {
+     "name": "Armstrong",
+     "miles": 4,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "Armstrong is a popular 4-mile, mixed-use trail"
+    },
+    {
+     "name": "Fantasy Ridge",
+     "miles": 6.1,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "6.1 miles",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Deer Valley",
+   "state": "Utah",
+   "baseLatitude": 40.6228,
+   "baseLongitude": -111.4894,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Deer_Valley",
+   "sourceUrl": "https://www.deervalley.com/-/media/deer-valley/pdfs/maps/deer-valley-summer-trail-map-2023.pdf",
+   "season": "2023 summer (official trail map PDF; 2025 map URL 404'd)",
+   "note": "Hiking page lists no trails/lengths. Only 2023 map PDF text partially extracted: Silver Lake and Ontario Canyon 2.0 miles. Map also has 'Sultan out and back 3.0 miles' and Red Cloud (length garbled) but hike vs bike use unverified so omitted. Scenic Overlook 0.25 mi is under threshold.",
+   "trails": [
+    {
+     "name": "Silver Lake",
+     "miles": 2,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "SILVER LAKE 2.0 MILES"
+    },
+    {
+     "name": "Ontario Canyon",
+     "miles": 2,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "ONTARIO CANYON 2.0 MILES"
+    }
+   ]
+  },
+  {
+   "resort": "Snowbird",
+   "state": "Utah",
+   "baseLatitude": 40.5811,
+   "baseLongitude": -111.6564,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Snowbird_(ski_resort)",
+   "sourceUrl": "https://www.snowbird.com/the-mountain/maps/summer-trail-map/",
+   "season": "n/a",
+   "note": "No official trail list with lengths retrievable; hiking/trail-map pages had no text lengths (map is image/app).",
+   "trails": []
+  },
+  {
+   "resort": "Alta",
+   "state": "Utah",
+   "baseLatitude": 40.5808,
+   "baseLongitude": -111.6372,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Alta_Ski_Area",
+   "sourceUrl": "https://www.alta.com/summer/trail-map",
+   "season": "current (fetched 2026)",
+   "note": "Twin Lakes Pass is 1.8 mi on trail-map page but '2.8 mile climb' on https://www.alta.com/summer/hiking; used trail-map page. Catherine's to Cecret Lake Connector (.29 mi) skipped as <0.3. Difficulty mapped: Easy->easy, Intermediate->moderate, Expert->difficult.",
+   "trails": [
+    {
+     "name": "Lower Albion Meadows",
+     "miles": 0.5,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Lower Albion Meadows | .5 miles"
+    },
+    {
+     "name": "Home Run",
+     "miles": 0.6,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Home Run | .6 miles"
+    },
+    {
+     "name": "Albion Meadow",
+     "miles": 0.5,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Albion Meadow | .5 miles"
+    },
+    {
+     "name": "Cecret Lake",
+     "miles": 0.75,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Cecret Lake | .75 miles"
+    },
+    {
+     "name": "Upper Albion Meadows",
+     "miles": 1.4,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Upper Albion Meadows | 1.4 miles"
+    },
+    {
+     "name": "Snake Pit",
+     "miles": 0.7,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Snake Pit | .7 miles"
+    },
+    {
+     "name": "Twin Lakes Pass",
+     "miles": 1.8,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Twin Lakes Pass | 1.8 miles"
+    },
+    {
+     "name": "Devil's Castle Loop",
+     "miles": 1.8,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Devil's Castle Loop | 1.8 miles"
+    },
+    {
+     "name": "Catherine's Pass",
+     "miles": 1.5,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Catherine's Pass | 1.5 miles"
+    },
+    {
+     "name": "East Baldy Traverse (EBT)",
+     "miles": 0.4,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "East Baldy Traverse (EBT) | .4 miles"
+    },
+    {
+     "name": "Collins Gulch",
+     "miles": 2.6,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Collins Gulch | 2.6 miles"
+    },
+    {
+     "name": "Cardiff Pass",
+     "miles": 1.4,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Cardiff Pass | 1.4 miles"
+    },
+    {
+     "name": "East Greeley",
+     "miles": 2.8,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "East Greeley | 2.8 miles"
+    }
+   ]
+  },
+  {
+   "resort": "Solitude",
+   "state": "Utah",
+   "baseLatitude": 40.6151,
+   "baseLongitude": -111.5889,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Solitude_Mountain_Resort",
+   "sourceUrl": "https://www.solitudemountain.com/things-to-do/hike",
+   "season": "n/a",
+   "note": "Hike page names Lake Solitude, Highway to Heaven to Twin Lakes, Fantasy Ridge but gives no lengths; summer trail map PDF text not extractable (likely mostly bike park).",
+   "trails": []
+  },
+  {
+   "resort": "Brighton",
+   "state": "Utah",
+   "baseLatitude": 40.6,
+   "baseLongitude": -111.5833,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Brighton_Ski_Resort",
+   "sourceUrl": "https://www.brightonresort.com/hiking",
+   "season": "current (fetched 2026)",
+   "note": "Brighton states many lengths as ranges; low end recorded in miles, full range in quote. Coordinates on Wikipedia are low precision (40.6,-111.5833).",
+   "trails": [
+    {
+     "name": "Silver Lake Loop",
+     "miles": 0.9,
+     "lengthBasis": "loop",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Silver Lake Loop Easy 0.9 mi"
+    },
+    {
+     "name": "Dog Lake",
+     "miles": 2.2,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Dog Lake Moderate ~2.2 mi"
+    },
+    {
+     "name": "Twin Lakes",
+     "miles": 2.3,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Twin Lakes Moderate 2.3–2.5 mi (range; low end recorded)"
+    },
+    {
+     "name": "Lake Mary",
+     "miles": 2.3,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Lake Mary Moderate ~2.3–2.6 mi (range; low end recorded)"
+    },
+    {
+     "name": "Lake Martha",
+     "miles": 3.5,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Lake Martha Moderate ~3.5–3.8 mi (range; low end recorded)"
+    },
+    {
+     "name": "Lake Catherine",
+     "miles": 4.4,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Lake Catherine Moderate ~4.4–4.6 mi (range; low end recorded)"
+    },
+    {
+     "name": "Sunset Peak",
+     "miles": 5.8,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Sunset Peak Moderate to Hard ~5.8–6.2 mi (range; low end recorded)"
+    },
+    {
+     "name": "Mount Wolverine",
+     "miles": 5,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Mount Wolverine Hard ~5–6.9 mi (range; low end recorded)"
+    },
+    {
+     "name": "Lakes Loop",
+     "miles": 7,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Lakes Loop Moderate ~7 mi"
+    },
+    {
+     "name": "Peaks Loop",
+     "miles": 7.5,
+     "lengthBasis": "loop",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Peaks Loop Hard ~7.5–7.8 mi (range; low end recorded)"
+    }
+   ]
+  },
+  {
+   "resort": "Jackson Hole Mountain Resort",
+   "state": "Wyoming",
+   "baseLatitude": 43.59,
+   "baseLongitude": -110.89,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Jackson_Hole_Mountain_Resort (infobox, only 2 decimals published)",
+   "sourceUrl": "https://www.jacksonhole.com/hiking-gondola%20and%20https://www.jacksonhole.com/summer-activities/hiking",
+   "season": "current summer (page undated)",
+   "note": "Only 8 trails on the official pages state a length; ~12 other resort trails (North Ridge, Rock Springs Loop, Cody Bowl, Seven Bridges, Saratoga, etc.) list no length and were skipped. Last 3 are Grand Teton NP trails listed on the resort page. Use type not stated per trail; page says trails are multi-use, so 'hike' is conservative.",
+   "trails": []
+  },
+  {
+   "resort": "Big Sky Resort",
+   "state": "Montana",
+   "baseLatitude": 45.275,
+   "baseLongitude": -111.4319,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Big_Sky_Resort (MediaWiki coordinates API; infobox coord template is blank)",
+   "sourceUrl": "https://www.bigskyresort.com/summer-activities/hiking",
+   "season": "current summer",
+   "note": "Difficulty mapped: Intermediate->moderate, Advanced/Expert->difficult. Summit Climb lengths are 'point-to-point'. Coordinates are Mountain Village area approx, not exact base.",
+   "trails": [
+    {
+     "name": "Cirque Loop",
+     "miles": 0.5,
+     "lengthBasis": "round-trip",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "0.5 miles round trip (both loops)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Huckleberry",
+     "miles": 1.4,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "1.4 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Thimbleberry",
+     "miles": 1.8,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "1.8 miles one-way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Andesite Scenic Overlook",
+     "miles": 0.4,
+     "lengthBasis": "round-trip",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "0.4 miles round-trip",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Moose Tracks",
+     "miles": 3,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "3 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "21K Loop",
+     "miles": 12.8,
+     "lengthBasis": "round-trip",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "12.8 miles round-trip",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Dreamweaver (mid-station to Challenger)",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "2 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Dreamweaver (Challenger to top)",
+     "miles": 2.5,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "2.5 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Shedhorn Out-and-Back",
+     "miles": 1.6,
+     "lengthBasis": "round-trip",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "1.6 miles round-trip",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Headwaters Hike",
+     "miles": 0.8,
+     "lengthBasis": "round-trip",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "0.8 miles round-trip",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Summit Climb (from Village)",
+     "miles": 4.3,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "4.3 miles point-to-point",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Summit Climb (from Gondola)",
+     "miles": 1.3,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "1.3 miles point-to-point",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "South Side Trail",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike+bike",
+     "quote": "2 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Lodge Loop",
+     "miles": 3,
+     "lengthBasis": "round-trip",
+     "difficulty": "moderate",
+     "use": "hike+bike",
+     "quote": "3 miles round-trip",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Otter Way",
+     "miles": 1.8,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike+bike",
+     "quote": "1.8 miles one way"
+    },
+    {
+     "name": "Coolridge",
+     "miles": 3.1,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike+bike",
+     "quote": "3.1 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Elkhorn",
+     "miles": 1.2,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike+bike",
+     "quote": "1.2 miles one way",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Elkhorn spur",
+     "miles": 1.3,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike+bike",
+     "quote": "1.3 miles one way",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Whitefish Mountain Resort",
+   "state": "Montana",
+   "baseLatitude": 48.5,
+   "baseLongitude": -114.34,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Whitefish_Mountain_Resort (infobox, 2 decimals only)",
+   "sourceUrl": "https://skiwhitefish.com/hiking/",
+   "season": "current summer",
+   "note": "Danny On + Flower Point entry overlaps the two separate trails. Search snippet said lower Danny On is being rerouted in summer 2026. Robots.txt fetched empty (no disallows). Difficulty null where not stated.",
+   "trails": [
+    {
+     "name": "Flower Point Loop",
+     "miles": 3.6,
+     "lengthBasis": "loop",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "3.6 miles (starts and ends at the summit)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "East Rim Loop",
+     "miles": 1,
+     "lengthBasis": "loop",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "1 mile (starts and ends at the summit)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Bob Cedar Trail",
+     "miles": 1,
+     "lengthBasis": "one-way",
+     "difficulty": null,
+     "use": "hike+bike",
+     "quote": "1 mile (one way, Base Lodge to Whitefish Trail or vice versa)",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Sun Valley",
+   "state": "Idaho",
+   "baseLatitude": 43.655,
+   "baseLongitude": -114.40917,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Sun_Valley,_Idaho (city coordinates; Bald Mountain article gives same point; no exact base coords found)",
+   "sourceUrl": "https://www.sunvalley.com/things-to-do/hiking-running/",
+   "season": "current summer",
+   "note": "Roundhouse listed as 8 mile loop with 4-mile one-way option. Wood River Trail (paved path, routes 2.4 and 2.8 mi round trip) skipped as a path not a trail. Difficulty null where page gave a range (Moderate-Hard, Easy-Moderate). Several trails are on public land but listed by the resort.",
+   "trails": [
+    {
+     "name": "Roundhouse via Bald Mountain Trail",
+     "miles": 8,
+     "lengthBasis": "loop",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "8 mile loop (4.5-5 hrs)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "White Cloud Nine Trail",
+     "miles": 4.2,
+     "lengthBasis": "loop",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "4.2 mile loop (1.5 hrs)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Proctor Mountain Trail",
+     "miles": 4.3,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "4.3 mile loop (2.5 hrs)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Chocolate Gulch Trail",
+     "miles": 4.6,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "4.6 mile loop (2 hrs)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Fox Creek Trail",
+     "miles": 5.5,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "5.5 mile loop (2.5 hrs)",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Pioneer Cabin Trail",
+     "miles": 7.7,
+     "lengthBasis": "round-trip",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "7.7 mile out & back (5 hrs)",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Taos Ski Valley",
+   "state": "New Mexico",
+   "baseLatitude": 36.59,
+   "baseLongitude": -105.43694,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Taos_Ski_Valley,_New_Mexico",
+   "sourceUrl": "https://www.skitaos.com/hiking",
+   "season": "n/a",
+   "note": "Official skitaos.com/hiking lists 16 trails by name and difficulty only, no lengths (points to AllTrails). Lengths seen in web search snippets came from blog/third-party text and were not verified on an official page, so none recorded.",
+   "trails": []
+  },
+  {
+   "resort": "Mammoth Mountain",
+   "state": "California",
+   "baseLatitude": 37.63056,
+   "baseLongitude": -119.0325,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Mammoth_Mountain_Resort (coordinates API)",
+   "sourceUrl": "https://www.mammothmountain.com/things-to-do/activities/hiking-trail-map",
+   "season": "current summer",
+   "note": "Starkweather Trail (2.5 mi one-way) is listed as Closed and was skipped. Difficulty mapped Advanced->difficult, Intermediate->moderate. Rainbow Falls 2.5 mi one-way appeared only in a search snippet, not on the fetched page.",
+   "trails": [
+    {
+     "name": "Mammoth Mountain Trail",
+     "miles": 5,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "5 Miles One-Way; 3 Hours",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Main Lodge Trail",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "2 Miles One-Way; 1 Hour",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Discovery Nature Trail",
+     "miles": 1,
+     "lengthBasis": "round-trip",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "1 Mile Round-Trip; 1 Hour",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Minaret Vista Trail",
+     "miles": 3,
+     "lengthBasis": "round-trip",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "3 Miles Round-Trip; 2 Hours",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "St. Anton Trail",
+     "miles": 3,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "3 Miles One-Way; 2 Hours",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Palisades Tahoe",
+   "state": "California",
+   "baseLatitude": 39.196,
+   "baseLongitude": -120.235,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Palisades_Tahoe",
+   "sourceUrl": "https://www.palisadestahoe.com/events-and-activities/lake-tahoe-hiking",
+   "season": "current (page undated)",
+   "note": "Wikipedia infobox gives 39.196, -120.235 (3 decimals; DMS 39°11'46\"N 120°14'06\"W = 39.1961, -120.2350). Difficulty 'Moderate/Strenuous' left null. Type (one-way/loop) as listed on page.",
+   "trails": [
+    {
+     "name": "High Camp Loop",
+     "miles": 1,
+     "lengthBasis": "loop",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "High Camp Loop - 1.0 Miles"
+    },
+    {
+     "name": "Emigrant Peak (Monument)",
+     "miles": 0.8,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Emigrant Peak (Monument) - 0.8 Miles"
+    },
+    {
+     "name": "Siberia Basin Loop Trail",
+     "miles": 2.5,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Siberia Basin Loop Trail - 2.5 Miles"
+    },
+    {
+     "name": "Siberia Ridge Road",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Siberia Ridge Road - 2.0 Miles"
+    },
+    {
+     "name": "Emigrant Peak Trail",
+     "miles": 1.4,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Emigrant Peak Trail - 1.4 Miles"
+    },
+    {
+     "name": "Western States Trail Connector",
+     "miles": 2,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Western States Trail Connector - 2.0 Miles"
+    },
+    {
+     "name": "Shirley Lake & Solitude Trail Loop",
+     "miles": 2.3,
+     "lengthBasis": "loop",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "Shirley Lake & Solitude Trail Loop - 2.3 Miles"
+    },
+    {
+     "name": "Trollstigen Trail",
+     "miles": 0.7,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "Trollstigen Trail - 0.7 Miles"
+    },
+    {
+     "name": "Shirley Canyon Trail",
+     "miles": 3.5,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Shirley Canyon Trail - 3.5 Miles"
+    },
+    {
+     "name": "World Cup Trail to Western States Trail",
+     "miles": 3.8,
+     "lengthBasis": "one-way",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "World Cup Trail to Western States Trail - 3.8 Miles"
+    },
+    {
+     "name": "Western States Trail",
+     "miles": 5.1,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Western States Trail - 5.1 Miles"
+    },
+    {
+     "name": "Thunder Mountain Trail",
+     "miles": 3.4,
+     "lengthBasis": "one-way",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "Thunder Mountain Trail - 3.4 Miles"
+    },
+    {
+     "name": "Granite Chief Trail",
+     "miles": 5.7,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "Granite Chief Trail - 5.7 Miles"
+    }
+   ]
+  },
+  {
+   "resort": "Heavenly",
+   "state": "California/Nevada",
+   "baseLatitude": 38.9353,
+   "baseLongitude": -119.94,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Heavenly_Mountain_Resort",
+   "sourceUrl": "https://www.skiheavenly.com/travel-guide/heavenly-resort-hiking-trails.aspx",
+   "season": "page posted March 2023 (most recent official list found)",
+   "note": "Skipped: Martin's Peak (page says 0.2 mi, under 0.3; a search snippet of same page said 0.3-mile loop - conflicting), Silver Rush Trail (only 'over a mile', no exact figure), Observation Deck (no length). Difficulty only where page states it (Skyline moderate, Tamarack 'most difficult of the hiking trails' mapped to difficult, Power Line moderate). Page text extracted via summarizing fetch tool.",
+   "trails": [
+    {
+     "name": "Cal Lookout Trail",
+     "miles": 0.4,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "This 0.4-mile trail takes you up a mere 30 feet in elevation",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Carson Valley Overlook",
+     "miles": 0.3,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "This 0.3-mile trail takes you up to 60 feet in elevation",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Skyline Trail",
+     "miles": 0.9,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "short 0.9-mile hike and a daunting 230-foot elevation gain",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Tamarack Trail",
+     "miles": 1.3,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "1.3 miles of groomed paths leading up Monument Peak",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Power Line Trail",
+     "miles": 7,
+     "lengthBasis": "round-trip",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "7-mile out-and-back hike through El Dorado National Forest",
+     "verifiedOnPage": true
+    },
+    {
+     "name": "Heavenly Mountain Resort Trail",
+     "miles": 7,
+     "lengthBasis": "loop",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "one continuous, 7-mile loop",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Northstar",
+   "state": "California",
+   "baseLatitude": 39.264,
+   "baseLongitude": -120.125,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Northstar_California",
+   "sourceUrl": "https://www.northstarcalifornia.com/travel-guide/hiking-around-northstar.aspx",
+   "season": "n/a",
+   "note": "Official hiking pages name Mt. Pluto and Sawtooth Trail but state no lengths. Official summer trail map PDF (northstarcalifornia.com/-/aemasset/sitecore/northstar/maps/20240606_NS_summer-trail_map_001.pdf) is image-only, no extractable text. Other Northstar pages are behind a Vail waiting room. Not verified; no trails recorded. Wikipedia coords 3 decimals.",
+   "trails": []
+  },
+  {
+   "resort": "Mt. Bachelor",
+   "state": "Oregon",
+   "baseLatitude": 44.003,
+   "baseLongitude": -121.677,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Mount_Bachelor_ski_area",
+   "sourceUrl": "https://www.mtbachelor.com/events-activities/summer-activities/hiking/",
+   "season": "2025 summer (hiking map dated 2025-07)",
+   "note": "Page states one-way and roundtrip miles; miles = one-way. Difficulty mapped from resort's Easier/More Difficult/Most Difficult to easy/moderate/difficult. Skipped Summit Lookout Loop (0.12 mi). Data read from site page-data JSON of the same official page. Wikipedia coords 3 decimals (DMS 44°00'11\"N 121°40'37\"W).",
+   "trails": [
+    {
+     "name": "Evergreen Trail",
+     "miles": 4.43,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike+bike",
+     "quote": "EVERGREEN TRAIL 4.43 Miles One-Way | 8.86 Miles Roundtrip | Easier"
+    },
+    {
+     "name": "Summit Crossover",
+     "miles": 1.96,
+     "lengthBasis": "one-way",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "SUMMIT CROSSOVER 1.96 Miles One-Way | 3.92 Miles Roundtrip | Easier"
+    },
+    {
+     "name": "Rope Tow",
+     "miles": 0.37,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "ROPE TOW 0.37 Miles One-Way | 0.74 Miles Roundtrip | More Difficult"
+    },
+    {
+     "name": "West Ridge Trail to Summit",
+     "miles": 1.19,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "WEST RIDGE TRAIL TO SUMMIT 1.19 Miles One-Way | 2.38 Miles Roundtrip | Most Difficult"
+    },
+    {
+     "name": "Summit East",
+     "miles": 2.1,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "SUMMIT EAST 2.10 Miles One-Way | 4.20 Miles Roundtrip | Most Difficult"
+    },
+    {
+     "name": "Northwest Crossover",
+     "miles": 0.65,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "NORTHWEST CROSSOVER 0.65 Miles One-Way | 1.3 Miles Roundtrip | More Difficult"
+    },
+    {
+     "name": "Fly Creek Trail",
+     "miles": 1.8,
+     "lengthBasis": "one-way",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "FLY CREEK TRAIL 1.80 Miles One-Way | 3.60 Miles Roundtrip | More Difficult"
+    }
+   ]
+  },
+  {
+   "resort": "Crystal Mountain",
+   "state": "Washington",
+   "baseLatitude": 46.93,
+   "baseLongitude": -121.48,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Crystal_Mountain_(Washington)",
+   "sourceUrl": "https://www.crystalmountainresort.com/-/media/crystal/pdf-files/trail-maps/2025-trail-maps/crystal_mountain_summer_trail_map_25.pdf",
+   "season": "2025 summer",
+   "note": "Official summer trail map PDF (crystalmountainresort.com HTML pages are bot-blocked, not bypassed). Difficulty on map is ranges (Easy-Moderate etc.), left null. Wikipedia coords only 2 decimals (46°56'N 121°29'W). Map states Henskin Lake Trail #1193 and Silver Creek Trail #1192 are not Crystal's trails; Bullion Basin not listed with length on the map.",
+   "trails": [
+    {
+     "name": "Crystal Mountain Trail to Henskin Lake",
+     "miles": 2.5,
+     "lengthBasis": "unstated",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "CRYSTAL MOUNTAIN TRAIL TO HENSKIN LAKE 2.5 miles | 1.5 hrs | Easy-Moderate"
+    },
+    {
+     "name": "Northway Trail (summit to base)",
+     "miles": 6,
+     "lengthBasis": "one-way",
+     "difficulty": null,
+     "use": "hike",
+     "quote": "6 miles (+2 miles back to Crystal Mountain base) | 3.5 hrs | Easy-Moderate"
+    }
+   ]
+  },
+  {
+   "resort": "Mt. Hood Meadows",
+   "state": "Oregon",
+   "baseLatitude": 45.32889,
+   "baseLongitude": -121.6625,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Mount_Hood_Meadows",
+   "sourceUrl": "https://cms.skihood.com/uploads/Summer_Trail_Map2024_18x14_72531dca17.pdf",
+   "season": "2024 summer (map file updated 2024-05); linked from skihood.com search results",
+   "note": "Difficulty mapped from Easier/More Difficult/Most Difficult to easy/moderate/difficult. Lengths as printed on the map (mi). Includes Forest Service trails the map lists with lengths (Elk Meadows, Umbrella Falls, Newton Creek, Sahalie Falls). Skipped Umbrella Cutoff (0.2 mi) and full Timberline Trail #600 (41.5 mi, whole-trail figure). Only Elk Meadows is labelled one way. The skihood.com HTML pages returned no trail content to the fetch tool.",
+   "trails": [
+    {
+     "name": "Bear Grass Trail",
+     "miles": 3.5,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "BEAR GRASS TRAIL 3.5 miles"
+    },
+    {
+     "name": "Bear Grass Cutoff",
+     "miles": 0.8,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "BEAR GRASS CUTOFF .8 miles"
+    },
+    {
+     "name": "Picnic Rock Spur",
+     "miles": 0.3,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "PICNIC ROCK SPUR .3 miles"
+    },
+    {
+     "name": "Stadium Loop",
+     "miles": 0.3,
+     "lengthBasis": "loop",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "STADIUM LOOP .3 miles"
+    },
+    {
+     "name": "Jack's Woods Trail",
+     "miles": 0.9,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "JACK'S WOODS TRAIL .9 miles"
+    },
+    {
+     "name": "Timberline Trail MHM Section",
+     "miles": 3.3,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "TIMBERLINE TRAIL MHM SECTION 3.3 miles"
+    },
+    {
+     "name": "Lower Wizard Way",
+     "miles": 1,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "LOWER WIZARD WAY 1 miles"
+    },
+    {
+     "name": "Middle Wizard Way",
+     "miles": 1.1,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "MIDDLE WIZARD WAY 1.1 miles"
+    },
+    {
+     "name": "Elk Meadows Trail #645",
+     "miles": 8.6,
+     "lengthBasis": "one-way",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "ELK MEADOWS TRAIL #645 8.6 miles"
+    },
+    {
+     "name": "Umbrella Falls Trail #667",
+     "miles": 3,
+     "lengthBasis": "unstated",
+     "difficulty": "moderate",
+     "use": "hike",
+     "quote": "UMBRELLA FALLS TRAIL #667 3 miles"
+    },
+    {
+     "name": "Newton Creek Trail #646",
+     "miles": 2,
+     "lengthBasis": "unstated",
+     "difficulty": "difficult",
+     "use": "hike",
+     "quote": "NEWTON CREEK TRAIL #646 2 miles"
+    },
+    {
+     "name": "Sahalie Falls Trail #667C",
+     "miles": 2.1,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "SAHALIE FALLS TRAIL #667C 2.1 miles"
+    }
+   ]
+  },
+  {
+   "resort": "Stowe",
+   "state": "Vermont",
+   "baseLatitude": 44.5319,
+   "baseLongitude": -72.7875,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Stowe_Mountain_Resort",
+   "sourceUrl": "https://www.stowe.com/the-mountain/about-the-mountain/trail-maps.aspx",
+   "season": "2026 summer",
+   "note": "Official Summer 2026 trail map exists (PDF on stowe.com) but the pages readable here list no trail names with lengths. Not fabricated.",
+   "trails": []
+  },
+  {
+   "resort": "Killington",
+   "state": "Vermont",
+   "baseLatitude": 43.626,
+   "baseLongitude": -72.798,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Killington_Ski_Resort",
+   "sourceUrl": "https://killington.com/hiking-map",
+   "season": "2026 summer",
+   "note": "Official Summer 2026 Hiking Map PDF is a lettered illustrated map (trails A-K, S) with color-coded difficulty but no mileages or trail names. Site says '15 miles of designated hiking trails' total only. A search snippet cited a 0.7 mi Snowshed Pond loop but could not be verified on the fetched page, so excluded. Coordinates only 3 decimals (Wikipedia).",
+   "trails": []
+  },
+  {
+   "resort": "Sugarloaf",
+   "state": "Maine",
+   "baseLatitude": 45.0314,
+   "baseLongitude": -70.3131,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Sugarloaf_(ski_resort)",
+   "sourceUrl": "https://www.sugarloaf.com/summer-activities/hiking",
+   "season": "current",
+   "note": "Official hiking page names Sugarloaf Summit, Burnt Mountain, Bigelow Preserve, Maine Huts and Trails but gives no lengths.",
+   "trails": []
+  },
+  {
+   "resort": "Sunday River",
+   "state": "Maine",
+   "baseLatitude": 44.4734,
+   "baseLongitude": -70.8569,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Sunday_River_(ski_resort)",
+   "sourceUrl": "https://www.sundayriver.com/summer-and-fall-activities/resort-hiking-trails",
+   "season": "current summer",
+   "note": "Lengths taken from official page (fetched via summarizer; quotes near-verbatim). Page does not state one-way/round-trip; bikes not mentioned so use=hike. Trail E quote reads '05. Miles' on the page (interpreted 0.5, verify). Difficulty 'Extreme' mapped to difficult. Beechnut Loop and Jordan Loop are credited on the page to 'Inland Woods & Trails' (likely partner network); drop if you want resort-only.",
+   "trails": [
+    {
+     "name": "C - Palisades",
+     "miles": 1,
+     "lengthBasis": "unstated",
+     "difficulty": "easy",
+     "use": "hike",
+     "quote": "C - Trail | 1 Mile | Easy",
+     "verifiedOnPage": true
+    }
+   ]
+  },
+  {
+   "resort": "Loon Mountain",
+   "state": "New Hampshire",
+   "baseLatitude": 44.036,
+   "baseLongitude": -71.6214,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Loon_Mountain",
+   "sourceUrl": "https://www.loonmtn.com/summer-activities/hiking",
+   "season": "current",
+   "note": "Official page has only image hiking maps (cdn.sanity.io jpg, East Ridge Trails); text gives no per-trail lengths (only 'over 3 miles of trails'). Image map not read.",
+   "trails": []
+  },
+  {
+   "resort": "Whiteface",
+   "state": "New York",
+   "baseLatitude": 44.3658,
+   "baseLongitude": -73.9028,
+   "coordinatesSource": "https://en.wikipedia.org/wiki/Whiteface_Mountain",
+   "sourceUrl": "https://whiteface.com/todo/hiking/",
+   "season": "2026 summer",
+   "note": "whiteface.com returned 403 / Cloudflare challenge for robots.txt and pages; not fetched (not bypassed). Coordinates are Wikipedia's mountain/ski area point (summit), not base. Search snippets mention routes but no lengths.",
+   "trails": []
+  }
+ ]
+}

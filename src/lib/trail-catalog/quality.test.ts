@@ -276,3 +276,43 @@ test("sidewalks and road sidepaths leave hiking results; named walks like riverw
   assert.equal(filterCatalog([sidepath.row], { activity: "bike" }).total, 1, "sidepaths stay listed for biking");
   assert.equal(filterCatalog([sidepath.row], { includeFragments: true }).total, 1);
 });
+
+import { LineIndex, classifyTerrain, pointsAlong, surroundingPoints } from "./additions";
+test("a new line already in the catalog is a duplicate; a new one is not", () => {
+  const index = new LineIndex();
+  index.add(north(0, 2000));
+  assert.ok(index.coveredShare([[[-105.0001, 40], [-105.0001, 40 + 1500 / 111_195]]]) > 0.95, "10 m offset copy");
+  assert.equal(index.coveredShare(north(0, 1500, -105.01)), 0, "parallel line 850 m away");
+});
+
+test("mountain terrain needs relief around the trail or a real climb; flat land is not mountain", () => {
+  assert.equal(classifyTerrain([2400, 2410, 2420], [2300, 2550, 2450, 2380]).mountain, true, "valley floor among peaks");
+  assert.equal(classifyTerrain([300, 330, 365], [300, 310, 320, 330]).mountain, true, "trail climbs 65 m");
+  assert.equal(classifyTerrain([1610, 1615, 1612], [1600, 1620, 1605, 1618]).mountain, false, "high plains are not mountains");
+  assert.equal(classifyTerrain([], []).mountain, false, "no elevation data is never assumed mountain");
+  const points = pointsAlong(north(0, 1000), 5);
+  assert.equal(points.length, 2, "a two-point line returns its points");
+  assert.equal(surroundingPoints([-105, 40]).length, 4);
+});
+
+import { buildResortOverlay, type ResortTrailSource } from "./resorts";
+test("resort-listed trails: stated lengths, no invented route, no duplicates of mapped trails", () => {
+  const source: ResortTrailSource = {
+    resort: "Taos Ski Valley", state: "New Mexico", baseLatitude: 36.596, baseLongitude: -105.454, coordinatesSource: "https://example.org", sourceUrl: "https://example.org/summer", season: "2025 summer",
+    trails: [
+      { name: "Williams Lake Trail", miles: 3.7, lengthBasis: "round-trip", difficulty: "moderate", use: "hike", quote: "Williams Lake Trail 3.7 mi" },
+      { name: "Bavarian Loop", miles: 1.1, lengthBasis: "loop", difficulty: null, use: "hike+bike", quote: "Bavarian Loop 1.1 mi" },
+      { name: "Kachina Spur", miles: 0.2, lengthBasis: "one-way", difficulty: null, use: "hike", quote: "0.2 mi" },
+    ],
+  };
+  const mapped = { ...base, id: "usgs-wl", name: "WILLIAMS LAKE TR", region: "New Mexico", latitude: 36.58, longitude: -105.44 };
+  const rows = buildResortOverlay([source], [mapped]);
+  assert.deepEqual(rows.map((r) => r.name), ["Bavarian Loop"], "mapped duplicate and <0.3 mi entries are dropped");
+  const [row] = rows;
+  assert.equal(row.miles, 1.1);
+  assert.equal(row.distanceBasis, "source");
+  assert.equal(row.source, "resort");
+  assert.match(row.note!, /isn’t drawn/);
+  assert.equal(filterCatalog([row], {}).total, 1, "a summer resort trail stays in hiking results despite 'Ski' in the resort name");
+  assert.equal(filterCatalog([row], { activity: "bike" }).total, 1, "multi-use resort trails are listed for biking too");
+});
