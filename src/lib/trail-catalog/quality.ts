@@ -33,6 +33,7 @@ export const QUALITY_FLAGS = {
   "implausible-length": "Longer than any plausible single trail",
   "invalid-geometry": "Missing or invalid coordinates",
   closed: "Source name marks the trail closed, abandoned or decommissioned",
+  sidewalk: "Sidewalk, road sidepath or on-street bike lane rather than a trail",
   "missing-region": "State or province could not be determined",
 } as const;
 export type QualityFlag = keyof typeof QUALITY_FLAGS;
@@ -127,6 +128,32 @@ export function isPlaceholderName(name: string) {
   const normalized = normalizeTrailName(name);
   return PLACEHOLDER_NAMES.has(normalized) || !/[a-z]/.test(normalized);
 }
+/** Sidewalks, road sidepaths and on-street bike lanes: pavement along a street, not a trail. */
+const SIDEWALK = /\b(sidewalks?|side ?paths?|sidepaths?|cycle ?tracks?|cycletracks?|sharrows?|bike ?lanes?|signed bike routes?|crosswalks?)\b/;
+/** Named after a city street ("1st Avenue", "Main Street", "B St."), which is a sidewalk in the source. */
+const STREET_NAME = /^(?:(?:n|s|e|w|north|south|east|west)\s+)?(?:\d+(?:st|nd|rd|th)|[a-z]|[a-z]+(?:\s+[a-z]+)?)\s+(?:st|street|ave|avenue|blvd|boulevard)$/;
+const NUMBERED_STREET = /^(?:(?:n|s|e|w|north|south|east|west)\s+)?(?:\d+(?:st|nd|rd|th)|[a-z])\s+(?:st|street|ave|avenue|blvd|boulevard)$/;
+/** Agencies whose street-style names are trail nicknames (mountain-bike "Boulevards", canyon "Wall Street"). */
+const WILDLAND_MANAGER = /\b(forest service|bureau of land management|game commission|fish and wildlife|wildlife resources)\b/i;
+/** Generic paved-path labels; short pieces with these names are urban paths, not destinations. */
+const GENERIC_PATH = /^(sidewalk or pathway|walking path|paved path|pathway|walkway|pedestrian path|multi ?use path|shared use path|concrete path|asphalt path)$/;
+/** Named promenades and waterfront walks are destinations even when paved (e.g. Miami Riverwalk). */
+const WALK_DESTINATION = /\b(river ?walk|boardwalk|promenade|esplanade|greenway|seawall|sea wall|harbor ?walk|bay ?walk|beach ?walk|lake ?walk|board walk|waterfront|rail ?trail|towpath|canal|botanical|arboretum|nature|park trail|trail)\b/;
+
+/**
+ * Sidewalks, road sidepaths and on-street lanes. Explicit words ("sidepath", "cycle track") always count.
+ * A plain street name counts unless it is a named walk, a nickname ("The Boulevard", "Bill's Boulevard"),
+ * or comes from a wildland agency; numbered and lettered streets ("5th St.", "B St.") always count.
+ */
+export function isSidewalkName(name: string, miles: number | null = null, manager: string | null = null) {
+  const n = normalizeTrailName(name);
+  if (SIDEWALK.test(n)) return true;
+  if (WALK_DESTINATION.test(n)) return false;
+  if (NUMBERED_STREET.test(n)) return true;
+  if (STREET_NAME.test(n)) return !n.startsWith("the ") && !/'s\b|’s\b/i.test(name) && !WILDLAND_MANAGER.test(manager ?? "");
+  return GENERIC_PATH.test(n) && (miles === null || miles < 0.5);
+}
+
 const CLOSED = /\b(closed|abandoned|decommissioned|obliterated|retired|historic route|former)\b/;
 export const isClosedName = (name: string) => CLOSED.test(normalizeTrailName(name));
 export const isConnectorName = (name: string) => CONNECTOR.test(normalizeTrailName(name));
@@ -154,7 +181,7 @@ export interface QualityResult {
 }
 
 export function assessTrail(
-  trail: Pick<CatalogTrail, "name" | "miles" | "region" | "kind">,
+  trail: Pick<CatalogTrail, "name" | "miles" | "region" | "kind"> & Partial<Pick<CatalogTrail, "manager">>,
   lines: Lines | null | undefined,
   context: QualityContext = {},
   rules: QualityRules = QUALITY_RULES,
@@ -174,6 +201,7 @@ export function assessTrail(
   if (!placeholder && (context.sameNameInRegion ?? 1) >= rules.networkNameMinPieces && isNetworkStyleName(trail.name)) flags.push("network-name");
   if (context.parentId) flags.push("fragment-of-longer-trail");
   if (isClosedName(trail.name)) flags.push("closed");
+  if (isSidewalkName(trail.name, miles, trail.manager ?? null)) flags.push("sidewalk");
 
   const length = miles ?? mappedMiles;
   const short = length < rules.shortTrailMiles;

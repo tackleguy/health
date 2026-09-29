@@ -196,14 +196,14 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
                   value="true"
                   defaultChecked={params.get("includeFragments") === "true"}
                 />
-                Include partial, unnamed and connector segments
+                Include partial, unnamed, connector and sidewalk segments
               </label>
             </div>
             <div className="catalog-filter-footer">
               <p className="catalog-muted">
                 Through-hikes are end-to-end routes. Separate trails can share a common name (for example
                 “Loop Trail”) — use unique names to collapse repeats. Pieces of longer trails, unnamed
-                stubs, connectors and closed trails are hidden unless you include partial segments.
+                stubs, connectors, sidewalks and closed trails are hidden unless you include partial segments.
               </p>
               <button className="catalog-button" type="submit">
                 Apply filters

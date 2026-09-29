@@ -259,3 +259,20 @@ test("repeated continue steps are combined and ramps read naturally", () => {
   assert.deepEqual(steps.map((s) => s.instruction), ["Continue on US 66", "Take the ramp onto I 40"]);
   assert.equal(steps[0].distanceMeters, 300);
 });
+
+import { isSidewalkName } from "./quality";
+test("sidewalks and road sidepaths leave hiking results; named walks like riverwalks stay", () => {
+  for (const name of ["Coral Way Sidepath", "Bloor St W Cycle Track", "Sidewalk or Pathway", "5th St.", "Main Street", "City of Windsor Bike Lanes"]) assert.equal(isSidewalkName(name, 1), true, name);
+  for (const name of ["Miami Riverwalk", "Hudson River Waterfront Walkway", "Stone Harbor Promenade", "Jordan River Parkway", "Old Tioga Road", "The Boulevard", "Bill's Boulevard", "Main Street Trail"]) assert.equal(isSidewalkName(name, 1), false, name);
+  assert.equal(isSidewalkName("Wall Street", 1, "Bureau of Land Management"), false, "wildland nickname");
+  assert.equal(isSidewalkName("Walking Path", 0.2), true, "short generic path");
+  assert.equal(isSidewalkName("Walking Path", 2), false, "long generic path stays");
+
+  const sidepath = trail("usgs-sp", path(1500), { name: "Coral Way Sidepath" });
+  const riverwalk = trail("usgs-rw", path(1500), { name: "Miami Riverwalk" });
+  auditCatalog([sidepath, riverwalk]);
+  assert.ok(sidepath.row.flags!.includes("sidewalk"));
+  assert.deepEqual(filterCatalog([sidepath.row, riverwalk.row], {}).trails.map((t) => t.id), ["usgs-rw"]);
+  assert.equal(filterCatalog([sidepath.row], { activity: "bike" }).total, 1, "sidepaths stay listed for biking");
+  assert.equal(filterCatalog([sidepath.row], { includeFragments: true }).total, 1);
+});

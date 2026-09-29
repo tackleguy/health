@@ -35,7 +35,7 @@ const SNOWMOBILE = /\b(snow[\s-]?mobile|snowmobile|snowmobiling)\b/i;
 const BIKE_PRIMARY =
   /\b(mountain[\s-]?bike|\bmtb\b|bike[\s-]?only|cycling|bicycle)\b/i;
 
-type ActivityFields = Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles"> & Partial<Pick<CatalogTrail, "winterUse">>;
+type ActivityFields = Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles"> & Partial<Pick<CatalogTrail, "winterUse" | "flags">>;
 
 function haystack(trail: Pick<CatalogTrail, "name" | "manager" | "tags" | "surface">) {
   return [trail.name, trail.manager ?? "", trail.surface ?? "", ...(trail.tags ?? [])].join(" ");
@@ -70,7 +70,8 @@ export function trailActivities(trail: ActivityFields): CatalogActivity[] {
   const text = haystack(trail);
   const out: CatalogActivity[] = [];
   if (isSkiActivityTrail(trail)) out.push("ski");
-  if (isBikeActivityTrail(trail)) out.push("bike");
+  // Road sidepaths and cycle tracks are paved bike routes even when the name doesn't say "bike".
+  if (isBikeActivityTrail(trail) || trail.flags?.includes("sidewalk")) out.push("bike");
   if (isRunActivityTrail(trail)) out.push("run");
   if (isBackpackActivityTrail(trail)) out.push("backpack");
   // Hiking-first catalog: non-winter foot travel stays hikeable. Pure bike names stay bike-only.
