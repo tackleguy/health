@@ -6,6 +6,7 @@ import { googleMapsDirectionsUrl } from "@/lib/trail-catalog/access";
 import { TrailWeatherForecast } from "./TrailWeatherForecast";
 import type { CatalogManifest, CatalogTrail } from "@/lib/trail-catalog/types";
 import { countryName, sourceName } from "@/lib/trail-catalog/types";
+import { CONFIDENCE_LABELS, SOURCE_TYPE_LABELS, TRAIL_TYPE_LABELS } from "@/lib/trail-catalog/agencies";
 import { QUALITY_FLAGS, QUALITY_STATUS_LABELS, ROUTE_TYPE_LABELS, formatDistance } from "@/lib/trail-catalog/quality";
 import { resolveDifficulty } from "@/lib/trail-difficulty";
 import "./catalog.css";
@@ -22,6 +23,7 @@ export function CatalogTrailDetail({
   parent?: { id: string; name: string; miles: number | null } | null;
 }) {
   const distance = formatDistance(t.miles);
+  const lastChecked = manifest.sources.find((m) => m.key === t.source)?.retrievedAt?.slice(0, 10) ?? null;
   const flags = t.flags ?? [];
   const warning = t.flags?.includes("sidewalk") || t.flags?.includes("motorized") || (t.quality && t.quality !== "ok" && t.quality !== "short") ? qualityWarning(t, parent) : null;
   const isRoute = t.kind === "route";
@@ -231,6 +233,53 @@ export function CatalogTrailDetail({
               <dt>Originator</dt>
               <dd>{t.manager ?? sourceName(t.source)}</dd>
             </div>
+            {t.sourceType && (
+              <div>
+                <dt>Source type</dt>
+                <dd>
+                  {SOURCE_TYPE_LABELS[t.sourceType]}
+                  {lastChecked && <small className="catalog-muted"> · checked {lastChecked}</small>}
+                </dd>
+              </div>
+            )}
+            {t.confidence && (
+              <div>
+                <dt>Confidence</dt>
+                <dd>{CONFIDENCE_LABELS[t.confidence]}</dd>
+              </div>
+            )}
+            {t.officialTrailId && (
+              <div>
+                <dt>Official trail number</dt>
+                <dd>#{t.officialTrailId}</dd>
+              </div>
+            )}
+            {(t.forest ?? t.park ?? t.blmArea ?? t.skiResort) && (
+              <div>
+                <dt>{t.forest ? "National forest" : t.park ? "Park" : t.blmArea ? "BLM area" : "Ski resort"}</dt>
+                <dd>
+                  {t.skiResort && !t.forest && !t.park && !t.blmArea ? (
+                    <Link className="catalog-link" href={`/explore/trails?resort=${encodeURIComponent(t.skiResort)}`}>
+                      {t.skiResort} hiking trails
+                    </Link>
+                  ) : (
+                    t.forest ?? t.park ?? t.blmArea
+                  )}
+                </dd>
+              </div>
+            )}
+            {t.trailType && (
+              <div>
+                <dt>Trail type</dt>
+                <dd>{TRAIL_TYPE_LABELS[t.trailType]}{t.uses?.length ? ` · ${t.uses.join(", ")}` : ""}</dd>
+              </div>
+            )}
+            {t.trailStatus && t.trailStatus !== "UNKNOWN" && (
+              <div>
+                <dt>Status</dt>
+                <dd>{{ OPEN: "Open", CLOSED: "Closed", SEASONAL: "Seasonal", RESTRICTED: "Access restricted", UNKNOWN: "Not reported" }[t.trailStatus]}</dd>
+              </div>
+            )}
             <div>
               <dt>Surface</dt>
               <dd>{t.surface ?? "Not reported"}</dd>
@@ -277,6 +326,21 @@ export function CatalogTrailDetail({
               </div>
             )}
           </dl>
+          {t.sources && t.sources.length > 0 && (
+            <p className="catalog-muted">
+              Also mapped in:{" "}
+              {t.sources.map((ref, i) => (
+                <span key={`${ref.type}-${ref.id}`}>
+                  {i > 0 && " · "}
+                  <a href={ref.url} target="_blank" rel="noopener noreferrer">
+                    {SOURCE_TYPE_LABELS[ref.type]}
+                    {ref.officialTrailId ? ` trail #${ref.officialTrailId}` : ""}
+                    {ref.name !== t.name ? ` (“${ref.name}”)` : ""}
+                  </a>
+                </span>
+              ))}
+            </p>
+          )}
           <p>
             <a href={t.sourceUrl} target="_blank" rel="noopener noreferrer">
               {isRoute ? "Official trail information" : t.source === "resort" ? "Resort’s summer trail information" : "View original source record"}

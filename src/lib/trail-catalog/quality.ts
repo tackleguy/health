@@ -35,6 +35,7 @@ export const QUALITY_FLAGS = {
   closed: "Source name marks the trail closed, abandoned or decommissioned",
   sidewalk: "Sidewalk, road sidepath or on-street bike lane rather than a trail",
   motorized: "ATV, OHV, motorcycle or 4x4 route",
+  "no-hiking": "The managing agency lists allowed uses and hiking is not one of them",
   "missing-region": "State or province could not be determined",
 } as const;
 export type QualityFlag = keyof typeof QUALITY_FLAGS;

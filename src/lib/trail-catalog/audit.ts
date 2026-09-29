@@ -1,4 +1,5 @@
 import type { CatalogTrail } from "./types";
+import { sourceTypeFor, type SourceType } from "./agencies";
 import { mergeKey } from "./merge";
 import { normalizeTrailName } from "./through-hikes";
 import {
@@ -21,8 +22,8 @@ export interface AuditInput {
   sectionReportedMiles?: number | null;
 }
 
-/** One flagged trail in the audit report: [id, name, region, source, miles, mappedMiles, status, flags, parentId]. */
-export type AuditEntry = [string, string, string | null, string, number | null, number, QualityStatus, QualityFlag[], string | null];
+/** One flagged trail in the audit report: [id, name, region, source, miles, mappedMiles, status, flags, parentId, latitude, longitude, sourceType]. */
+export type AuditEntry = [string, string, string | null, string, number | null, number, QualityStatus, QualityFlag[], string | null, number, number, SourceType];
 
 export interface AuditReport {
   generatedAt: string;
@@ -104,7 +105,7 @@ export function auditCatalog(items: AuditInput[], rules: QualityRules = QUALITY_
     for (const flag of result.flags) byFlag[flag] = (byFlag[flag] ?? 0) + 1;
     counts[BUCKETS.findIndex(([, max]) => (row.miles ?? 0) < max)]++;
     if (result.status !== "ok") {
-      entries.push([row.id, row.name, row.region, row.source, row.miles, Math.round(result.mappedMiles * 1000) / 1000, result.status, result.flags, parentId ?? null]);
+      entries.push([row.id, row.name, row.region, row.source, row.miles, Math.round(result.mappedMiles * 1000) / 1000, result.status, result.flags, parentId ?? null, row.latitude, row.longitude, sourceTypeFor(row)]);
     }
   }
 

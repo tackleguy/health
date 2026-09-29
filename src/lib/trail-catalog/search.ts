@@ -43,6 +43,10 @@ export function matchingCatalogRows(rows: CatalogTrail[], filters: CatalogFilter
     if (!filters.includeFragments && activity !== "bike" && activity !== "all" && r.flags?.includes("sidewalk")) return false;
     // Motorized routes are not hikes, runs or bike rides; they show only with every activity or partial segments.
     if (!filters.includeFragments && activity !== "all" && r.flags?.includes("motorized")) return false;
+    // The managing agency says hiking isn't an allowed use here.
+    if (!filters.includeFragments && (activity === "hike" || activity === "backpack" || activity === "run") && r.flags?.includes("no-hiking")) return false;
+    if (filters.resort && normalize(r.skiResort ?? "") !== normalize(filters.resort)) return false;
+    if (filters.sourceType && r.sourceType !== filters.sourceType) return false;
     if (filters.kind && r.kind !== filters.kind) return false;
     if (filters.bbox && !withinBounds(r.longitude, r.latitude, filters.bbox)) return false;
     if (filters.country === "intl") {
@@ -167,6 +171,8 @@ export function parseCatalogFilters(params: URLSearchParams): CatalogFilters {
     kind,
     uniqueNames: params.get("uniqueNames") === "true",
     includeFragments: params.get("includeFragments") === "true",
+    resort: params.get("resort")?.slice(0, 100) || undefined,
+    sourceType: (params.get("sourceType")?.toUpperCase().replace(/[^A-Z_]/g, "") || undefined) as CatalogFilters["sourceType"],
     lat: number("lat", -90, 90),
     lng: number("lng", -180, 180),
     radiusKm: number("radiusKm", 0.1, 1000),

@@ -25,13 +25,27 @@ function segDist(p: XY, a: XY, b: XY) {
   return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
 }
 
-/** Spatial hash of existing catalog lines, answering "how much of this new line is already listed?" */
+/**
+ * Spatial hash of existing catalog lines that answers "how much of this new line is already listed, and
+ * by which record?". Segments live in typed arrays so ~500k source lines fit in memory.
+ */
 export class LineIndex {
-  private cells = new Map<number, [XY, XY][]>();
-  add(lines: Lines) {
+  private cells = new Map<number, number[]>();
+  private coords = new Float64Array(1 << 16);
+  private owners = new Int32Array(1 << 14);
+  private count = 0;
+  private ownerIds: string[] = [];
+
+  add(lines: Lines, ownerId = "") {
+    const owner = this.ownerIds.push(ownerId) - 1;
     for (const line of lines) {
       for (let i = 1; i < line.length; i++) {
         const a = toXY(line[i - 1]), b = toXY(line[i]);
+        const segment = this.count++;
+        if (segment * 4 + 4 > this.coords.length) { const next = new Float64Array(this.coords.length * 2); next.set(this.coords); this.coords = next; }
+        if (segment + 1 > this.owners.length) { const next = new Int32Array(this.owners.length * 2); next.set(this.owners); this.owners = next; }
+        this.coords.set([a[0], a[1], b[0], b[1]], segment * 4);
+        this.owners[segment] = owner;
         const steps = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / (CELL / 2)));
         let last = NaN;
         for (let s = 0; s <= steps; s++) {
@@ -39,32 +53,48 @@ export class LineIndex {
           if (k === last) continue;
           last = k;
           const bucket = this.cells.get(k);
-          if (bucket) bucket.push([a, b]); else this.cells.set(k, [[a, b]]);
+          if (bucket) bucket.push(segment); else this.cells.set(k, [segment]);
         }
       }
     }
   }
-  private near(p: XY) {
+
+  /** Owners with a segment within DUPLICATE_METERS of p. */
+  private near(p: XY, found: Set<number>) {
     const cx = Math.floor(p[0] / CELL), cy = Math.floor(p[1] / CELL);
     for (let x = cx - 1; x <= cx + 1; x++) for (let y = cy - 1; y <= cy + 1; y++) {
-      for (const [a, b] of this.cells.get(key(x, y)) ?? []) if (segDist(p, a, b) <= DUPLICATE_METERS) return true;
+      for (const segment of this.cells.get(key(x, y)) ?? []) {
+        const o = segment * 4, c = this.coords;
+        if (segDist(p, [c[o], c[o + 1]], [c[o + 2], c[o + 3]]) <= DUPLICATE_METERS) found.add(this.owners[segment]);
+      }
     }
-    return false;
   }
-  /** Share of `lines` (sampled every ~20 m) that lies on an indexed line. */
-  coveredShare(lines: Lines) {
+
+  /** Share of `lines` (sampled every ~20 m) on any indexed line, and the indexed record it overlaps most. */
+  bestMatch(lines: Lines): { share: number; ownerId: string | null } {
     let total = 0, hit = 0;
+    const perOwner = new Map<number, number>();
+    const found = new Set<number>();
     for (const line of lines) {
       for (let i = 1; i < line.length; i++) {
         const a = toXY(line[i - 1]), b = toXY(line[i]);
         const steps = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 20));
         for (let s = i === 1 ? 0 : 1; s <= steps; s++) {
           total++;
-          if (this.near([a[0] + (b[0] - a[0]) * s / steps, a[1] + (b[1] - a[1]) * s / steps])) hit++;
+          found.clear();
+          this.near([a[0] + (b[0] - a[0]) * s / steps, a[1] + (b[1] - a[1]) * s / steps], found);
+          if (found.size) hit++;
+          for (const o of found) perOwner.set(o, (perOwner.get(o) ?? 0) + 1);
         }
       }
     }
-    return total ? hit / total : 0;
+    let best = -1, bestHits = 0;
+    for (const [o, n] of perOwner) if (n > bestHits) { best = o; bestHits = n; }
+    return { share: total ? hit / total : 0, ownerId: best >= 0 ? this.ownerIds[best] : null };
+  }
+
+  coveredShare(lines: Lines) {
+    return this.bestMatch(lines).share;
   }
 }
 
@@ -107,8 +137,20 @@ export function classifyTerrain(alongMeters: number[], aroundMeters: number[]): 
 /** NPS layer values that mean the trail is not a real, open, maintained foot trail. */
 export const NPS_WHERE = [
   "TRLNAME IS NOT NULL AND TRLNAME <> ' ' AND TRLNAME <> ''",
-  "TRLSTATUS IN ('Existing','Exisiting')",
+  // Temporarily closed trails are real trails; they are kept and shown as closed.
+  "TRLSTATUS IN ('Existing','Exisiting','Temporarily Closed')",
   "(ISEXTANT IS NULL OR ISEXTANT <> 'False')",
   "(TRLFEATTYPE IS NULL OR TRLFEATTYPE NOT IN ('Unofficial Trail','Unmaintained Trail','Unmaintained Trail Centerline'))",
   "(TRLTYPE IS NULL OR TRLTYPE NOT IN ('Sidewalk','Water Trail','Snow Trail','Ferry Route'))",
 ].join(" AND ");
+
+/** USFS land trails with official evidence that hikers may use them (allowed use 1, or a hiker season). */
+export const USFS_HIKING_WHERE = "trail_type='TERRA' AND trail_name IS NOT NULL AND (allowed_terra_use LIKE '%1%' OR hiker_pedestrian_managed IS NOT NULL OR hiker_pedestrian_accpt IS NOT NULL)";
+/** USFS land trails where the Forest Service lists allowed uses and hiking is not one of them. */
+export const USFS_NO_HIKING_WHERE = "trail_type='TERRA' AND allowed_terra_use IS NOT NULL AND allowed_terra_use <> 'N/A' AND allowed_terra_use NOT LIKE '%1%' AND hiker_pedestrian_managed IS NULL AND hiker_pedestrian_accpt IS NULL";
+/** BLM routes managed for non-motorized or non-mechanized (foot and horse) public use. */
+export const BLM_LAYERS = [
+  { layer: 4, where: "ROUTE_PRMRY_NM IS NOT NULL" },
+  { layer: 5, where: "ROUTE_PRMRY_NM IS NOT NULL" },
+  { layer: 7, where: "ROUTE_PRMRY_NM IS NOT NULL AND PLAN_MODE_TRNSPRT IN ('Non-Motorized','Non-Mechanized')" },
+];

@@ -11,7 +11,7 @@ export interface CatalogTrail {
   longitude: number;
   difficulty: string | null;
   dogs: boolean | null;
-  source: "usgs" | "parks-canada" | "ontario" | "nps" | "resort" | "guide" | "route-aggregate";
+  source: "usgs" | "parks-canada" | "ontario" | "nps" | "usfs" | "blm" | "resort" | "guide" | "route-aggregate";
   sourceId: string;
   sourceUrl: string;
   officialUrl: string | null;
@@ -44,6 +44,22 @@ export interface CatalogTrail {
   elevationFt?: { min: number; max: number };
   /** Ski area the matching piste belongs to (OpenSkiMap). */
   skiArea?: string;
+  /** Kind of evidence behind the record (see agencies.ts). */
+  sourceType?: import("./agencies").SourceType;
+  confidence?: import("./agencies").Confidence;
+  trailType?: import("./agencies").TrailType;
+  trailStatus?: import("./agencies").TrailStatus;
+  /** Other official datasets that map the same line (NPS, USFS, BLM). */
+  sources?: import("./agencies").SourceRef[];
+  /** Agency trail number, e.g. USFS "610". */
+  officialTrailId?: string;
+  park?: string;
+  forest?: string;
+  blmArea?: string;
+  /** Ski resort whose official summer trail information lists this trail. */
+  skiResort?: string;
+  /** Officially allowed uses (USFS). */
+  uses?: string[];
   /** Source name when it was a placeholder ("-", "<unnamed>") and is shown as Unnamed trail. */
   originalName?: string;
 }
@@ -54,11 +70,14 @@ export interface CatalogManifest {
   /** Source sections merged into the `total` trails. */
   sectionTotal?: number;
   countries: Record<string, number>;
-  sources: { name: string; url: string; license: string; count: number; query: string; retrievedAt: string }[];
+  sources: { key?: string; name: string; url: string; license: string; count: number; query: string; retrievedAt: string }[];
   regions: { name: string; country: string; count: number }[];
   indexSha256: string;
   excluded: Record<string, number>;
   notes: string[];
+  /** Per-agency discovery and import counts from the last scan. */
+  coverage?: Record<string, { areasDiscovered: number; areasProcessed: number; linesDiscovered: number; newLinesImported: number; trailsAdded: number; existingTrailsConfirmed: number; needsReview: number; rejected: number; lastScan: string }>;
+  confidence?: Record<string, number>;
 }
 export type CatalogBounds = [west: number, south: number, east: number, north: number];
 export interface CatalogMapPoint {
@@ -98,6 +117,9 @@ export interface CatalogFilters {
   uniqueNames?: boolean;
   /** Include fragments (pieces of longer trails, unnamed stubs, connectors). Default excludes them. */
   includeFragments?: boolean;
+  /** Only trails a given ski resort lists (e.g. "Vail"). */
+  resort?: string;
+  sourceType?: import("./agencies").SourceType;
   lat?: number;
   lng?: number;
   radiusKm?: number;
@@ -133,6 +155,8 @@ const SOURCE_NAMES: Record<CatalogTrail["source"], string> = {
   "parks-canada": "Parks Canada",
   ontario: "Ontario Trail Network",
   nps: "National Park Service",
+  usfs: "U.S. Forest Service",
+  blm: "Bureau of Land Management",
   resort: "Resort summer trail map",
   guide: "Curated guide",
   "route-aggregate": "Mapped corridor",

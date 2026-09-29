@@ -12,7 +12,8 @@ import { auditCatalog } from "../../src/lib/trail-catalog/audit";
 import { QUALITY_RULES, isPlaceholderName } from "../../src/lib/trail-catalog/quality";
 import { PisteIndex, matchSkiRun, type SkiRunCache } from "../../src/lib/trail-catalog/ski-runs";
 import { TrailheadIndex, trailEnds, type TrailheadCache } from "../../src/lib/trail-catalog/access";
-import { DUPLICATE_SHARE, LineIndex, MIN_NEW_TRAIL_MILES, NPS_WHERE, classifyTerrain, pointsAlong, surroundingPoints } from "../../src/lib/trail-catalog/additions";
+import { BLM_LAYERS, DUPLICATE_SHARE, LineIndex, NPS_WHERE, USFS_HIKING_WHERE, USFS_NO_HIKING_WHERE, classifyTerrain, pointsAlong, surroundingPoints } from "../../src/lib/trail-catalog/additions";
+import { confidenceFor, sourceTypeFor, titleCaseName, trailStatusFor, trailTypeFor, usfsUses, type SourceRef, type SourceType } from "../../src/lib/trail-catalog/agencies";
 
 const root = process.cwd();
 const output = path.join(root, "data/trail-catalog");
@@ -24,6 +25,9 @@ const minimumTrailMiles = QUALITY_RULES.minimumTrailMiles;
 const refresh = process.argv.includes("--refresh");
 const USGS = "https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/37";
 const CANADA = "https://services2.arcgis.com/wCOMu5IS7YdSyPNx/arcgis/rest/services/Trails_Sentiers_APCA_Temporary_Temporaire_APCA_OpenOuvert/FeatureServer/0";
+const USFS = "https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_TrailNFSPublish_01/MapServer/0";
+const USFS_FORESTS = "https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/0";
+const BLM = "https://gis.blm.gov/arcgis/rest/services/transportation/BLM_Natl_GTLF_Public_Display/MapServer";
 const NPS = "https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails/FeatureServer/0";
 const ONTARIO = "https://ws.lioservices.lrc.gov.on.ca/arcgis2/rest/services/LIO_OPEN_DATA/LIO_Open04/MapServer/19";
 /** Named USGS trail sections plus unnamed sections tagged for hikers. */
@@ -35,7 +39,9 @@ type Feature = { attributes: Record<string, string | number | null>; geometry?: 
 type ResponseData = { features?: Feature[]; exceededTransferLimit?: boolean; error?: { message: string }; retrievedAt: string };
 type Region = { properties: { name: string; admin: string }; geometry: { type: string; coordinates: number[][][] | number[][][][] } };
 const boundaries: { name: string; country: string; rings: number[][][]; bounds: number[] }[] = [];
-const excluded: Record<string, number> = { missingName: 0, invalidGeometry: 0, duplicateId: 0, duplicateGeometry: 0, tooShort: 0, npsAlreadyListed: 0, npsTooShort: 0, npsNotMountain: 0 };
+const excluded: Record<string, number> = { missingName: 0, invalidGeometry: 0, duplicateId: 0, duplicateGeometry: 0, tooShort: 0, npsAlreadyListed: 0, npsTooShort: 0, npsNotMountain: 0, agencyConfirmedExisting: 0 };
+const AGENCIES = ["nps", "usfs", "blm"] as const;
+type AgencyKey = typeof AGENCIES[number];
 const shardOf = (id: string) => (parseInt(hash(id).slice(0, 2), 16)%64).toString().padStart(2, "0");
 
 function inside(point: Point, ring: number[][]) {
@@ -145,25 +151,38 @@ async function main() {
   const sourcesToImport = [
     { key: "parks-canada" as const, country: "CA" as const, endpoint: CANADA, where: "1=1", fields: "*", idField: "OBJECTID", name: "Parks Canada — Trails APCA", license: "Open Government Licence – Canada", url: "https://open.canada.ca/data/en/dataset/64a90e8d-5bc0-4027-8645-b5881b4068d4" },
     { key: "ontario" as const, country: "CA" as const, endpoint: ONTARIO, where: "TRAIL_NAME IS NOT NULL", fields: "OBJECTID,OGF_ID,TRAIL_NAME,TRAIL_ASSOCIATION,TRAIL_ASSOCIATION_WEBSITE,TRAIL_LENGTH_KM,EFFECTIVE_DATETIME", idField: "OBJECTID", name: "Ontario Trail Network — Trail Segment", license: "Open Government Licence – Ontario", url: "https://data.ontario.ca/en/dataset/ontario-trail-network" },
+    { key: "usfs" as const, country: "US" as const, endpoint: USFS, where: USFS_HIKING_WHERE, fields: "objectid,trail_cn,bmp,trail_no,trail_name,managing_org,trail_class,allowed_terra_use,trail_surface,national_trail_designation,accessibility_status,gis_miles", idField: "objectid", name: "U.S. Forest Service — National Forest System Trails (land trails open to hikers)", license: "Public domain", url: "https://data.fs.usda.gov/geodata/edw/datasets.php" },
+    { key: "blm" as const, country: "US" as const, endpoint: BLM, layers: BLM_LAYERS.map(l => ({ endpoint: `${BLM}/${l.layer}`, where: l.where })), where: "non-motorized and non-mechanized public trails", fields: "OBJECTID,GlobalID,ROUTE_PRMRY_NM,ADMIN_ST,PLAN_MODE_TRNSPRT,PLAN_ACCESS_RSTRCT,PLAN_SEASON_RSTRCT_CODE,OBSRVE_SRFCE_TYPE,ROUTE_SPCL_DSGNTN_TYPE", idField: "OBJECTID", name: "Bureau of Land Management — Ground Transportation Linear Features (trails managed for non-motorized public use)", license: "Public domain", url: "https://gbp-blm-egis.hub.arcgis.com/" },
     { key: "nps" as const, country: "US" as const, endpoint: NPS, where: NPS_WHERE, fields: "OBJECTID,GEOMETRYID,TRLNAME,TRLSURFACE,SEASONAL,SEASDESC,UNITCODE,UNITNAME,EDITDATE", idField: "OBJECTID", name: "National Park Service — Public Trails (existing, official trails; mountain trails ≥0.3 mi not already listed)", license: "Public domain", url: "https://public-nps.opendata.arcgis.com/" },
     { key: "usgs" as const, country: "US" as const, endpoint: USGS, where: USGS_WHERE, fields: "objectid,permanentidentifier,name,lengthmiles,pets,sourceoriginator,sourceeditdate,trailsurface,seasonopen", idField: "objectid", name: "USGS National Transportation Dataset — Trails", license: "Public domain", url: "https://www.usgs.gov/national-digital-trails/how-access-or-view-usgs-trails-dataset" },
   ];
+  // USFS forest names by org code ("0301" → "Carson National Forest").
+  const forestNames = new Map<string, string>();
+  for (let offset = 0; ; offset += 1000) {
+    const query = new URLSearchParams({ f: "json", where: "1=1", outFields: "FORESTORGCODE,FORESTNAME", returnGeometry: "false", orderByFields: "FORESTORGCODE ASC", resultOffset: String(offset), resultRecordCount: "1000" });
+    const data = await fetchPage(`${USFS_FORESTS}/query?${query}`, `usfs-forests-${offset}`);
+    for (const f of data.features!) forestNames.set(String(f.attributes.forestorgcode ?? f.attributes.FORESTORGCODE), String(f.attributes.forestname ?? f.attributes.FORESTNAME));
+    if (!data.exceededTransferLimit || !data.features!.length) break;
+  }
+  const discovered: Record<AgencyKey, { areas: Set<string>; lines: number; retrievedAt: string }> = { nps: { areas: new Set(), lines: 0, retrievedAt: "" }, usfs: { areas: new Set(), lines: 0, retrievedAt: "" }, blm: { areas: new Set(), lines: 0, retrievedAt: "" } };
   for (const source of sourcesToImport) {
     const before = rows.length; let retrievedAt = "";
+    for (const layer of ("layers" in source && source.layers) ? source.layers : [{ endpoint: source.endpoint, where: source.where }])
     for (let offset = 0; ; offset += 1000) {
-      const query = new URLSearchParams({ f: "json", where: source.where, outFields: source.fields, returnGeometry: "true", outSR: "4326", geometryPrecision: "5", maxAllowableOffset: "0.0001", orderByFields: `${source.idField} ASC`, resultOffset: String(offset), resultRecordCount: "1000" });
-      const data = await fetchPage(`${source.endpoint}/query?${query}`, `${source.key}-${offset}-${hash(query.toString()).slice(0, 8)}`);
+      const query = new URLSearchParams({ f: "json", where: layer.where, outFields: source.fields, returnGeometry: "true", outSR: "4326", geometryPrecision: "5", maxAllowableOffset: "0.0001", orderByFields: `${source.idField} ASC`, resultOffset: String(offset), resultRecordCount: "1000" });
+      const data = await fetchPage(`${layer.endpoint}/query?${query}`, `${source.key}-${offset}-${hash(layer.endpoint === source.endpoint ? query.toString() : layer.endpoint + query.toString()).slice(0, 8)}`);
       retrievedAt = data.retrievedAt;
       for (const f of data.features!) {
         const a = f.attributes;
-        const named = str(source.key === "ontario" ? a.TRAIL_NAME : source.key === "nps" ? a.TRLNAME : source.country === "CA" ? a.Name_Official_e ?? a.Nom_Officiel_f : a.name);
+        const rawName = str(source.key === "ontario" ? a.TRAIL_NAME : source.key === "nps" ? a.TRLNAME : source.key === "usfs" ? a.trail_name : source.key === "blm" ? a.ROUTE_PRMRY_NM : source.country === "CA" ? a.Name_Official_e ?? a.Nom_Officiel_f : a.name);
+        const named = rawName && (source.key === "usfs" || source.key === "blm") ? titleCaseName(rawName) : rawName;
         // Placeholder names ("-", "<unnamed>", "Unknown") are not trail names; they are labeled and never merged.
         const placeholder = named !== null && isPlaceholderName(named);
         const name = named && !placeholder ? named : (source.key === "usgs" || placeholder ? "Unnamed trail" : null);
         if (!name) { excluded.missingName++; continue; }
         const lines = f.geometry?.paths;
         if (!lines?.length || lines.some(line => line.length < 2 || line.some(p => p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]) || Math.abs(p[0]) > 180 || Math.abs(p[1]) > 90))) { excluded.invalidGeometry++; continue; }
-        const sourceId = source.key === "ontario" ? String(a.OGF_ID) : source.key === "nps" ? str(a.GEOMETRYID)?.replace(/[{}]/g, "").toLowerCase() ?? null : source.country === "US" ? str(a.permanentidentifier) : String(a.OBJECTID);
+        const sourceId = source.key === "ontario" ? String(a.OGF_ID) : source.key === "nps" ? str(a.GEOMETRYID)?.replace(/[{}]/g, "").toLowerCase() ?? null : source.key === "usfs" ? (str(a.trail_cn) ? `${a.trail_cn}-${Number(a.bmp ?? 0).toFixed(3)}` : null) : source.key === "blm" ? str(a.GlobalID)?.replace(/[{}]/g, "").toLowerCase() ?? null : source.country === "US" ? str(a.permanentidentifier) : String(a.OBJECTID);
         if (!sourceId) throw new Error("Missing source identifier");
         const id = `${source.key}-${sourceId}`;
         if (ids.has(id)) { excluded.duplicateId++; continue; }
@@ -174,9 +193,9 @@ async function main() {
         const geometryShard = shardOf(id);
         const reportedMiles = source.key === "ontario" && typeof a.TRAIL_LENGTH_KM === "number" ? a.TRAIL_LENGTH_KM/1.609344 : a.lengthmiles;
         const suppliedMiles = typeof reportedMiles === "number" && reportedMiles > 0 ? reportedMiles : null;
-        const sourceTimestamp = source.key === "ontario" ? a.EFFECTIVE_DATETIME : source.key === "nps" ? a.EDITDATE : a.sourceeditdate;
+        const sourceTimestamp = source.key === "ontario" ? a.EFFECTIVE_DATETIME : source.key === "nps" ? a.EDITDATE : source.key === "usfs" || source.key === "blm" ? null : a.sourceeditdate;
         const metersDate = typeof sourceTimestamp === "number" ? sourceTimestamp : null;
-        rows.push({ id, name, country: source.country, region: regionAt(point, source.country), kind: "segment", miles: suppliedMiles, distanceBasis: suppliedMiles !== null ? "source" : "geometry", latitude: point[1], longitude: point[0], difficulty: source.country === "CA" ? ({ 1: "Easy", 2: "Moderate", 3: "Difficult", 4: "Most difficult" }[Number(a["Summer_Classification_Été"]) as 1|2|3|4] ?? null) : null, dogs: a.pets === "Y" ? true : a.pets === "N" ? false : null, source: source.key, sourceId, sourceUrl: `${source.endpoint}/query?${new URLSearchParams({ where: `${source.idField}=${a[source.idField]}`, outFields: "*", f: "pjson" })}`, officialUrl: safeUrl(a.URL_e ?? a.URL_f), sourceDate: metersDate !== null ? new Date(metersDate).toISOString() : null, manager: source.country === "CA" ? "Parks Canada" : str(a.sourceoriginator), surface: source.country === "US" ? str(a.trailsurface) : ({1:"Natural",2:"Gravel",3:"Boardwalk",4:"Asphalt",5:"Wood chip",6:"Water",7:"Concrete",8:"Stairs"}[Number(a.Surface) as 1] ?? null), season: str(a.seasonopen), geometryShard });
+        rows.push({ id, name, country: source.country, region: regionAt(point, source.country), kind: "segment", miles: suppliedMiles, distanceBasis: suppliedMiles !== null ? "source" : "geometry", latitude: point[1], longitude: point[0], difficulty: source.country === "CA" ? ({ 1: "Easy", 2: "Moderate", 3: "Difficult", 4: "Most difficult" }[Number(a["Summer_Classification_Été"]) as 1|2|3|4] ?? null) : null, dogs: a.pets === "Y" ? true : a.pets === "N" ? false : null, source: source.key, sourceId, sourceUrl: `${layer.endpoint}/query?${new URLSearchParams({ where: `${source.idField}=${a[source.idField]}`, outFields: "*", f: "pjson" })}`, officialUrl: safeUrl(a.URL_e ?? a.URL_f), sourceDate: metersDate !== null ? new Date(metersDate).toISOString() : null, manager: source.country === "CA" ? "Parks Canada" : str(a.sourceoriginator), surface: source.country === "US" ? str(a.trailsurface) : ({1:"Natural",2:"Gravel",3:"Boardwalk",4:"Asphalt",5:"Wood chip",6:"Water",7:"Concrete",8:"Stairs"}[Number(a.Surface) as 1] ?? null), season: str(a.seasonopen), geometryShard });
         if (source.key === "ontario") {
           const row = rows[rows.length-1];
           row.region = "Ontario";
@@ -192,25 +211,77 @@ async function main() {
           row.season = a.SEASONAL === "Yes" ? (str(a.SEASDESC) ?? "Seasonal") : null;
           row.sourceUrl = `${NPS}/query?${new URLSearchParams({ where: `GEOMETRYID='${a.GEOMETRYID}'`, outFields: "*", f: "pjson" })}`;
         }
+        if (source.key === "nps") {
+          const row = rows[rows.length-1];
+          if (str(a.UNITNAME)) row.park = String(a.UNITNAME);
+          discovered.nps.areas.add(String(a.UNITCODE ?? ""));
+          if (a.TRLSTATUS === "Temporarily Closed") row.trailStatus = "CLOSED";
+        }
+        if (source.key === "usfs") {
+          const row = rows[rows.length-1];
+          const forest = forestNames.get(String(a.managing_org ?? "").slice(0, 4));
+          row.manager = forest ? `U.S. Forest Service — ${forest}` : "U.S. Forest Service";
+          if (forest) row.forest = forest;
+          if (str(a.trail_no)) row.officialTrailId = String(a.trail_no);
+          row.uses = usfsUses(a.allowed_terra_use);
+          row.surface = str(a.trail_surface);
+          row.season = null;
+          discovered.usfs.areas.add(String(a.managing_org ?? "").slice(0, 4));
+        }
+        if (source.key === "blm") {
+          const row = rows[rows.length-1];
+          row.manager = "Bureau of Land Management";
+          row.blmArea = `BLM ${a.ADMIN_ST ?? ""}`.trim();
+          row.surface = str(a.OBSRVE_SRFCE_TYPE);
+          row.season = a.PLAN_SEASON_RSTRCT_CODE && a.PLAN_SEASON_RSTRCT_CODE !== "NO" ? "Seasonal restrictions" : null;
+          row.uses = a.PLAN_MODE_TRNSPRT === "Non-Mechanized" ? ["Hiking", "Horses"] : ["Hiking", "Horses", "Bikes"];
+          if (a.PLAN_ACCESS_RSTRCT && a.PLAN_ACCESS_RSTRCT !== "None") row.trailStatus = "RESTRICTED";
+          discovered.blm.areas.add(String(a.ADMIN_ST ?? ""));
+        }
+        if (source.key === "nps" || source.key === "usfs" || source.key === "blm") { discovered[source.key].lines++; discovered[source.key].retrievedAt = data.retrievedAt; }
         if (placeholder) rows[rows.length-1].originalName = named!;
         geometries.set(id, lines);
       }
       console.log(`${source.key}: ${offset+data.features!.length} fetched; ${rows.length.toLocaleString()} accepted total`);
       if (!data.exceededTransferLimit || data.features!.length === 0) break;
     }
-    sources.push({ name: source.name, url: source.url, license: source.license, count: rows.length-before, query: source.where, retrievedAt });
+    sources.push({ key: source.key, name: source.name, url: source.url, license: source.license, count: rows.length-before, query: source.where, retrievedAt });
   }
-  // NPS lines already in the catalog (USGS includes much NPS data) are duplicates; only new lines are added.
+  // Agency lines (NPS, USFS, BLM) that repeat a line already in the catalog are not new trails: they
+  // confirm that trail and are attached to it as sources. Only lines nobody has mapped are added.
+  const confirmations = new Map<string, SourceRef[]>();
+  const refFor = (row: CatalogTrail): SourceRef => ({ type: sourceTypeFor(row), id: row.sourceId, url: row.sourceUrl, name: row.name, ...(row.officialTrailId ? { officialTrailId: row.officialTrailId } : {}), ...((row.park ?? row.forest ?? row.blmArea) ? { unit: row.park ?? row.forest ?? row.blmArea } : {}) });
+  const added: Record<AgencyKey, number> = { nps: 0, usfs: 0, blm: 0 };
   {
-    const nps = rows.filter(r => r.source === "nps");
+    const isAgency = (r: CatalogTrail) => (AGENCIES as readonly string[]).includes(r.source);
     const cell = (p: Point) => `${Math.floor(p[0]*4)}:${Math.floor(p[1]*4)}`;
-    const touched = new Set(nps.flatMap(r => geometries.get(r.id)!.flat().map(cell)));
-    const existing = new LineIndex();
-    for (const r of rows) if (r.source !== "nps" && geometries.get(r.id)!.some(line => line.some(p => touched.has(cell(p))))) existing.add(geometries.get(r.id)!);
-    const listed = new Set(nps.filter(r => existing.coveredShare(geometries.get(r.id)!) >= DUPLICATE_SHARE).map(r => r.id));
-    excluded.npsAlreadyListed = listed.size;
-    for (let i = rows.length-1; i >= 0; i--) if (listed.has(rows[i].id)) { geometries.delete(rows[i].id); rows.splice(i, 1); }
-    console.log(`NPS: ${nps.length - listed.size} of ${nps.length} official trail lines are not yet in the catalog`);
+    const touched = new Set(rows.filter(isAgency).flatMap(r => geometries.get(r.id)!.flat().map(cell)));
+    const index = new LineIndex();
+    for (const r of rows) if (!isAgency(r) && geometries.get(r.id)!.some(line => line.some(p => touched.has(cell(p))))) index.add(geometries.get(r.id)!, r.id);
+    const drop = new Set<string>();
+    for (const key of AGENCIES) {
+      for (const r of rows.filter(r => r.source === key)) {
+        const match = index.bestMatch(geometries.get(r.id)!);
+        if (match.share >= DUPLICATE_SHARE && match.ownerId) {
+          (confirmations.get(match.ownerId) ?? confirmations.set(match.ownerId, []).get(match.ownerId)!).push(refFor(r));
+          drop.add(r.id);
+        } else {
+          index.add(geometries.get(r.id)!, r.id);
+          added[key]++;
+        }
+      }
+      console.log(`${key.toUpperCase()}: ${added[key]} new lines; ${rows.filter(r => r.source === key).length - added[key]} confirm lines already in the catalog`);
+    }
+    excluded.agencyConfirmedExisting = drop.size;
+    for (let i = rows.length-1; i >= 0; i--) if (drop.has(rows[i].id)) { geometries.delete(rows[i].id); rows.splice(i, 1); }
+  }
+  // USFS land trails where hiking is not an allowed use: catalog lines on them are not hiking trails.
+  const noHiking = new LineIndex();
+  for (let offset = 0; ; offset += 1000) {
+    const query = new URLSearchParams({ f: "json", where: USFS_NO_HIKING_WHERE, outFields: "objectid,trail_cn", returnGeometry: "true", outSR: "4326", geometryPrecision: "5", maxAllowableOffset: "0.0001", orderByFields: "objectid ASC", resultOffset: String(offset), resultRecordCount: "1000" });
+    const data = await fetchPage(`${USFS}/query?${query}`, `usfs-nohike-${offset}-${hash(query.toString()).slice(0, 8)}`);
+    for (const f of data.features!) if (f.geometry?.paths?.length) noHiking.add(f.geometry.paths, String(f.attributes.trail_cn));
+    if (!data.exceededTransferLimit || !data.features!.length) break;
   }
   if (rows.length < minimumSections) throw new Error(`Only ${rows.length} valid distinct sections. Catalog has not been replaced; expected at least ${minimumSections}.`);
   const merged = mergeCatalogSections(rows.map(row => ({ row, lines: geometries.get(row.id)! })), { regionAt });
@@ -220,27 +291,30 @@ async function main() {
     trail.row.geometryShard = shardOf(trail.row.id);
     trails.push(trail);
   }
-  // New trails made only of NPS lines must be mountain trails of at least 0.3 mi. NPS lines that joined an
-  // existing trail fill its gaps and stay.
+  // Attach confirming official sources, and sample the elevation range of trails that only an agency maps.
   {
-    const npsOnly = trails.filter(t => t.sectionIds.every(id => id.startsWith("nps-")));
-    const keep = new Set<MergedTrailRef>();
-    const pending: { trail: MergedTrailRef; along: Point[]; around: Point[] }[] = [];
-    for (const trail of npsOnly) {
-      if ((trail.row.miles ?? 0) < MIN_NEW_TRAIL_MILES) { excluded.npsTooShort += trail.sectionIds.length; continue; }
-      const along = pointsAlong(trail.lines, 10);
-      pending.push({ trail, along, around: surroundingPoints(along[Math.floor(along.length/2)]) });
+    const agencyOnly: MergedTrailRef[] = [];
+    for (const trail of trails) {
+      const refs = trail.sectionIds.flatMap(id => confirmations.get(id) ?? []);
+      if (refs.length) {
+        const unique = [...new Map(refs.map(r => [`${r.type}:${r.id}`, r])).values()];
+        trail.row.sources = unique.slice(0, 8);
+        trail.row.officialTrailId ??= unique.find(r => r.officialTrailId)?.officialTrailId;
+        for (const r of unique) {
+          if (r.type === "NPS_OFFICIAL" && r.unit) trail.row.park ??= r.unit;
+          if (r.type === "USFS_OFFICIAL" && r.unit) trail.row.forest ??= r.unit;
+          if (r.type === "BLM_OFFICIAL" && r.unit) trail.row.blmArea ??= r.unit;
+        }
+      }
+      if (trail.sectionIds.every(id => /^(nps|usfs|blm)-/.test(id))) agencyOnly.push(trail);
     }
-    const elevations = await elevationsFor(pending.flatMap(p => [...p.along, ...p.around]));
-    for (const { trail, along, around } of pending) {
-      const terrain = classifyTerrain(along.map(p => elevations.get(pointKey(p)) ?? NaN), around.map(p => elevations.get(pointKey(p)) ?? NaN));
-      if (!terrain.mountain) { excluded.npsNotMountain += trail.sectionIds.length; continue; }
-      trail.row.elevationFt = { min: Math.round(terrain.minMeters*3.28084), max: Math.round(terrain.maxMeters*3.28084) };
-      keep.add(trail);
+    const samples = agencyOnly.map(trail => ({ trail, along: pointsAlong(trail.lines, 10) }));
+    const elevations = await elevationsFor(samples.flatMap(s => s.along));
+    for (const { trail, along } of samples) {
+      const terrain = classifyTerrain(along.map(p => elevations.get(pointKey(p)) ?? NaN), []);
+      if (Number.isFinite(terrain.minMeters)) trail.row.elevationFt = { min: Math.round(terrain.minMeters*3.28084), max: Math.round(terrain.maxMeters*3.28084) };
     }
-    const drop = new Set(npsOnly.filter(t => !keep.has(t)));
-    for (let i = trails.length-1; i >= 0; i--) if (drop.has(trails[i])) trails.splice(i, 1);
-    console.log(`NPS: ${keep.size} new mountain trails ≥${MIN_NEW_TRAIL_MILES} mi added; ${drop.size} new trails were too short or not in mountain terrain`);
+    console.log(`Agencies: ${agencyOnly.length} new trails made only of agency lines; ${trails.filter(t => t.row.sources?.length).length} existing trails confirmed by an agency dataset`);
   }
   trails.sort((a, b) => a.row.name.localeCompare(b.row.name) || a.row.id.localeCompare(b.row.id));
   // Records whose line follows OpenSkiMap pistes are ski runs, not hiking trails (npm run source:ski).
@@ -281,6 +355,28 @@ async function main() {
   }
   // Every published trail passes through the quality rules; the report ships with the snapshot.
   const audit = auditCatalog(trails.map(t => ({ row: t.row, lines: t.lines, reportedMiles: t.reportedMiles, sectionReportedMiles: t.sectionReportedMiles })));
+  // Lines on USFS trails where hiking isn't allowed, then source type, confidence, trail type and status.
+  let noHikingCount = 0;
+  for (const trail of trails) {
+    if (/^(nps|usfs|blm)$/.test(trail.row.source)) continue;
+    if (noHiking.bestMatch(trail.lines).share >= DUPLICATE_SHARE) { trail.row.flags = [...(trail.row.flags ?? []), "no-hiking"]; noHikingCount++; }
+  }
+  if (noHikingCount) audit.byFlag["no-hiking"] = noHikingCount;
+  const confidenceCounts: Record<string, number> = {};
+  for (const { row } of trails) {
+    row.sourceType = sourceTypeFor(row);
+    row.confidence = confidenceFor(row);
+    row.trailType = trailTypeFor(row);
+    row.trailStatus = row.trailStatus ?? trailStatusFor(row);
+    confidenceCounts[row.confidence] = (confidenceCounts[row.confidence] ?? 0) + 1;
+  }
+  console.log(`Confidence: ${JSON.stringify(confidenceCounts)}`);
+  const coverage = Object.fromEntries(AGENCIES.map(key => {
+    const own = trails.filter(t => t.row.source === key);
+    const confirmed = trails.filter(t => t.row.sources?.some(r => r.type === ({ nps: "NPS_OFFICIAL", usfs: "USFS_OFFICIAL", blm: "BLM_OFFICIAL" } as Record<AgencyKey, SourceType>)[key])).length;
+    return [key, { areasDiscovered: [...discovered[key].areas].filter(Boolean).length, areasProcessed: [...discovered[key].areas].filter(Boolean).length, linesDiscovered: discovered[key].lines, newLinesImported: added[key], trailsAdded: own.length, existingTrailsConfirmed: confirmed, needsReview: own.filter(t => t.row.confidence === "NEEDS_REVIEW").length, rejected: own.filter(t => t.row.confidence === "REJECTED").length, lastScan: discovered[key].retrievedAt }];
+  }));
+  console.log(`Coverage: ${JSON.stringify(coverage)}`);
   audit.excludedTooShort = excluded.tooShort;
   audit.duplicatesRemoved = excluded.duplicateId + excluded.duplicateGeometry;
   console.log(`Quality: ${JSON.stringify(audit.byStatus)}`);
@@ -297,7 +393,7 @@ async function main() {
   sources.forEach((source,i)=>{ source.count = trails.reduce((sum, t) => sum+t.sectionIds.filter(id => sourceOf.get(id) === sourcesToImport[i].key).length, 0); });
   if (skiSource) sources.push(skiSource);
   if (trailheadSource) sources.push(trailheadSource);
-  const manifest: CatalogManifest = { version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`, `National Park Service trails are added only when NPS lists them as existing, official, open trails (not unofficial, unmaintained, sidewalk, water or snow trails) and the line is not already in the catalog. New NPS trails must be at least ${MIN_NEW_TRAIL_MILES} mi and in mountain terrain (sampled elevation varies ≥100 m within 1 km, or the trail climbs ≥60 m; Copernicus DEM via Open-Meteo). NPS lines that fill gaps in existing trails are kept.`, `Every trail is checked by config/trail-quality.json rules: ${audit.byStatus.ok.toLocaleString("en-US")} passed, ${audit.byStatus.short.toLocaleString("en-US")} are short trails, ${audit.byStatus.review.toLocaleString("en-US")} need review and ${audit.byStatus.fragment.toLocaleString("en-US")} are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources.`, ...(skiSource ? [`${winterCounts.downhill.toLocaleString("en-US")} records follow downhill ski pistes mapped in OpenSkiMap and are listed as ski runs, not hiking trails; ${winterCounts.nordic.toLocaleString("en-US")} follow Nordic ski tracks and stay hikeable.`] : [])] };
+  const manifest: CatalogManifest = { coverage, confidence: confidenceCounts, version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`, `Official agency trails come from the NPS Public Trails layer (existing, official, open or temporarily closed; not unofficial, unmaintained, sidewalk, water or snow trails), U.S. Forest Service National Forest System Trails (land trails where hiking is an allowed use or has a managed season) and BLM transportation data (routes managed for non-motorized or non-mechanized public use). A line already in the catalog within 25 m for ≥60% of its length confirms that trail and is recorded as a source; only new lines become trails. Catalog lines on Forest Service trails that do not allow hiking are rejected. Trails only an agency maps show a sampled elevation range (Copernicus DEM via Open-Meteo).`, `Every trail is checked by config/trail-quality.json rules: ${audit.byStatus.ok.toLocaleString("en-US")} passed, ${audit.byStatus.short.toLocaleString("en-US")} are short trails, ${audit.byStatus.review.toLocaleString("en-US")} need review and ${audit.byStatus.fragment.toLocaleString("en-US")} are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources.`, ...(skiSource ? [`${winterCounts.downhill.toLocaleString("en-US")} records follow downhill ski pistes mapped in OpenSkiMap and are listed as ski runs, not hiking trails; ${winterCounts.nordic.toLocaleString("en-US")} follow Nordic ski tracks and stay hikeable.`] : [])] };
   const stage = path.join(output, `snapshot-${Date.now()}`); await mkdir(stage);
   const shards: Record<string, Record<string, Point[][]>> = {}, aliases: Record<string, Record<string, string>> = {};
   for (const trail of trails) {

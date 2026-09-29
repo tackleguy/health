@@ -11,7 +11,7 @@ import { buildCatalogMap } from "./map";
 
 const unzip = promisify(gunzip);
 const root = path.join(process.cwd(), "data/trail-catalog");
-const CATALOG_ID = /^(usgs|parks-canada|ontario|nps|resort|route)-/;
+const CATALOG_ID = /^(usgs|parks-canada|ontario|nps|usfs|blm|resort|route)-/;
 let catalog: Promise<{
   rows: CatalogTrail[];
   texts: string[];
