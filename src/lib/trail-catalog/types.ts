@@ -36,6 +36,12 @@ export interface CatalogTrail {
   parentId?: string;
   /** Source-reported length, kept when it disagrees with the mapped line. */
   reportedMiles?: number;
+  /** Set when the mapped line follows OpenSkiMap pistes: downhill runs are not hiking trails. */
+  winterUse?: import("./ski-runs").WinterUse;
+  /** Nearest OpenStreetMap trailhead to either end of the trail, when one is mapped within 800 m. */
+  trailhead?: import("./access").AccessPoint;
+  /** Ski area the matching piste belongs to (OpenSkiMap). */
+  skiArea?: string;
   /** Source name when it was a placeholder ("-", "<unnamed>") and is shown as Unnamed trail. */
   originalName?: string;
 }

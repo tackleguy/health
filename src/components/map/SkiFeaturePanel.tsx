@@ -75,7 +75,7 @@ export function SkiFeaturePanel({
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <a
-          href={directionsUrl(feature.lat, feature.lng, feature.name)}
+          href={directionsUrl(feature.lat, feature.lng)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"

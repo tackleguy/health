@@ -35,6 +35,8 @@ const SNOWMOBILE = /\b(snow[\s-]?mobile|snowmobile|snowmobiling)\b/i;
 const BIKE_PRIMARY =
   /\b(mountain[\s-]?bike|\bmtb\b|bike[\s-]?only|cycling|bicycle)\b/i;
 
+type ActivityFields = Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles"> & Partial<Pick<CatalogTrail, "winterUse">>;
+
 function haystack(trail: Pick<CatalogTrail, "name" | "manager" | "tags" | "surface">) {
   return [trail.name, trail.manager ?? "", trail.surface ?? "", ...(trail.tags ?? [])].join(" ");
 }
@@ -55,7 +57,8 @@ export function isBackpackActivityTrail(
   return trail.miles !== null && trail.miles >= 15;
 }
 
-export function isSkiActivityTrail(trail: Pick<CatalogTrail, "name" | "manager">) {
+export function isSkiActivityTrail(trail: Pick<CatalogTrail, "name" | "manager"> & Partial<Pick<CatalogTrail, "winterUse">>) {
+  if (trail.winterUse) return true;
   if (!isWinterActivityTrail(trail)) return false;
   const text = `${trail.name} ${trail.manager ?? ""}`;
   if (SNOWMOBILE.test(text) && !SKI.test(text)) return false;
@@ -63,9 +66,7 @@ export function isSkiActivityTrail(trail: Pick<CatalogTrail, "name" | "manager">
 }
 
 /** Activities a catalog row is suitable for (best-effort from name and length). */
-export function trailActivities(
-  trail: Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles">,
-): CatalogActivity[] {
+export function trailActivities(trail: ActivityFields): CatalogActivity[] {
   const text = haystack(trail);
   const out: CatalogActivity[] = [];
   if (isSkiActivityTrail(trail)) out.push("ski");
@@ -85,7 +86,7 @@ export function trailActivities(
 }
 
 export function matchesCatalogActivity(
-  trail: Pick<CatalogTrail, "name" | "manager" | "tags" | "surface" | "kind" | "miles">,
+  trail: ActivityFields,
   activity: CatalogActivity,
 ): boolean {
   return trailActivities(trail).includes(activity);

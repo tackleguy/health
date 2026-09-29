@@ -7,6 +7,14 @@ import type { CatalogTrail } from "@/lib/trail-catalog/types";
 
 const NO_TRAILS: CatalogTrail[] = [];
 const NO_LINES: [number, number][][] = [];
+const NO_PINS: MapPin[] = [];
+
+export interface MapPin {
+  latitude: number;
+  longitude: number;
+  label: string;
+  kind: "start" | "origin" | "option";
+}
 
 const tileUrl =
   process.env.NEXT_PUBLIC_CATALOG_TILE_URL ??
@@ -18,9 +26,14 @@ const tileAttribution =
 export function CatalogMapView({
   trails = NO_TRAILS,
   lines = NO_LINES,
+  route,
+  pins = NO_PINS,
 }: {
   trails?: CatalogTrail[];
   lines?: [number, number][][];
+  /** Driving route to the start, [lng, lat] pairs; the map fits it when present. */
+  route?: [number, number][];
+  pins?: MapPin[];
 }) {
   const container = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -64,6 +77,32 @@ export function CatalogMapView({
       bounds.extend(poly.getBounds());
     }
 
+    if (route && route.length > 1) {
+      const poly = L.polyline(route.map(([lon, lat]) => [lat, lon] as L.LatLngExpression), {
+        color: "#2563eb",
+        weight: 5,
+        opacity: 0.85,
+        dashArray: "8 8",
+      }).addTo(map);
+      bounds.extend(poly.getBounds());
+    }
+
+    for (const pin of pins) {
+      const marker = L.marker([pin.latitude, pin.longitude], {
+        title: pin.label,
+        icon: L.divIcon({
+          className: "hikesync-leaflet-marker",
+          html: `<span class="catalog-map-pin ${pin.kind}" aria-hidden="true"></span>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        }),
+      });
+      marker.bindTooltip(pin.label, { direction: "top" });
+      marker.addTo(map);
+      markers.push(marker);
+      if (pin.kind !== "option") bounds.extend([pin.latitude, pin.longitude]);
+    }
+
     for (const t of trails) {
       bounds.extend([t.latitude, t.longitude]);
       const marker = L.marker([t.latitude, t.longitude], {
@@ -95,7 +134,7 @@ export function CatalogMapView({
       markers.forEach((m) => m.remove());
       map.remove();
     };
-  }, [trails, lines]);
+  }, [trails, lines, route, pins]);
 
   return (
     <div>

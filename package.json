@@ -16,6 +16,8 @@
     "ingest:nps": "tsx scripts/ingestion/run.ts nps",
     "source:trails": "tsx scripts/ingestion/source-catalog.ts",
     "audit:trails": "tsx scripts/ingestion/audit-catalog.ts",
+    "source:ski": "tsx scripts/ingestion/ski-runs.ts",
+    "source:trailheads": "tsx scripts/ingestion/trailheads.ts",
     "bootstrap": "tsx scripts/bootstrap-and-ingest.ts",
     "test": "tsx --test src/lib/ingestion/parsers/gpx.test.ts src/lib/assistant/*.test.ts src/lib/trail-catalog/*.test.ts src/lib/ingestion/*.test.ts"
   },

@@ -185,3 +185,77 @@ test("short distances show meters instead of <0.1 mi", () => {
   assert.equal(formatDistance(2).primary, "2.0 mi");
   assert.equal(formatDistance(2).secondary, "3.2 km");
 });
+
+import { PisteIndex, matchSkiRun, type SkiRun } from "./ski-runs";
+import { matchesCatalogActivity } from "./activity";
+
+const piste = (uses: string[], lines: Lines, name = "Upper Kachina"): SkiRun => ({ name, uses, difficulty: "intermediate", areaId: "a", areaName: "Attitash", lines });
+
+test("a trail drawn along a downhill piste is a ski run and leaves hiking results", () => {
+  const index = new PisteIndex([piste(["downhill"], north(0, 1500))]);
+  const lines: Lines = [[[-105.0001, 40], [-105.0001, 40 + 1500 / 111_195]]];
+  const match = matchSkiRun("Kachina", lines, index)!;
+  assert.equal(match.use, "downhill");
+  assert.equal(match.areaName, "Attitash");
+  const row = { ...base, name: "Kachina", miles: 0.9, winterUse: match.use };
+  assert.equal(matchesCatalogActivity(row, "hike"), false);
+  assert.equal(matchesCatalogActivity(row, "ski"), true);
+  assert.equal(filterCatalog([row], {}).total, 0);
+  assert.equal(filterCatalog([row], { activity: "ski" }).total, 1);
+});
+
+test("a summer trail that switchbacks across pistes stays a hiking trail", () => {
+  const index = new PisteIndex([piste(["downhill"], north(0, 1500))]);
+  const zigzag: Lines = [[]];
+  for (let i = 0; i <= 12; i++) zigzag[0].push([-105 + (i % 2 ? 0.003 : -0.003), 40 + (i * 120) / 111_195]);
+  assert.equal(matchSkiRun("Wildflower Loop", zigzag, index), null);
+});
+
+test("a foot-trail name on a piste and a Nordic track both stay hikeable", () => {
+  const downhill = new PisteIndex([piste(["downhill"], north(0, 1500))]);
+  assert.equal(matchSkiRun("Summit Hiking Trail", north(0, 1500), downhill), null);
+  const nordic = new PisteIndex([piste(["nordic"], north(0, 1500), "Stream Loop")]);
+  const match = matchSkiRun("Stream Loop", north(0, 1500), nordic)!;
+  assert.equal(match.use, "nordic");
+  const row = { ...base, name: "Stream Loop", miles: 0.9, winterUse: match.use };
+  assert.equal(matchesCatalogActivity(row, "hike"), true);
+  assert.equal(matchesCatalogActivity(row, "ski"), true);
+});
+
+import { chooseStart, googleMapsDirectionsUrl, onTrailInstructions, stepInstruction, trailEnds } from "./access";
+
+test("start point prefers a mapped trailhead, then parking, then the trail end", () => {
+  const lines = north(0, 1600);
+  const ends = trailEnds(lines)!;
+  const parking = { kind: "parking" as const, name: "Lot", latitude: 40, longitude: -105.001, toTrailMeters: 85 };
+  const trailhead = { kind: "trailhead" as const, name: "Ridge TH", latitude: 40, longitude: -105.003, toTrailMeters: 250 };
+  assert.equal(chooseStart(ends, [parking, trailhead]).name, "Ridge TH");
+  assert.equal(chooseStart(ends, [parking]).name, "Lot");
+  assert.equal(chooseStart(ends, []).kind, "trail-end");
+});
+
+test("on-trail instructions give direction, length and the way back", () => {
+  const lines = north(0, 1609);
+  const start = { kind: "trailhead" as const, name: "Ridge TH", latitude: 40, longitude: -105.002, toTrailMeters: 170 };
+  const steps = onTrailInstructions("Ridge Trail", 1, lines, start);
+  assert.equal(steps[0], "Start at Ridge TH.");
+  assert.match(steps[1], /Walk about .* east to reach Ridge Trail/);
+  assert.match(steps[2], /Follow Ridge Trail north for 1\.0 mi/);
+  assert.match(steps[3], /2\.0 mi round trip/);
+  const loop: Lines = [[[-105, 40], [-105, 40.005], [-104.995, 40.005], [-104.995, 40], [-105, 40]]];
+  assert.match(onTrailInstructions("Pond Loop", 1.3, loop, chooseStart(trailEnds(loop)!, []))[1], /around the loop/);
+});
+
+test("driving steps read as instructions and Google links need no key", () => {
+  assert.equal(stepInstruction({ name: "Main Street", distance: 100, duration: 10, maneuver: { type: "turn", modifier: "left" } }), "Turn left onto Main Street");
+  assert.equal(stepInstruction({ name: "", distance: 0, duration: 0, maneuver: { type: "roundabout", exit: 2 } }), "At the roundabout, take the 2nd exit");
+  assert.equal(googleMapsDirectionsUrl(40.1, -105.2), "https://www.google.com/maps/dir/?api=1&destination=40.1%2C-105.2&travelmode=driving");
+});
+
+import { routeSteps } from "./access";
+test("repeated continue steps are combined and ramps read naturally", () => {
+  const step = (type: string, name: string, distance: number, modifier?: string) => ({ name, distance, duration: 1, maneuver: { type, modifier } });
+  const steps = routeSteps([step("continue", "US 66", 100), step("new name", "US 66", 200), step("on ramp", "I 40", 50, "straight")]);
+  assert.deepEqual(steps.map((s) => s.instruction), ["Continue on US 66", "Take the ramp onto I 40"]);
+  assert.equal(steps[0].distanceMeters, 300);
+});

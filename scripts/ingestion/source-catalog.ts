@@ -10,6 +10,8 @@ import type { CatalogManifest, CatalogTrail } from "../../src/lib/trail-catalog/
 import { JOIN_METERS, mergeCatalogSections } from "../../src/lib/trail-catalog/merge";
 import { auditCatalog } from "../../src/lib/trail-catalog/audit";
 import { QUALITY_RULES, isPlaceholderName } from "../../src/lib/trail-catalog/quality";
+import { PisteIndex, matchSkiRun, type SkiRunCache } from "../../src/lib/trail-catalog/ski-runs";
+import { TrailheadIndex, trailEnds, type TrailheadCache } from "../../src/lib/trail-catalog/access";
 
 const root = process.cwd();
 const output = path.join(root, "data/trail-catalog");
@@ -148,6 +150,42 @@ async function main() {
     trails.push(trail);
   }
   trails.sort((a, b) => a.row.name.localeCompare(b.row.name) || a.row.id.localeCompare(b.row.id));
+  // Records whose line follows OpenSkiMap pistes are ski runs, not hiking trails (npm run source:ski).
+  let skiSource: CatalogManifest["sources"][number] | null = null;
+  const winterCounts = { downhill: 0, nordic: 0 };
+  try {
+    const ski = JSON.parse(gunzipSync(await readFile(path.join(root, ".cache/ski/runs-na.json.gz"))).toString()) as SkiRunCache;
+    const pistes = new PisteIndex(ski.runs);
+    for (const trail of trails) {
+      const match = matchSkiRun(trail.row.name, trail.lines, pistes);
+      if (!match) continue;
+      trail.row.winterUse = match.use;
+      if (match.areaName) trail.row.skiArea = match.areaName;
+      winterCounts[match.use]++;
+    }
+    skiSource = { name: "OpenSkiMap — ski runs (used to identify ski runs; not listed as trails)", url: "https://openskimap.org", license: "ODbL — © OpenStreetMap contributors", count: 0, query: `U.S./Canadian pistes; a record is a run when ≥60% of its line follows a piste`, retrievedAt: ski.retrievedAt };
+    console.log(`Ski pistes: ${winterCounts.downhill} downhill runs, ${winterCounts.nordic} Nordic tracks`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    console.warn("No ski run cache; run npm run source:ski to identify ski runs.");
+  }
+  // Start points: the nearest mapped OSM trailhead to either end (npm run source:trailheads).
+  let trailheadSource: CatalogManifest["sources"][number] | null = null;
+  try {
+    const cached = JSON.parse(gunzipSync(await readFile(path.join(root, ".cache/trailheads/trailheads-na.json.gz"))).toString()) as TrailheadCache;
+    const index = new TrailheadIndex(cached.trailheads);
+    let matched = 0;
+    for (const trail of trails) {
+      const ends = trailEnds(trail.lines);
+      const start = ends ? index.nearest(ends) : null;
+      if (start) { trail.row.trailhead = start; matched++; }
+    }
+    trailheadSource = { name: "OpenStreetMap — trailheads (start points)", url: "https://www.openstreetmap.org/copyright", license: "ODbL — © OpenStreetMap contributors", count: 0, query: `highway=trailhead within 800 m of a trail end; ${matched.toLocaleString("en-US")} trails matched; OSM data as of ${cached.dataTimestamp ?? "unknown"}`, retrievedAt: cached.retrievedAt };
+    console.log(`Trailheads: ${matched} trails have a mapped trailhead within 800 m`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    console.warn("No trailhead cache; run npm run source:trailheads to add start points.");
+  }
   // Every published trail passes through the quality rules; the report ships with the snapshot.
   const audit = auditCatalog(trails.map(t => ({ row: t.row, lines: t.lines, reportedMiles: t.reportedMiles, sectionReportedMiles: t.sectionReportedMiles })));
   audit.excludedTooShort = excluded.tooShort;
@@ -164,7 +202,9 @@ async function main() {
   }
   const sourceOf = new Map(rows.map(r => [r.id, r.source]));
   sources.forEach((source,i)=>{ source.count = trails.reduce((sum, t) => sum+t.sectionIds.filter(id => sourceOf.get(id) === sourcesToImport[i].key).length, 0); });
-  const manifest: CatalogManifest = { version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`, `Every trail is checked by config/trail-quality.json rules: ${audit.byStatus.ok.toLocaleString("en-US")} passed, ${audit.byStatus.short.toLocaleString("en-US")} are short trails, ${audit.byStatus.review.toLocaleString("en-US")} need review and ${audit.byStatus.fragment.toLocaleString("en-US")} are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources.`] };
+  if (skiSource) sources.push(skiSource);
+  if (trailheadSource) sources.push(trailheadSource);
+  const manifest: CatalogManifest = { version:2, generatedAt:new Date().toISOString(), total:selected.length, sectionTotal, countries, sources, regions:[...regionCounts.values()].sort((a,b)=>a.name.localeCompare(b.name)), indexSha256:hash(index), excluded, notes:[`Each record is a whole named trail: ${sectionTotal.toLocaleString("en-US")} source sections were merged where sections with the same name connect (within ${JOIN_METERS} m). Same-named trails that do not connect stay separate, except named through-hikes (Appalachian, Pacific Crest, …), which are one trail even across mapping gaps. Unnamed sections are never merged.`, "Trail length is the sum of its sections with overlapping stretches counted once. U.S. sections use USGS-reported miles when they agree with the mapped line (within 0.67–1.5×); otherwise, and for all Canadian sections, length is measured from the generalized geometry.", "Generalized source geometry is for discovery, not navigation. Map pins are points on the trail's longest mapped line, not verified trailheads.", "State/province is inferred from the map pin and Natural Earth public-domain boundaries; long trails can extend outside it.", "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.", "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.", `Standalone trails shorter than ${minimumTrailMiles} mi are mapping fragments and are excluded.`, `Every trail is checked by config/trail-quality.json rules: ${audit.byStatus.ok.toLocaleString("en-US")} passed, ${audit.byStatus.short.toLocaleString("en-US")} are short trails, ${audit.byStatus.review.toLocaleString("en-US")} need review and ${audit.byStatus.fragment.toLocaleString("en-US")} are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources.`, ...(skiSource ? [`${winterCounts.downhill.toLocaleString("en-US")} records follow downhill ski pistes mapped in OpenSkiMap and are listed as ski runs, not hiking trails; ${winterCounts.nordic.toLocaleString("en-US")} follow Nordic ski tracks and stay hikeable.`] : [])] };
   const stage = path.join(output, `snapshot-${Date.now()}`); await mkdir(stage);
   const shards: Record<string, Record<string, Point[][]>> = {}, aliases: Record<string, Record<string, string>> = {};
   for (const trail of trails) {

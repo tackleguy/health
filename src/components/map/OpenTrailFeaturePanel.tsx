@@ -45,7 +45,7 @@ export function OpenTrailFeaturePanel({
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <a
-          href={directionsUrl(feature.lat, feature.lng, feature.name)}
+          href={directionsUrl(feature.lat, feature.lng)}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-ghost !py-2 !text-sm"

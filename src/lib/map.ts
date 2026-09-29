@@ -1,10 +1,8 @@
 import type { ActivityType } from "@/lib/types";
 
-export function directionsUrl(lat: number, lng: number, label?: string): string {
-  const dest = `${lat},${lng}`;
-  const params = new URLSearchParams({ api: "1", destination: dest });
-  if (label) params.set("destination_place_id", label);
-  return `https://www.google.com/maps/dir/?${params}`;
+/** Google Maps directions. `destination_place_id` must be a Google place ID, so a name is never passed there. */
+export function directionsUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps/dir/?${new URLSearchParams({ api: "1", destination: `${lat},${lng}` })}`;
 }
 
 export function haversineKm(

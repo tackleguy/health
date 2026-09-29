@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CatalogPhotos } from "./CatalogPhotos";
 import { CatalogMapView } from "./CatalogMapView";
+import { TrailMapAndDirections } from "./TrailMapAndDirections";
+import { googleMapsDirectionsUrl } from "@/lib/trail-catalog/access";
 import { TrailWeatherForecast } from "./TrailWeatherForecast";
 import type { CatalogManifest, CatalogTrail } from "@/lib/trail-catalog/types";
 import { countryName, sourceName } from "@/lib/trail-catalog/types";
@@ -51,6 +53,21 @@ export function CatalogTrailDetail({
           {[t.region, countryName(t.country)].filter(Boolean).join(", ")} · {sourceName(t.source)}
         </p>
       </header>
+      {t.winterUse && (
+        <div className="catalog-quality-note" role="note">
+          {t.winterUse === "downhill" ? (
+            <>
+              <strong>Downhill ski run{t.skiArea ? ` at ${t.skiArea}` : ""}.</strong> This line follows a mapped ski piste,
+              so it is listed with ski trails, not hikes. Resorts set their own rules for summer access and uphill travel.
+            </>
+          ) : (
+            <>
+              <strong>Nordic ski track{t.skiArea ? ` at ${t.skiArea}` : ""}.</strong> This trail is groomed for
+              cross-country skiing in winter; check whether walking is allowed on the tracks then.
+            </>
+          )}
+        </div>
+      )}
       {warning && (
         <div className="catalog-quality-note" role="note">
           <strong>{QUALITY_STATUS_LABELS[t.quality!]}.</strong> {warning}
@@ -152,13 +169,27 @@ export function CatalogTrailDetail({
           </a>
         )}
       </div>
-      {hasLines ? <CatalogMapView lines={lines} /> : <CatalogMapView trails={[t]} />}
+      {hasLines && !isRoute ? (
+        <TrailMapAndDirections name={t.name} miles={t.miles} lines={lines} trailhead={t.trailhead} />
+      ) : hasLines ? (
+        <CatalogMapView lines={lines} />
+      ) : (
+        <CatalogMapView trails={[t]} />
+      )}
       <p className="catalog-muted">
         {!hasLines
           ? "Pin marks an approximate trailhead or corridor midpoint — not a verified start. This is not a GPS track."
           : isRoute
             ? "Mapped sections joined for discovery; gaps are stretches no source has mapped. This is not a GPS track."
-            : "Generalized source geometry for discovery. This map does not verify navigation, current access or a trailhead."}
+            : "Generalized source geometry for discovery. Trailheads come from OpenStreetMap and are not verified; confirm access, parking and road conditions before you go."}
+        {(isRoute || !hasLines) && hasLocation && (
+          <>
+            {" "}
+            <a href={googleMapsDirectionsUrl(t.latitude, t.longitude)} target="_blank" rel="noopener noreferrer">
+              Directions to the map pin in Google Maps
+            </a>
+          </>
+        )}
       </p>
       {hasLocation && (
         <TrailWeatherForecast

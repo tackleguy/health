@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-28T06:32:17.059Z",
+  "generatedAt": "2026-09-29T00:13:45.952Z",
   "total": 146355,
   "sectionTotal": 492994,
   "countries": {
@@ -31,6 +31,22 @@
       "count": 484801,
       "query": "(name IS NOT NULL AND name <> '') OR hikerpedestrian = 'Y'",
       "retrievedAt": "2026-09-26T09:09:56.596Z"
+    },
+    {
+      "name": "OpenSkiMap — ski runs (used to identify ski runs; not listed as trails)",
+      "url": "https://openskimap.org",
+      "license": "ODbL — © OpenStreetMap contributors",
+      "count": 0,
+      "query": "U.S./Canadian pistes; a record is a run when ≥60% of its line follows a piste",
+      "retrievedAt": "2026-09-28T23:50:43.346Z"
+    },
+    {
+      "name": "OpenStreetMap — trailheads (start points)",
+      "url": "https://www.openstreetmap.org/copyright",
+      "license": "ODbL — © OpenStreetMap contributors",
+      "count": 0,
+      "query": "highway=trailhead within 800 m of a trail end; 10,420 trails matched; OSM data as of 2026-05-06T03:25:00Z",
+      "retrievedAt": "2026-09-29T00:11:54.156Z"
     }
   ],
   "regions": [
@@ -305,7 +321,7 @@
       "count": 2258
     }
   ],
-  "indexSha256": "f36917fa4fa0408b3c9c34433514cc6b83e5395a04215bbbd6bc946841673b88",
+  "indexSha256": "f15201adb5e3f7ec086fc3cb990401c663aec948392842558b7e7ba394904367",
   "excluded": {
     "missingName": 0,
     "invalidGeometry": 1,
@@ -321,6 +337,7 @@
     "Seasonal access, overnight camping, water, difficulty and elevation are not inferred. Source data may be older than the retrieval date.",
     "U.S. eligibility is named USGS sections plus unnamed sections tagged hikerpedestrian=Y; unnamed sections are labeled Unnamed trail.",
     "Standalone trails shorter than 0.05 mi are mapping fragments and are excluded.",
-    "Every trail is checked by config/trail-quality.json rules: 94,585 passed, 20,673 are short trails, 3,417 need review and 27,680 are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources."
+    "Every trail is checked by config/trail-quality.json rules: 94,585 passed, 20,673 are short trails, 3,417 need review and 27,680 are partial, unnamed or connector segments kept out of default results. No elevation is available from these sources.",
+    "1,531 records follow downhill ski pistes mapped in OpenSkiMap and are listed as ski runs, not hiking trails; 2,347 follow Nordic ski tracks and stay hikeable."
   ]
 }

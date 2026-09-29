@@ -378,7 +378,7 @@ export async function CatalogBrowser({ params }: { params: URLSearchParams }) {
                 <a href={s.url} target="_blank" rel="noopener noreferrer">
                   {s.name}
                 </a>{" "}
-                — {s.license}. {s.count.toLocaleString("en-US")} sections.
+                — {s.license}.{s.count > 0 ? ` ${s.count.toLocaleString("en-US")} sections.` : ""}
               </li>
             ))}
           </ul>
