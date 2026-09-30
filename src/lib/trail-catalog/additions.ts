@@ -148,9 +148,21 @@ export const NPS_WHERE = [
 export const USFS_HIKING_WHERE = "trail_type='TERRA' AND trail_name IS NOT NULL AND (allowed_terra_use LIKE '%1%' OR hiker_pedestrian_managed IS NOT NULL OR hiker_pedestrian_accpt IS NOT NULL)";
 /** USFS land trails where the Forest Service lists allowed uses and hiking is not one of them. */
 export const USFS_NO_HIKING_WHERE = "trail_type='TERRA' AND allowed_terra_use IS NOT NULL AND allowed_terra_use <> 'N/A' AND allowed_terra_use NOT LIKE '%1%' AND hiker_pedestrian_managed IS NULL AND hiker_pedestrian_accpt IS NULL";
-/** BLM routes managed for non-motorized or non-mechanized (foot and horse) public use. */
+/** BLM routes managed for non-motorized or non-mechanized (foot and horse) public use. Layer 7 has no
+ * GlobalID; its allowed-mode codes say who may use each route. */
+const BLM_FIELDS = "OBJECTID,ROUTE_PRMRY_NM,ADMIN_ST,PLAN_MODE_TRNSPRT,PLAN_ACCESS_RSTRCT,PLAN_SEASON_RSTRCT_CODE,OBSRVE_SRFCE_TYPE,ROUTE_SPCL_DSGNTN_TYPE";
 export const BLM_LAYERS = [
-  { layer: 4, where: "ROUTE_PRMRY_NM IS NOT NULL" },
-  { layer: 5, where: "ROUTE_PRMRY_NM IS NOT NULL" },
-  { layer: 7, where: "ROUTE_PRMRY_NM IS NOT NULL AND PLAN_MODE_TRNSPRT IN ('Non-Motorized','Non-Mechanized')" },
+  { layer: 4, where: "ROUTE_PRMRY_NM IS NOT NULL", fields: `${BLM_FIELDS},GlobalID` },
+  { layer: 5, where: "ROUTE_PRMRY_NM IS NOT NULL", fields: `${BLM_FIELDS},GlobalID` },
+  { layer: 7, where: "ROUTE_PRMRY_NM IS NOT NULL AND PLAN_ALLOW_MODE_TRNSPRT IN ('HIK_ONLY','EQU_HIK_ONLY','BIKE_HIK_ONLY','NON_MOTO_SHARED')", fields: `${BLM_FIELDS},PLAN_ALLOW_MODE_TRNSPRT` },
 ];
+/** Allowed uses from BLM mode codes. */
+export function blmUses(a: Record<string, unknown>) {
+  switch (a.PLAN_ALLOW_MODE_TRNSPRT) {
+    case "HIK_ONLY": return ["Hiking"];
+    case "EQU_HIK_ONLY": return ["Hiking", "Horses"];
+    case "BIKE_HIK_ONLY": return ["Hiking", "Bikes"];
+    case "NON_MOTO_SHARED": return ["Hiking", "Horses", "Bikes"];
+  }
+  return a.PLAN_MODE_TRNSPRT === "Non-Mechanized" ? ["Hiking", "Horses"] : ["Hiking", "Horses", "Bikes"];
+}

@@ -54,7 +54,7 @@ test("bundled snapshot contains whole merged trails with complete map geometry",
   for (const row of rows) {
     assert.ok(mapped.has(row.id));assert.equal(row.kind,"segment");assert.ok(row.name.trim());
     assert.ok(Number.isFinite(row.miles) && row.miles!>=0.05);
-    assert.ok(["carto.nationalmap.gov","services2.arcgis.com","ws.lioservices.lrc.gov.on.ca","mapservices.nps.gov"].includes(new URL(row.sourceUrl).hostname));
+    assert.ok(["carto.nationalmap.gov","services2.arcgis.com","ws.lioservices.lrc.gov.on.ca","mapservices.nps.gov","apps.fs.usda.gov","gis.blm.gov"].includes(new URL(row.sourceUrl).hostname));
     if (row.source==="usgs") assert.equal(row.difficulty,null);
   }
 });
