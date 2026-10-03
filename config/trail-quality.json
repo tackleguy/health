@@ -1,0 +1,17 @@
+{
+  "$comment": "Trail quality rules used by src/lib/trail-catalog/quality.ts at catalog build and audit time. Thresholds flag trails for review; they never delete a trail on their own.",
+  "minimumTrailMiles": 0.05,
+  "shortTrailMiles": 0.31,
+  "maxPlausibleMiles": 3000,
+  "fragmentSearchMeters": 3000,
+  "fragmentParentRatio": 2,
+  "networkNameMinPieces": 5,
+  "loopCloseMeters": 60,
+  "loopMinMiles": 0.1,
+  "gapMeters": 200,
+  "maxJumpMiles": 1,
+  "straightLineMinMiles": 0.5,
+  "distanceToleranceLow": 0.67,
+  "distanceToleranceHigh": 1.5,
+  "sourceShortfallRatio": 0.5
+}

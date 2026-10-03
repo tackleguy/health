@@ -5,23 +5,27 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GeoLineString, MapMarker, MapMode } from "@/lib/types";
 import type { SkiArea, SkiFeatureSummary } from "@/lib/ski";
 import type { CatalogMapPoint, CatalogMapResult, CatalogTrail } from "@/lib/trail-catalog/types";
-import { displayMiles, sourceName } from "@/lib/trail-catalog/types";
+import { displayMiles, sourceName, countryName } from "@/lib/trail-catalog/types";
 import { MapView, type MapPopupInfo } from "@/components/map/MapView";
 import { ModeSwitcher } from "@/components/map/ModeSwitcher";
+import { OpenTrailFeaturePanel } from "@/components/map/OpenTrailFeaturePanel";
 import { SkiFeaturePanel } from "@/components/map/SkiFeaturePanel";
 import { LocationPermissionPrompt } from "@/components/gps/LocationPermissionPrompt";
 import { useLocationPermission } from "@/components/gps/useLocationPermission";
+import type { OpenTrailFeatureSummary } from "@/lib/opentrailmap";
 import {
   activityForTrail,
   formatDistanceAway,
   haversineKm,
   recordUrl,
 } from "@/lib/map";
+import { resolveDifficulty } from "@/lib/trail-difficulty";
 
 type NearbySkiArea = SkiArea & { distance_km?: number };
 
 interface MapFilters {
-  country: "" | "US" | "CA";
+  country: "" | "US" | "CA" | "intl";
+  kind: "" | "route" | "segment";
   difficulty: string;
   minMiles: string;
   maxMiles: string;
@@ -31,6 +35,7 @@ interface MapFilters {
 
 const EMPTY_FILTERS: MapFilters = {
   country: "",
+  kind: "",
   difficulty: "",
   minMiles: "",
   maxMiles: "",
@@ -76,17 +81,23 @@ function catalogMarkers(points: CatalogMapPoint[]): MapMarker[] {
 }
 
 function trailPopup(trail: CatalogTrail): MapPopupInfo {
+  const difficulty = resolveDifficulty({
+    reported: trail.difficulty,
+    miles: trail.miles,
+    name: trail.name,
+  });
   const rows = [
-    { label: "Difficulty", value: trail.difficulty?.trim() || "Not listed" },
+    { label: "Difficulty", value: `${difficulty.difficulty} · ${difficulty.label}` },
     { label: "Distance", value: displayMiles(trail.miles) },
     {
       label: "Location",
-      value: [trail.region, trail.country === "CA" ? "Canada" : "United States"]
-        .filter(Boolean)
-        .join(", "),
+      value: [trail.region, countryName(trail.country)].filter(Boolean).join(", "),
     },
     { label: "Source", value: sourceName(trail.source) },
   ];
+  if (trail.kind === "route") {
+    rows.unshift({ label: "Type", value: "Through-hike" });
+  }
   if (trail.surface) rows.push({ label: "Surface", value: trail.surface });
   if (trail.manager) rows.push({ label: "Manager", value: trail.manager });
 
@@ -95,11 +106,11 @@ function trailPopup(trail: CatalogTrail): MapPopupInfo {
     latitude: trail.latitude,
     title: trail.name,
     rows,
-    primaryHref: recordUrl(activityForTrail(trail.difficulty ?? "moderate"), {
+    primaryHref: recordUrl(activityForTrail(difficulty.difficulty), {
       trailId: trail.id,
     }),
     primaryLabel: "Record",
-    secondaryHref: `/explore/trails?q=${encodeURIComponent(trail.name)}`,
+    secondaryHref: `/explore/trails/${trail.id}`,
     secondaryLabel: "Explore",
   };
 }
@@ -107,6 +118,7 @@ function trailPopup(trail: CatalogTrail): MapPopupInfo {
 function filterQuery(filters: MapFilters): string {
   const params = new URLSearchParams();
   if (filters.country) params.set("country", filters.country);
+  if (filters.kind) params.set("kind", filters.kind);
   if (filters.difficulty) params.set("difficulty", filters.difficulty);
   if (filters.minMiles) params.set("minMiles", filters.minMiles);
   if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
@@ -132,6 +144,8 @@ export function MapPageClient({
   const [selectedRoute, setSelectedRoute] = useState<GeoLineString | null>(null);
   const [selectedSkiFeature, setSelectedSkiFeature] =
     useState<SkiFeatureSummary | null>(null);
+  const [selectedOpenTrail, setSelectedOpenTrail] =
+    useState<OpenTrailFeatureSummary | null>(null);
   const [mapFocus, setMapFocus] = useState<{
     lat: number;
     lng: number;
@@ -165,6 +179,7 @@ export function MapPageClient({
 
   const activeFilterCount = [
     filters.country,
+    filters.kind,
     filters.difficulty,
     filters.minMiles,
     filters.maxMiles,
@@ -228,6 +243,7 @@ export function MapPageClient({
     }
     const params = new URLSearchParams();
     if (filters.country) params.set("country", filters.country);
+    if (filters.kind) params.set("kind", filters.kind);
     if (filters.difficulty) params.set("difficulty", filters.difficulty);
     if (filters.minMiles) params.set("minMiles", filters.minMiles);
     if (filters.maxMiles) params.set("maxMiles", filters.maxMiles);
@@ -268,6 +284,7 @@ export function MapPageClient({
     setSelectedTrail(null);
     setSelectedRoute(null);
     setSelectedSkiFeature(null);
+    setSelectedOpenTrail(null);
     setMapFocus(null);
   };
 
@@ -387,9 +404,27 @@ export function MapPageClient({
                 }))
               }
             >
-              <option value="">Canada & U.S.</option>
+              <option value="">All countries</option>
               <option value="US">United States</option>
               <option value="CA">Canada</option>
+              <option value="intl">International</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-cream">Type</span>
+            <select
+              className="rounded-[var(--radius-lg)] border border-[var(--control-border)] bg-surface-muted px-3 py-2 text-cream"
+              value={filters.kind}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  kind: event.target.value as MapFilters["kind"],
+                }))
+              }
+            >
+              <option value="">Routes & sections</option>
+              <option value="route">Through-hikes</option>
+              <option value="segment">Sections</option>
             </select>
           </label>
           <label className="grid gap-1 text-sm">
@@ -541,6 +576,13 @@ export function MapPageClient({
           setSelectedRoute(null);
         }}
         onBoundsChange={mode === "trail" ? loadCatalogForBounds : undefined}
+        onOpenTrailFeatureClick={(feature) => {
+          setSelectedOpenTrail(feature);
+          setSelectedSkiFeature(null);
+          setSelectedTrail(null);
+          setSelectedRoute(null);
+          setMapFocus({ lat: feature.lat, lng: feature.lng, zoom: 14 });
+        }}
         onMarkerClick={(marker) => {
           if (marker.type === "park") {
             window.location.href = marker.href;
@@ -559,6 +601,7 @@ export function MapPageClient({
               lat: marker.latitude,
               lng: marker.longitude,
             });
+            setSelectedOpenTrail(null);
             setSelectedTrail(null);
             setSelectedRoute(null);
             return;
@@ -573,6 +616,7 @@ export function MapPageClient({
             });
             setSelectedTrail(null);
             setSelectedRoute(null);
+            setSelectedOpenTrail(null);
             return;
           }
           if (point?.trail) {
@@ -595,6 +639,14 @@ export function MapPageClient({
         />
       )}
 
+      {selectedOpenTrail && (
+        <OpenTrailFeaturePanel
+          feature={selectedOpenTrail}
+          mode={mode === "ski" ? "ski" : "trail"}
+          onClose={() => setSelectedOpenTrail(null)}
+        />
+      )}
+
       {mode === "trail" && (
         <p className="text-xs text-mist">
           Right-drag or two-finger twist to rotate (works on satellite). Compass resets north.
@@ -602,6 +654,20 @@ export function MapPageClient({
           <Link href="/explore/trails" className="font-semibold text-accent">
             Browse the trail list
           </Link>
+        </p>
+      )}
+
+      {mode === "ski" && (
+        <p className="text-xs text-mist">
+          Zoom in to see nordic ski trails from OpenStreetMap. Tap a path for
+          details, or{" "}
+          <Link
+            href="/explore/trails?activity=ski&includeWinter=true"
+            className="font-semibold text-accent"
+          >
+            browse catalog ski sections
+          </Link>
+          .
         </p>
       )}
     </div>

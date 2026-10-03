@@ -14,7 +14,9 @@ import {
   ensureImportPark,
   fetchExistingTrailRefs,
   finishImportLog,
+  importedLengthMiles,
   insertImportedTrail,
+  mergeImportedTrailSections,
   storeMergeCandidates,
   storeSourceRecord,
   upsertDataSource,
@@ -106,7 +108,7 @@ export async function runIngestionPipeline(
       existing.push({
         id: trailId,
         name: normalized.name,
-        length_miles: normalized.lengthMiles ?? 0,
+        length_miles: importedLengthMiles(normalized),
         latitude: normalized.startLatitude,
         longitude: normalized.startLongitude,
       });
@@ -116,6 +118,8 @@ export async function runIngestionPipeline(
         await storeMergeCandidates(supabase, trailId, candidates);
       }
     }
+
+    if (result.stored > 0) await mergeImportedTrailSections(supabase);
 
     if (logId) {
       await finishImportLog(supabase, logId, result, "completed");

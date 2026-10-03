@@ -81,8 +81,53 @@ export async function findTrailByExternalId(
     .eq("data_source_id", dataSourceId)
     .eq("source_external_id", externalId)
     .maybeSingle();
+  if (data?.id) return data.id;
 
-  return data?.id ?? null;
+  // Sections merged into a longer trail live on as trail_segments.
+  const { data: segment } = await supabase
+    .from("trail_segments")
+    .select("trail_id")
+    .eq("data_source_id", dataSourceId)
+    .eq("source_external_id", externalId)
+    .limit(1)
+    .maybeSingle();
+
+  return segment?.trail_id ?? null;
+}
+
+/** Miles along a GeoJSON line. */
+function lineMiles(geojson: NormalizedTrail["geojson"]) {
+  const coords = geojson.coordinates;
+  let meters = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const [lng1, lat1] = coords[i - 1];
+    const [lng2, lat2] = coords[i];
+    const rad = Math.PI / 180;
+    const h =
+      Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
+      Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
+    meters += 2 * 6_371_008.8 * Math.asin(Math.sqrt(Math.min(1, h)));
+  }
+  return meters / 1609.344;
+}
+
+/** Source-reported length when it agrees with the mapped line, otherwise the mapped length. */
+export function importedLengthMiles(trail: NormalizedTrail) {
+  const mapped = lineMiles(trail.geojson);
+  const reported = trail.lengthMiles;
+  const miles =
+    reported != null && reported > 0 && mapped > 0 && reported / mapped >= 0.67 && reported / mapped <= 1.5
+      ? reported
+      : mapped;
+  // Never round a real trail up to a placeholder length; a 0 here means the geometry is empty and validation flags it.
+  return Math.round(miles * 1000) / 1000;
+}
+
+/** Joins connected same-name imported sections into single trails and fixes their lengths. */
+export async function mergeImportedTrailSections(supabase: SupabaseClient) {
+  const { data, error } = await supabase.rpc("merge_trail_sections");
+  if (error) throw error;
+  return (data as { merged_trails: number; removed_trails: number; corrected_lengths: number }[] | null)?.[0] ?? null;
 }
 
 export async function insertImportedTrail(
@@ -107,7 +152,7 @@ export async function insertImportedTrail(
       trail_name: trail.name,
       description: trail.description ?? `Imported trail: ${trail.name}`,
       difficulty: trail.difficulty ?? "moderate",
-      length_miles: Math.max(0.1, Math.round((trail.lengthMiles ?? 0.1) * 100) / 100),
+      length_miles: importedLengthMiles(trail),
       elevation_ft: trail.elevationGainFt ?? 0,
       route_type: trail.routeType ?? "out-and-back",
       latitude: trail.startLatitude,

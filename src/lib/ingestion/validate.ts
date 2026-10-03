@@ -1,6 +1,7 @@
 import type { NormalizedTrail, RawTrailRecord, ValidationResult } from "./types";
 import { haversineMeters } from "@/lib/gps";
 import { geoJsonLineString } from "./parsers/geojson";
+import { QUALITY_RULES, isPlaceholderName } from "@/lib/trail-catalog/quality";
 
 const MAX_SEGMENT_JUMP_M = 5000;
 const MAX_REASONABLE_SPEED_MPS = 15;
@@ -65,6 +66,18 @@ export function validateTrailRecord(record: RawTrailRecord): ValidationResult {
         severity: "warning",
       });
     }
+  }
+
+  if (record.name?.trim() && isPlaceholderName(record.name)) {
+    issues.push({ field: "name", message: `"${record.name}" is a placeholder, not a trail name`, severity: "warning" });
+  }
+
+  if (totalM > 0 && totalM < QUALITY_RULES.shortTrailMiles * 1609.344) {
+    issues.push({
+      field: "coordinates",
+      message: `Mapped length ${Math.round(totalM)} m is under the short-trail threshold; check it is a whole trail`,
+      severity: "warning",
+    });
   }
 
   if (totalM < 10) {

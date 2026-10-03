@@ -9,9 +9,13 @@ const PLACE_FALSE_POSITIVE =
 
 /**
  * True when a catalog section is primarily a winter or snowmobile route
- * rather than a hiking trail (name/manager heuristics — no activity field exists).
+ * rather than a hiking trail: its line follows a downhill piste, or its name/manager says so.
  */
-export function isWinterActivityTrail(trail: Pick<CatalogTrail, "name" | "manager">): boolean {
+export function isWinterActivityTrail(trail: Pick<CatalogTrail, "name" | "manager"> & Partial<Pick<CatalogTrail, "winterUse" | "source">>): boolean {
+  // Summer trails a resort lists; the resort's name ("Taos Ski Valley") says nothing about the trail.
+  if (trail.source === "resort") return false;
+  // Mapped on a downhill piste: a ski run whatever its name says.
+  if (trail.winterUse === "downhill") return true;
   const haystack = `${trail.name} ${trail.manager ?? ""}`;
   if (PLACE_FALSE_POSITIVE.test(haystack)) return false;
   return WINTER_ACTIVITY.test(haystack);

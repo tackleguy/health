@@ -236,6 +236,7 @@ export async function getTrailExtendedFields(
   const detail = data as Record<string, unknown>;
   return {
     geometry: detail.geometry as Trail["geometry"],
+    segments: detail.segments as Trail["segments"],
     elevation_profile: detail.elevation_profile as Trail["elevation_profile"],
     start_latitude: detail.start_latitude as number | null,
     start_longitude: detail.start_longitude as number | null,

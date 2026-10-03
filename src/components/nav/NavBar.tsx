@@ -37,7 +37,7 @@ const tools = [
   { href: "/", label: "Activity log", hint: "G then A" },
   { href: "/pack-trails", label: "Route guides" },
   { href: "/trails", label: "Custom trails" },
-  { href: "/explore/ski", label: "Ski resorts" },
+  { href: "/explore/ski", label: "Ski trails" },
 ];
 
 const goRoutes: Record<string, string> = {};

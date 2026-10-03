@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     ]);
 
     const results: (SearchResult & { lat?: number; lng?: number })[] = [
-      ...(catalog?.trails ?? []).map(trail=>({ id:trail.id,type:"trail" as const,name:trail.name,subtitle:`${trail.region ?? countryName(trail.country)} · Trail section`,href:`/explore/trails/${trail.id}`,lat:trail.latitude,lng:trail.longitude })),
+      ...(catalog?.trails ?? []).map(trail=>({ id:trail.id,type:"trail" as const,name:trail.name,subtitle:`${trail.region ?? countryName(trail.country)} · ${trail.kind === "route" ? "Through-hike" : "Trail section"}`,href:`/explore/trails/${trail.id}`,lat:trail.latitude,lng:trail.longitude })),
       ...parks.map((park) => ({
         id: park.id,
         type: "park" as const,

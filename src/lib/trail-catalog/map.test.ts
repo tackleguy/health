@@ -8,14 +8,15 @@ import type { CatalogTrail } from "./types";
 
 test("a bounded map represents every matching hiking record, not one results page", async () => {
   const data = await searchCatalogMap();
-  assert.ok(data.total >= 89000 && data.total <= 90000);
+  const withWinter = await searchCatalogMap({ includeWinter: true, activity: "all" });
+  assert.ok(withWinter.total >= 100000);
+  assert.ok(data.total >= 80000 && data.total <= withWinter.total);
   assert.ok(data.points.length <= MAX_MAP_POINTS);
   assert.equal(data.points.reduce((sum, point) => sum + point.count, 0), data.total);
-  const withWinter = await searchCatalogMap({ includeWinter: true });
-  assert.equal(withWinter.total, 90000);
   assert.ok(withWinter.total >= data.total);
+  assert.equal(withWinter.points.reduce((sum, point) => sum + point.count, 0), withWinter.total);
   const area = await searchCatalogMap({ country: "US", region: "Colorado", bbox: [-106, 39, -105, 41] });
-  assert.ok(area.total > 0 && area.total < data.total);
+  assert.ok(area.total > 0 && area.total < withWinter.total);
   assert.equal(area.points.reduce((sum, point) => sum + point.count, 0), area.total);
 });
 test("bounds cross the date line without stretching a nearby group around the world", () => {
@@ -32,6 +33,16 @@ test("valid braced USGS identifiers open their real geometry and export escaped 
   const gpx = catalogGpx({ ...detail.trail, name: 'A & B <trail> "name"' }, detail.lines);
   assert.match(gpx, /A &amp; B &lt;trail&gt; &quot;name&quot;/);
   assert.match(gpx, /<trkpt lat="/);
-  assert.match(gpx, /Generalized trail-section geometry/);
+  assert.match(gpx, /Generalized trail geometry/);
   assert.equal(await getCatalogTrail("usgs-../../package.json"), null);
+});
+test("grouped markers sit on a member trail, never an empty box center", () => {
+  const rows = Array.from({ length: MAX_MAP_POINTS + 40 }, (_, i) => ({
+    id: `t${i}`, longitude: i % 2 ? -157.8 : -118 - (i % 7) * 0.01, latitude: i % 2 ? 21.3 : 34 + (i % 5) * 0.01,
+  })) as CatalogTrail[];
+  const map = buildCatalogMap(rows);
+  assert.ok(map.grouped);
+  for (const point of map.points) {
+    assert.ok(rows.some((r) => Math.abs(r.longitude - point.longitude) < 1e-9 && r.latitude === point.latitude), `${point.id} is on a trail`);
+  }
 });

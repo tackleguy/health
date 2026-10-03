@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   getReviews,
@@ -20,20 +20,36 @@ import { TrailPoisSection } from "@/components/trails/TrailPoisSection";
 import { TrailWeatherForecast } from "@/components/trails/TrailWeatherForecast";
 import { GpxRouteUpload } from "@/components/trails/GpxRouteUpload";
 import { difficultyColor, formatRating } from "@/lib/utils";
+import { resolveDifficulty } from "@/lib/trail-difficulty";
 import { buildTrailJsonLd } from "@/lib/seo/trail-jsonld";
 import type { GeoLineString } from "@/lib/types";
 import { getCatalogTrail } from "@/lib/trail-catalog/server";
 import { CatalogTrailDetail } from "@/components/trails/CatalogTrailDetail";
+
+/** Dynamic params arrive percent-encoded, e.g. USGS ids with braces. */
+function decodeId(raw: string) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  if (/^(usgs|parks-canada|ontario)-/.test(id)) {
+  const id = decodeId((await params).id);
+  if (/^(usgs|parks-canada|ontario|nps|usfs|blm|resort|route)-/.test(id)) {
     const record = await getCatalogTrail(id);
-    return { title: record ? `${record.trail.name} — HikeSync` : "Trail not found", description: "Source-linked trail section from the HikeSync Canada and U.S. catalog." };
+    const isRoute = record?.trail.kind === "route";
+    return {
+      title: record ? `${record.trail.name} — HikeSync` : "Trail not found",
+      description: isRoute
+        ? "Through-hike guide from the HikeSync trail catalog."
+        : "Source-linked trail from the HikeSync catalog, with map and weather forecast.",
+    };
   }
   const trail = await getTrail(id);
   if (!trail) return { title: "Trail not found" };
@@ -59,10 +75,11 @@ export default async function ExploreTrailDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  if (/^(usgs|parks-canada|ontario)-/.test(id)) {
+  const id = decodeId((await params).id);
+  if (/^(usgs|parks-canada|ontario|nps|usfs|blm|resort|route)-/.test(id)) {
     const record = await getCatalogTrail(id);
     if (!record) notFound();
+    if (record.trail.id !== id) permanentRedirect(`/explore/trails/${encodeURIComponent(record.trail.id)}`);
     return <CatalogTrailDetail {...record} />;
   }
   const trail = await getTrail(id);
@@ -83,9 +100,22 @@ export default async function ExploreTrailDetailPage({
     ]);
 
   const jsonLd = buildTrailJsonLd(trail);
+  const resolvedDifficulty = resolveDifficulty({
+    reported: trail.difficulty,
+    communityDifficulty: trail.community_difficulty,
+    difficultyRatingCount: trail.difficulty_rating_count,
+    miles: trail.length_miles,
+    elevationFt: trail.elevation_ft,
+    name: trail.trail_name,
+    description: trail.description,
+  });
 
   const heroPhoto = photos.find((p) => p.is_hero) ?? photos[0] ?? null;
-  const routes: GeoLineString[] = trail.geometry ? [trail.geometry] : [];
+  const routes: GeoLineString[] = trail.segments?.length
+    ? trail.segments
+    : trail.geometry
+      ? [trail.geometry]
+      : [];
 
   const markers = [
     ...trailheads.map((head) => ({
@@ -184,19 +214,23 @@ export default async function ExploreTrailDetailPage({
           <div className="lg:col-span-2">
             <div className="mb-6 flex flex-wrap gap-3">
               <span
-                className={`rounded-full px-3 py-1 text-sm font-semibold capitalize ${difficultyColor(trail.difficulty)}`}
+                className={`rounded-full px-3 py-1 text-sm font-semibold capitalize ${difficultyColor(resolvedDifficulty.difficulty)}`}
+                title={resolvedDifficulty.label}
               >
-                {trail.difficulty}
+                {resolvedDifficulty.difficulty}
               </span>
-              <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-medium text-stone-700">
+              <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-medium text-mist">
+                {resolvedDifficulty.label}
+              </span>
+              <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-medium text-mist">
                 {trail.route_type}
               </span>
               {trail.allows_dogs != null && (
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-medium text-mist">
                   {trail.allows_dogs ? "Dogs allowed" : "No dogs"}
                 </span>
               )}
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
+              <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-medium text-mist">
                 ★ {formatRating(trail.avg_rating)} ({trail.review_count} reviews)
               </span>
             </div>

@@ -57,6 +57,12 @@ export default async function AdminPage({
           <p className="text-sm font-medium text-emerald-700">Trail Platform · Phase 1</p>
           <h1 className="text-3xl font-bold text-stone-900">Admin dashboard</h1>
         </div>
+        <Link
+          href={`/admin/trail-quality?admin_secret=${encodeURIComponent(params.admin_secret!)}`}
+          className="text-sm text-emerald-700 hover:underline"
+        >
+          Trail data quality
+        </Link>
         <Link href="/explore/trails" className="text-sm text-emerald-700 hover:underline">
           View trails →
         </Link>
